@@ -477,55 +477,114 @@ public class DiscordBot extends ListenerAdapter {
       }
    }
 
+   /** Republie le règlement (après /reglement recharger). */
+   public void republishRules() {
+      if (this.ready()) {
+         Bukkit.getScheduler().runTaskAsynchronously(this.plugin, () -> {
+            try {
+               TextChannel rules = this.ch("rules");
+               if (rules != null) {
+                  this.postRules(rules);
+                  this.saveData();
+               }
+            } catch (Exception var2) {
+               this.plugin.getLogger().warning("Discord : publication du règlement impossible : " + var2.getMessage());
+            }
+         });
+      }
+   }
+
+   /**
+    * Règlement en articles (MAJ 1.21.0) : un embed par titre (coupé au besoin), en plusieurs messages
+    * (10 embeds et 6000 caractères au plus par message). Republié quand le texte change.
+    */
    private void postRules(TextChannel rules) {
-      File f = new File(this.plugin.getDataFolder(), "reglement.yml");
-      if (!f.exists()) {
-         this.plugin.saveResource("reglement.yml", false);
+      fr.windydev.clans.rules.RulesManager rm = this.plugin.rules();
+      List<MessageEmbed> all = new ArrayList<>();
+      String head = rm.intro()
+         + "\n\n📌 **Version "
+         + rm.version()
+         + "**"
+         + (rm.date().isEmpty() ? "" : " du " + rm.date())
+         + " · "
+         + rm.parts().size()
+         + " titres, "
+         + rm.articleCount()
+         + " articles.\nEn jeu : `/reglement`. Le règlement doit être accepté en jeu à la première connexion et après chaque modification importante.";
+      all.add(new EmbedBuilder().setTitle(rm.title()).setDescription(head).setImage("attachment://banniere.jpg").setColor(PURPLE).build());
+
+      for (String[] b : rm.discordBlocks(3900)) {
+         all.add(new EmbedBuilder().setTitle(b[0].length() > 250 ? b[0].substring(0, 250) : b[0]).setDescription(b[1]).setColor(GOLD).build());
       }
 
-      YamlConfiguration y = YamlConfiguration.loadConfiguration(f);
-      List<MessageEmbed> embeds = new ArrayList<>();
-      embeds.add(
-         new EmbedBuilder()
-            .setTitle(y.getString("titre", "\ud83d\udcdc Règlement"))
-            .setDescription(y.getString("introduction", ""))
-            .setImage("attachment://banniere.jpg")
-            .setColor(PURPLE)
-            .build()
-      );
-
-      for (Map<?, ?> sec : y.getMapList("sections")) {
-         if (embeds.size() >= 10) {
-            break;
+      String hash = Integer.toHexString(all.stream().map(e -> e.getTitle() + e.getDescription()).toList().hashCode());
+      if (!hash.equals(this.data.getString("messages.rules-hash"))) {
+         // anciens messages : version en 6 sections (un seul) ou en articles (plusieurs)
+         String old = this.data.getString("messages.rules");
+         if (old != null) {
+            rules.deleteMessageById(old).queue(null, err -> {});
          }
 
-         String t = String.valueOf(sec.get("titre"));
-         String txt = String.valueOf(sec.get("texte"));
-         embeds.add(
-            new EmbedBuilder()
-               .setTitle(t.length() > 250 ? t.substring(0, 250) : t)
-               .setDescription(txt.length() > 1000 ? txt.substring(0, 1000) : txt)
-               .setColor(GOLD)
-               .build()
-         );
-      }
-
-      String hash = Integer.toHexString(embeds.stream().map(e -> e.getTitle() + e.getDescription()).toList().hashCode());
-      String id = this.data.getString("messages.rules");
-      if (id == null || !hash.equals(this.data.getString("messages.rules-hash"))) {
-         if (id != null) {
+         for (String id : this.data.getStringList("messages.rules-list")) {
             rules.deleteMessageById(id).queue(null, err -> {});
          }
 
-         Message m = (Message)((MessageCreateAction)((MessageCreateAction)rules.sendMessageEmbeds(embeds).addFiles(new FileUpload[]{this.banner()}))
-               .setComponents(
+         List<List<MessageEmbed>> groups = new ArrayList<>();
+         List<MessageEmbed> cur = new ArrayList<>();
+         int size = 0;
+
+         for (MessageEmbed e : all) {
+            int len = (e.getTitle() == null ? 0 : e.getTitle().length()) + (e.getDescription() == null ? 0 : e.getDescription().length());
+            if (!cur.isEmpty() && (cur.size() >= 10 || size + len > 5800)) {
+               groups.add(cur);
+               cur = new ArrayList<>();
+               size = 0;
+            }
+
+            cur.add(e);
+            size += len;
+         }
+
+         if (!cur.isEmpty()) {
+            groups.add(cur);
+         }
+
+         List<String> ids = new ArrayList<>();
+
+         for (int i = 0; i < groups.size(); i++) {
+            MessageCreateAction act = rules.sendMessageEmbeds(groups.get(i));
+            if (i == 0) {
+               act = (MessageCreateAction)act.addFiles(new FileUpload[]{this.banner()});
+            }
+
+            if (i == groups.size() - 1) {
+               act = (MessageCreateAction)act.setComponents(
                   new MessageTopLevelComponent[]{
                      ActionRow.of(Button.success("rules:accept", "✅ J'ai lu et j'accepte le règlement"), new ActionRowChildComponent[0])
                   }
-               ))
-            .complete();
-         this.data.set("messages.rules", m.getId());
+               );
+            }
+
+            ids.add(((Message)act.complete()).getId());
+         }
+
+         int before = this.data.getInt("messages.rules-version", 0);
+         boolean had = this.data.getString("messages.rules-hash") != null;
+         this.data.set("messages.rules", null);
+         this.data.set("messages.rules-list", ids);
          this.data.set("messages.rules-hash", hash);
+         this.data.set("messages.rules-version", rm.version());
+         if (had) {
+            boolean major = rm.version() > before;
+            this.announce(
+               "rules",
+               "📜 **Le règlement a été mis à jour"
+                  + (major ? " (version " + rm.version() + ")" : "")
+                  + "** : "
+                  + rules.getAsMention()
+                  + (major ? "\nC'est une modification importante : tu devras l'accepter de nouveau en jeu à ta prochaine connexion." : "")
+            );
+         }
       }
    }
 
@@ -672,6 +731,20 @@ public class DiscordBot extends ListenerAdapter {
                   .queue();
             } else {
                c.sendMessageEmbeds(eb.build(), new MessageEmbed[0]).queue();
+            }
+         }
+      }
+   }
+
+   /** Message privé Discord aux membres liés d'un clan (avertissement d'inactivité). */
+   public void dmClan(Clan c, String text) {
+      if (this.ready()) {
+         for (UUID u : c.members().keySet()) {
+            String id = this.data.getString("links." + u);
+            if (id != null) {
+               this.guild
+                  .retrieveMemberById(id)
+                  .queue(m -> m.getUser().openPrivateChannel().queue(ch -> ch.sendMessage(text).queue(null, err -> {}), err -> {}), err -> {});
             }
          }
       }

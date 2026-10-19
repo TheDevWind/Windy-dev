@@ -43,6 +43,7 @@ public class PackService implements Listener, CommandExecutor {
    private static final UUID GAME_ID = UUID.fromString("5b1d7a1e-3c2f-4e8a-9d6b-77a1c0de0002");
    private static final String PACK_NAME = "windyclans-pack.zip";
    private static final String GAME_NAME = "windyclans-jeu.zip";
+   private static final String CUSTOM_NAME = "windyclans-pack-perso.zip";
    /** Joueurs qui ont retiré l'habillage des écrans du jeu avec /ecrans. */
    private final Set<UUID> noGame = new HashSet<>();
    private File packFile;
@@ -61,8 +62,15 @@ public class PackService implements Listener, CommandExecutor {
          this.packFile = new File(this.plugin.getDataFolder(), PACK_NAME);
          this.plugin.getDataFolder().mkdirs();
 
-         try (InputStream in = this.plugin.getResource(PACK_NAME)) {
-            Files.copy(in, this.packFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+         // MAJ 1.22.0 : un pack déposé à la main dans plugins/WindyClans/windyclans-pack-perso.zip remplace celui du plugin
+         File custom = new File(this.plugin.getDataFolder(), CUSTOM_NAME);
+         if (custom.isFile() && custom.length() > 0L) {
+            Files.copy(custom.toPath(), this.packFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            this.plugin.getLogger().info("Pack de ressources : " + CUSTOM_NAME + " utilisé à la place du pack intégré.");
+         } else {
+            try (InputStream in = this.plugin.getResource(PACK_NAME)) {
+               Files.copy(in, this.packFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
          }
 
          this.sha1 = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-1").digest(Files.readAllBytes(this.packFile.toPath())));

@@ -98,6 +98,13 @@ public final class WindyClans extends JavaPlugin {
    private GlyphManager glyphs;
    private ArmorSets armorSets;
    private SpawnService spawns;
+   private TeleportService teleports;
+   private fr.windydev.clans.quest.QuestManager quests;
+   private fr.windydev.clans.quest.NewbieShield shield;
+   private fr.windydev.clans.events.WeeklyEvent weeklyEvent;
+   private fr.windydev.clans.pvp.PvpManager pvp;
+   private fr.windydev.clans.rules.RulesManager rules;
+   private fr.windydev.clans.feature.InactiveClans inactive;
    private final Set<UUID> bypass = new HashSet<>();
    private final Set<UUID> borders = new HashSet<>();
    private final Set<UUID> clanChatToggle = new HashSet<>();
@@ -137,6 +144,17 @@ public final class WindyClans extends JavaPlugin {
       this.glyphs.load();
       this.armorSets = new ArmorSets(this);
       this.bot = new DiscordBot(this);
+      this.rules = new fr.windydev.clans.rules.RulesManager(this);
+      this.rules.load();
+      this.quests = new fr.windydev.clans.quest.QuestManager(this);
+      this.quests.load();
+      this.shield = new fr.windydev.clans.quest.NewbieShield(this);
+      this.shield.load();
+      this.weeklyEvent = new fr.windydev.clans.events.WeeklyEvent(this);
+      this.weeklyEvent.load();
+      this.pvp = new fr.windydev.clans.pvp.PvpManager(this);
+      this.pvp.load();
+      this.inactive = new fr.windydev.clans.feature.InactiveClans(this);
       this.profiles = new ProfileManager(this);
       this.profiles.load();
       this.profiles.loadData();
@@ -222,10 +240,12 @@ public final class WindyClans extends JavaPlugin {
       this.spawns = new SpawnService(this);
       pm.registerEvents(this.spawns, this);
       pm.registerEvents(new SpeedFix(this), this);
+      pm.registerEvents(new fr.windydev.clans.feature.BigHealth(this), this);
       TeleportService tps = new TeleportService(this);
+      this.teleports = tps;
       pm.registerEvents(tps, this);
 
-      for (String c : new String[]{"sethome", "home", "delhome", "spawn", "tpa", "tpaccept", "tpdeny"}) {
+      for (String c : new String[]{"sethome", "home", "homes", "delhome", "spawn", "tpa", "tpaccept", "tpdeny"}) {
          this.register(c, tps);
       }
 
@@ -257,6 +277,24 @@ public final class WindyClans extends JavaPlugin {
       pm.registerEvents(this.glyphs, this);
       pm.registerEvents(this.armorSets, this);
       this.armorSets.start();
+      // MAJ 1.21.0 : règlement accepté en jeu, quêtes, parcours, protection des nouveaux, évènement de la semaine, clans inactifs
+      pm.registerEvents(this.rules, this);
+      this.rules.start();
+      this.register("reglement", this.rules);
+      pm.registerEvents(this.quests, this);
+      this.quests.start();
+      this.register("quetes", this.quests);
+      this.register("parcours", this.quests);
+      pm.registerEvents(this.shield, this);
+      this.shield.start();
+      this.register("protection", this.shield);
+      pm.registerEvents(this.weeklyEvent, this);
+      this.weeklyEvent.start();
+      this.register("evenement", this.weeklyEvent);
+      pm.registerEvents(this.pvp, this);
+      this.pvp.start();
+      this.register("pvp", this.pvp);
+      this.inactive.start();
       this.bot.start();
       Bukkit.getScheduler().runTaskTimer(this, this.clans::saveIfDirty, 1200L, 1200L);
       this.scoreboard.start();
@@ -275,6 +313,18 @@ public final class WindyClans extends JavaPlugin {
    public void onDisable() {
       if (this.hud != null) {
          this.hud.shutdown();
+      }
+
+      if (this.weeklyEvent != null) {
+         this.weeklyEvent.shutdown();
+      }
+
+      if (this.pvp != null) {
+         this.pvp.shutdown();
+      }
+
+      if (this.quests != null) {
+         this.quests.shutdown();
       }
 
       if (this.rituals != null) {
@@ -386,6 +436,11 @@ public final class WindyClans extends JavaPlugin {
       this.cauldron.load();
       this.awakening.load();
       this.elixirs.load();
+      this.quests.load();
+      this.shield.load();
+      this.weeklyEvent.load();
+      this.pvp.load();
+      this.rules.load();
       Bukkit.getOnlinePlayers().forEach(this.profiles::apply);
    }
 
@@ -399,6 +454,13 @@ public final class WindyClans extends JavaPlugin {
          this.getConfig().set("bank.currency", "windy:piece");
          this.getConfig().set("bank.currency-name", "coins");
          this.getLogger().info("Banque : la monnaie passe des diamants aux coins (les soldes sont gardés : 1 diamant = 1 coin).");
+      }
+
+      if (!this.getConfig().getBoolean("migrations.ancien-pack-1-22", false)) {
+         // MAJ 1.22.0 : retour à l'ancien pack de textures ; l'habillage des écrans du jeu (1.20.0) n'est plus envoyé
+         this.getConfig().set("resource-pack.game-pack.enabled", false);
+         this.getConfig().set("migrations.ancien-pack-1-22", true);
+         this.getLogger().info("Pack : retour à l'ancien pack de textures, habillage des écrans du jeu désactivé (resource-pack.game-pack.enabled).");
       }
 
       this.saveConfig();
@@ -482,6 +544,34 @@ public final class WindyClans extends JavaPlugin {
 
    public SpawnService spawns() {
       return this.spawns;
+   }
+
+   public TeleportService teleports() {
+      return this.teleports;
+   }
+
+   public fr.windydev.clans.quest.QuestManager quests() {
+      return this.quests;
+   }
+
+   public fr.windydev.clans.quest.NewbieShield shield() {
+      return this.shield;
+   }
+
+   public fr.windydev.clans.pvp.PvpManager pvp() {
+      return this.pvp;
+   }
+
+   public fr.windydev.clans.events.WeeklyEvent weeklyEvent() {
+      return this.weeklyEvent;
+   }
+
+   public fr.windydev.clans.rules.RulesManager rules() {
+      return this.rules;
+   }
+
+   public fr.windydev.clans.feature.InactiveClans inactive() {
+      return this.inactive;
    }
 
    public PackService pack() {

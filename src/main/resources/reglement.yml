@@ -1,43 +1,322 @@
 # ==========================================================================================
-#  Règlement de WINDY_MC, publié par le bot dans le salon 📜-règlement.
-#  Modifie ce fichier puis tape /setup sur Discord (ou redémarre) : le message est mis à jour.
-#  Maximum 9 sections ; chaque texte fait au plus 1000 caractères.
+#  Règlement de WINDY_MC (MAJ 1.21.0 : règlement en articles, accepté en jeu)
+# ------------------------------------------------------------------------------------------
+#  Utilisé en jeu (/reglement, écran « J'accepte » à la première connexion) et publié par le bot
+#  dans le salon 📜-règlement (plusieurs messages si besoin, mis à jour tout seul).
+#
+#  Modifier le texte : change les articles ci-dessous puis /reglement recharger (ou redémarre).
+#  Modification importante : augmente "version" de 1. Tous les joueurs devront accepter le
+#  règlement de nouveau en jeu, et une annonce est publiée sur Discord.
+#  Mise en forme : **texte** = gras (en jeu et sur Discord), une ligne par alinéa.
 # ==========================================================================================
+config-version: 2
+version: 1
 titre: "📜 Règlement de WINDY_MC"
-introduction: |-
-  En jouant sur WINDY_MC ou en rejoignant ce Discord, tu acceptes ce règlement.
-  Le staff peut sanctionner un comportement contraire à l'esprit du jeu, même s'il n'est pas listé ici.
+date: "9 octobre 2026"
+introduction: "Le présent règlement fixe les règles applicables à tous les joueurs du serveur Minecraft WINDY_MC et de son serveur Discord. Il est complété par un barème de sanctions (article 42)."
 
-sections:
-  - titre: "🤝 1. Respect"
-    texte: |-
-      • Pas d'insultes, de harcèlement, de discrimination ni de propos haineux, en jeu comme sur Discord.
-      • Pas de spam, de publicité ni de contenu choquant.
-      • Une décision du staff se conteste calmement, dans un ticket.
-  - titre: "🚫 2. Triche et bugs"
-    texte: |-
-      • Interdits : cheats (fly, kill aura, auto-clic…), x-ray, et mods ou packs qui donnent un avantage.
-      • Minimaps autorisées sans affichage des joueurs, des entités ni des grottes.
-      • Exploiter un bug (duplication, passage dans un mur…) est interdit : signale-le dans 🎫-tickets.
-      • Un seul compte par joueur. Ne donne jamais ton mot de passe (/login) : tu es responsable de ton compte.
-  - titre: "🏰 3. Bases et territoires"
-    texte: |-
-      • **Toute base doit avoir une entrée en surface ou un point d'accès trouvable** : une porte, un tunnel ou un puits visible depuis l'extérieur.
-      • Interdit : base entièrement murée sans accès, bunker sans entrée, base cachée dans la bedrock ou en l'air sans moyen d'y monter.
-      • Une base qui ne respecte pas cette règle peut être ouverte par le staff.
-      • Pas de murs, de pièges ni de constructions collées à un autre clan juste pour le gêner.
-  - titre: "⚔️ 4. PvP et guerres"
-    texte: |-
-      • Le PvP est libre hors du spawn et des capitales.
-      • **Une guerre doit avoir une raison** : conflit de territoire, vol, trahison, vengeance, rivalité… Le jeu la demande à la déclaration et l'annonce à tout le serveur.
-      • Une guerre sans raison crédible, ou déclarée encore et encore pour harceler un clan, peut être annulée par le staff.
-      • Pas de spawn-kill, et pas de déconnexion en plein combat pour éviter la mort.
-      • Interrompre l'Éveil d'un joueur est autorisé : c'est prévu par le jeu.
-  - titre: "💰 5. Échanges"
-    texte: |-
-      • Les arnaques sont interdites : un échange promis doit être honoré.
-      • Pas de vente d'objets ou de coins contre de l'argent réel.
-  - titre: "⚖️ 6. Sanctions"
-    texte: |-
-      Selon la gravité : avertissement, mute, exclusion, bannissement temporaire ou définitif.
-      Pour contester une sanction, ouvre un ticket.
+# points clés montrés sur l'écran d'acceptation en jeu
+resume:
+  - "Respect en jeu, au vocal et sur Discord"
+  - "Un seul compte, ni triche ni bug exploité"
+  - "Hors territoire : vol permis, casse interdite"
+  - "Toute base a une entrée trouvable"
+  - "PvP libre, sauf spawn, capitales et nouveaux (2 h)"
+  - "Pas de fuite ni de déconnexion en combat"
+  - "Éveil : PvP à 30 blocs, interruptions limitées"
+  - "Pas d'AFK aux fermes, 60 animaux par enclos"
+  - "Toute demande au staff : ticket sur Discord"
+
+titres:
+  - nom: "Titre I — Dispositions générales"
+    emoji: "📘"
+    icone: WRITABLE_BOOK
+    articles:
+      - nom: "Article 1 — Objet"
+        texte: |-
+          **1.1** Le règlement encadre le comportement des joueurs, l'usage des comptes, le jeu en commun, les relations entre clans et le rôle du staff.
+          **1.2** Il s'applique en jeu, sur le chat vocal, sur le serveur Discord et dans les messages privés échangés à propos du serveur.
+      - nom: "Article 2 — Acceptation"
+        texte: |-
+          **2.1** Se connecter au serveur ou rejoindre le Discord vaut acceptation du règlement.
+          **2.2** Le règlement est présenté en jeu à la première connexion et après chaque modification importante. Le joueur doit l'accepter pour jouer. Il reste consultable à tout moment avec la commande /reglement.
+          **2.3** Nul ne peut se prévaloir de l'ignorance du règlement.
+      - nom: "Article 3 — Définitions"
+        texte: |-
+          • **Staff :** les personnes chargées de la modération et de l'administration du serveur, quel que soit leur rôle.
+          • **Territoire :** l'ensemble des chunks revendiqués par un clan. **Capitale :** la zone centrale d'un clan, protégée du PvP hors guerre.
+          • **Hors territoire :** toute zone qui n'appartient à aucun clan, en dehors du spawn.
+          • **Guerre :** l'affrontement déclaré entre deux clans par le système du jeu.
+          • **Éveil :** le rituel qui fait passer un joueur au rang de race supérieur.
+          • **Exploitation de bug :** tout usage d'un comportement du jeu qui n'est manifestement pas prévu, pour en tirer un avantage.
+      - nom: "Article 4 — Esprit du jeu et cas non prévus"
+        texte: |-
+          **4.1** Le serveur est un lieu de jeu entre camarades. Les règles s'interprètent selon leur esprit, et non pour en chercher les failles.
+          **4.2** Un comportement nuisible qui n'est pas décrit ici peut être sanctionné par analogie avec la faute la plus proche du barème.
+          **4.3** Contourner une règle par un moyen détourné est sanctionné comme la faute elle-même.
+  - nom: "Titre II — Comportement"
+    emoji: "🤝"
+    icone: NAME_TAG
+    articles:
+      - nom: "Article 5 — Respect"
+        texte: |-
+          **5.1** Sont interdits, en jeu comme sur Discord : les insultes, les provocations répétées, les moqueries visant une personne, le harcèlement, les menaces, la discrimination et les propos haineux.
+          **5.2** Un conflit né dans le jeu reste dans le jeu. Il est interdit de le poursuivre en dehors du serveur (à l'école, sur les réseaux, en message privé) par des menaces ou du harcèlement.
+          **5.3** Il est interdit d'inciter d'autres joueurs à s'en prendre à une personne.
+      - nom: "Article 6 — Chat écrit"
+        texte: |-
+          **6.1** Le chat général se tient en français.
+          **6.2** Sont interdits : le spam, le flood, les messages entièrement en majuscules, les caractères répétés, la publicité pour un autre serveur ou un service, et les liens sans rapport avec le serveur.
+          **6.3** La mendicité insistante (objets, coins, grades, place dans le staff) est assimilée à du spam.
+          **6.4** Contourner un filtre ou une sanction de chat (orthographe déformée, panneaux, livres, noms d'objets, autre canal) est sanctionné comme le message lui-même.
+      - nom: "Article 7 — Chat vocal"
+        texte: |-
+          **7.1** Le chat vocal est soumis aux mêmes règles que le chat écrit.
+          **7.2** Sont interdits : les cris, les bruits volontaires, l'usage d'une soundboard et la diffusion de musique imposée aux autres.
+          **7.3** Il est interdit d'enregistrer ou de diffuser la voix d'un joueur sans son accord.
+          **7.4** Un joueur qui demande à un autre de baisser le volume ou de cesser une nuisance doit être entendu.
+      - nom: "Article 8 — Pseudos, skins et créations"
+        texte: |-
+          **8.1** Les pseudos, skins, capes, noms et tags de clan, noms d'objets, panneaux, livres, bannières et constructions ne doivent comporter aucun contenu insultant, sexuel, violent, haineux ou choquant.
+          **8.2** Le staff peut exiger la modification ou retirer tout contenu contraire à cet article.
+      - nom: "Article 9 — Vie privée"
+        texte: |-
+          **9.1** Il est interdit de divulguer des informations personnelles sur une autre personne (identité, adresse, numéro, photos, captures de conversations privées) sans son accord.
+          **9.2** Les captures d'écran et vidéos prises en jeu ne peuvent servir qu'à un signalement au staff ou avec l'accord des joueurs visibles.
+      - nom: "Article 10 — Usurpation"
+        texte: |-
+          **10.1** Il est interdit de se faire passer pour un membre du staff ou pour un autre joueur, par le pseudo, le skin, le chat ou tout autre moyen.
+          **10.2** Il est interdit de prétendre agir au nom du staff ou de promettre une faveur du staff.
+  - nom: "Titre III — Comptes et intégrité du jeu"
+    emoji: "🛡️"
+    icone: SHIELD
+    articles:
+      - nom: "Article 11 — Comptes"
+        texte: |-
+          **11.1** Chaque personne ne dispose que d'un seul compte. Les comptes secondaires sont interdits, y compris pour stocker des objets, voter, farmer ou contourner une sanction.
+          **11.2** Un joueur qui joue à la fois sur Java et sur console (pseudo commençant par un point) le déclare au staff, qui relie les deux comptes.
+          **11.3** Le prêt, l'échange, le partage et la vente de comptes sont interdits.
+      - nom: "Article 12 — Sécurité du compte"
+        texte: |-
+          **12.1** Le titulaire d'un compte est responsable de tout ce qui y est fait, y compris par un tiers à qui il aurait confié son mot de passe.
+          **12.2** Le mot de passe (/login) ne doit être communiqué à personne. Le staff ne le demande jamais.
+          **12.3** Un compte compromis ou un mot de passe oublié se signale par ticket.
+      - nom: "Article 13 — Modifications du client"
+        texte: |-
+          **13.1** Sont autorisés : les mods de performance et de rendu (Sodium, Iris, OptiFine), les shaders, les packs de textures sans avantage, une minimap qui n'affiche ni les joueurs, ni les créatures, ni les grottes.
+          **13.2** Toute autre modification qui donne une information ou une action que le jeu ne fournit pas est interdite. En cas de doute, le joueur demande au staff avant de l'utiliser.
+      - nom: "Article 14 — Triche"
+        texte: |-
+          **14.1** Sont interdits : les clients et mods de triche (vol, vitesse, kill aura, portée allongée, auto-totem, nuker, scaffold), le x-ray sous toutes ses formes (mod, pack de textures, luminosité forcée), la freecam, l'affichage des entités ou des coffres à travers les murs.
+          **14.2** Sont interdits : l'auto-clic, les macros et tout script qui joue à la place du joueur.
+          **14.3** Un anti-triche fonctionne en permanence. Un faux positif se signale par ticket. Refuser un contrôle du staff ou désinstaller un logiciel pendant un contrôle vaut aveu.
+      - nom: "Article 15 — Bugs"
+        texte: |-
+          **15.1** Il est interdit d'exploiter un bug : duplication, passage dans un mur, créature coincée pour la tuer sans risque, objet ou monnaie obtenus par une faille, contournement d'une protection ou d'un temps d'attente.
+          **15.2** Tout bug découvert est signalé par ticket, sans être utilisé ni divulgué aux autres joueurs. Un bug grave signalé peut être récompensé.
+          **15.3** Ce qui a été obtenu par un bug est retiré, même si le joueur l'a signalé après coup.
+  - nom: "Titre IV — Le monde"
+    emoji: "🌍"
+    icone: GRASS_BLOCK
+    articles:
+      - nom: "Article 16 — Vol et casse hors territoire"
+        texte: |-
+          **16.1** Hors territoire, le vol est autorisé : le joueur peut se servir dans un conteneur (coffre, tonneau, four, boîte de Shulker posée) et ramasser les objets au sol.
+          **16.2** Hors territoire, la casse est interdite : casser, brûler, inonder ou faire exploser la construction d'autrui, tuer ses animaux, ou casser un bloc (porte, mur, vitre, coffre) pour atteindre un conteneur.
+          **16.3** Dans un territoire, le jeu protège les constructions et les conteneurs, sauf pendant une guerre (article 27).
+          **16.4** Toute construction endommagée en violation du présent article est réparée par le staff, aux frais du fautif lorsque c'est possible.
+      - nom: "Article 17 — Bases"
+        texte: |-
+          **17.1** Toute base doit disposer d'une entrée en surface ou d'un accès trouvable depuis l'extérieur : porte, tunnel ou puits visible.
+          **17.2** Sont interdites : la base entièrement murée, le bunker sans entrée, la base dissimulée dans la bedrock ou suspendue sans moyen d'y accéder.
+          **17.3** Le staff peut ouvrir un accès à une base non conforme, sans préavis.
+      - nom: "Article 18 — Territoires"
+        texte: |-
+          **18.1** Il est interdit de revendiquer des chunks dans le seul but d'encercler, d'enfermer ou de gêner un autre clan, ou de bloquer l'accès au spawn, à un donjon, à une Faille ou à un lieu public.
+          **18.2** Il est interdit de construire des murs, des pièges ou des structures collés au territoire d'un autre clan dans le but de le gêner.
+          **18.3** Lorsqu'aucun membre d'un clan ne s'est connecté pendant 30 jours, ses territoires sont libérés automatiquement, après un avertissement publié sur Discord sept jours avant. Les constructions qui s'y trouvent ne sont plus protégées.
+      - nom: "Article 19 — Spawn et lieux publics"
+        texte: |-
+          **19.1** Le spawn, ses bâtiments et ses PNJ sont protégés et doivent être respectés.
+          **19.2** Il est interdit d'attendre aux abords du spawn, d'un donjon ou d'une Faille pour attaquer les joueurs qui en sortent (camping).
+          **19.3** Les chemins, ponts et portails construits pour tous ne doivent pas être détruits ni piégés.
+      - nom: "Article 20 — Fermes, redstone et AFK"
+        texte: |-
+          **20.1** Les fermes automatiques sont autorisées.
+          **20.2** Le jeu AFK pour faire fonctionner une ferme est interdit, qu'il s'agisse d'une absence du clavier ou d'un dispositif maintenant une touche enfoncée. Le staff peut expulser un joueur AFK.
+          **20.3** Un enclos ne peut contenir plus de 60 animaux. Les horloges de redstone qui tournent en continu sans utilité sont interdites, ainsi que toute machine conçue pour ralentir le serveur.
+          **20.4** Une ferme qui ralentit le serveur peut être réduite ou retirée par le staff, après avertissement de son propriétaire.
+      - nom: "Article 21 — Pièges"
+        texte: |-
+          **21.1** Les pièges défensifs sont autorisés dans son propre territoire.
+          **21.2** Sont interdits : les pièges tendus par une téléportation (/tpa, invitation à un home), sur un chemin public, autour d'un portail, du spawn, d'un donjon ou d'une Faille, et tout piège destiné aux nouveaux joueurs.
+  - nom: "Titre V — Clans, PvP et guerres"
+    emoji: "⚔️"
+    icone: IRON_SWORD
+    articles:
+      - nom: "Article 22 — Clans"
+        texte: |-
+          **22.1** Chaque clan organise librement sa vie interne : recrutement, grades, alliances et ruptures. Le staff n'intervient qu'en cas de violation du règlement.
+          **22.2** Le recrutement se fait sans spam (article 6). Il est interdit de rejoindre un clan dans le seul but de l'espionner pour un autre clan et de lui nuire.
+      - nom: "Article 23 — Trahison"
+        texte: |-
+          **23.1** La trahison fait partie du jeu. Un membre qui vide la banque ou les coffres de son clan avant de le quitter n'est ni sanctionné ni remboursé.
+          **23.2** Il appartient à chaque clan de choisir à qui il confie des droits. Le clan trahi peut répondre en jeu, notamment par une guerre.
+          **23.3** Les menaces, le chantage et le harcèlement hors du jeu à la suite d'une trahison restent interdits (article 5).
+      - nom: "Article 24 — PvP"
+        texte: |-
+          **24.1** Le PvP est libre, sauf au spawn, dans les capitales de clan hors guerre et contre les joueurs protégés par l'article 25.
+          **24.2** Sont interdits : le spawn-kill, l'acharnement sur un même joueur qui ne se défend pas, et l'attaque répétée d'un joueur qui revient chercher ses affaires.
+      - nom: "Article 25 — Protection des nouveaux joueurs"
+        texte: |-
+          **25.1** Pendant ses deux premières heures de jeu, un nouveau joueur ne peut ni infliger ni subir de dégâts d'un autre joueur. La protection prend fin automatiquement.
+          **25.2** Il est interdit d'utiliser un joueur protégé pour transporter, bloquer ou attaquer à sa place, et de créer un compte pour profiter de cette protection.
+      - nom: "Article 26 — Combat"
+        texte: |-
+          **26.1** Il est interdit de quitter le serveur, de se téléporter (/home, /spawn, /tpa) ou d'utiliser une commande pour fuir un combat en cours.
+          **26.2** Un joueur qui se déconnecte en combat peut être sanctionné et ne sera pas remboursé de ce qu'il perd ensuite.
+      - nom: "Article 27 — Guerres"
+        texte: |-
+          **27.1** Une guerre doit avoir une raison crédible : territoire, vol, trahison, vengeance, rivalité. Le chef de clan la donne à la déclaration, et le jeu l'annonce à tout le serveur.
+          **27.2** Pendant une guerre (10 minutes de préparation, 30 minutes de combat), il est permis de casser et de piller les conteneurs dans le territoire ennemi, hors capitale. Le clan vainqueur reçoit 10 % de la banque du vaincu.
+          **27.3** Le staff peut annuler une guerre sans raison crédible, ou déclarée de façon répétée pour harceler un clan.
+      - nom: "Article 28 — Guerres et combats arrangés"
+        texte: |-
+          **28.1** Il est interdit d'organiser une fausse guerre, ou de se laisser tuer volontairement, entre alliés, amis ou comptes d'une même personne, pour obtenir de l'expérience, des coins, une part de banque ou un classement.
+          **28.2** Tous les gains obtenus de cette façon sont retirés aux deux parties.
+  - nom: "Titre VI — Éveil, donjons et contenus"
+    emoji: "✨"
+    icone: LODESTONE
+    articles:
+      - nom: "Article 29 — Éveil et PvP"
+        texte: |-
+          **29.1** Pendant un Éveil, le PvP est ouvert dans un rayon de 30 blocs autour du sanctuaire, y compris dans une capitale.
+          **29.2** Interrompre l'Éveil d'un autre joueur est autorisé : le jeu le prévoit et le récompense.
+          **29.3** Un Éveil échoué fait perdre la moitié des offrandes et des âmes engagées, et impose 24 heures d'attente avant un nouvel essai.
+      - nom: "Article 30 — Limite des interruptions"
+        texte: |-
+          **30.1** Afin qu'aucun joueur ne soit bloqué indéfiniment, le jeu limite le nombre d'interruptions par d'autres joueurs. Un échec compte comme une interruption lorsque le rituelliste est tué par un joueur, ou lorsque le cœur ou un bloc de son sanctuaire est brisé par un joueur.
+          **30.2** Le nombre d'interruptions au-delà duquel l'Éveil se déroule sans PvP dépend de l'Éveil visé :
+          • 1er Éveil (rang II) : 3 interruptions
+          • 2e Éveil (rang III) : 5 interruptions
+          • 3e Éveil (rang IV) : 15 interruptions
+          • 4e et dernier Éveil (rang V) : aucune limite
+          **30.3** Une fois la limite atteinte, les tentatives suivantes du même Éveil se déroulent sans PvP : aucun joueur ne peut frapper le rituelliste ni briser son sanctuaire, et le rituelliste ne peut frapper personne. L'Éveil reste annoncé à tout le serveur.
+          **30.4** Un échec dû aux créatures, à un éloignement du sanctuaire ou à une déconnexion ne compte pas comme une interruption, pas plus qu'une interruption par un membre du clan du rituelliste ou par un allié, qui ne rapporte rien. Le compteur est propre à chaque Éveil et repart de zéro quand l'Éveil réussit.
+      - nom: "Article 31 — Abus autour de l'Éveil"
+        texte: |-
+          **31.1** Il est interdit d'arranger une interruption : interrompre volontairement l'Éveil d'un allié, d'un ami ou d'un membre de son clan, ou se laisser interrompre, pour faire toucher la récompense. Les gains sont retirés aux deux parties.
+          **31.2** Il est interdit de gêner un Éveil protégé par un moyen détourné : piège, lave, blocs posés, créatures attirées exprès.
+          **31.3** Il est interdit de lancer un Éveil près de la base d'un autre clan dans le but de la rendre attaquable.
+      - nom: "Article 32 — Donjons, boss et Faille"
+        texte: |-
+          **32.1** Dans un groupe, chacun joue pour le groupe. Sont interdits : perdre des vies volontairement, gêner un allié, quitter la partie pour la faire échouer.
+          **32.2** Coincer une créature ou un boss dans un mur, sortir d'une salle par un bug ou obtenir un butin par une faille constitue une exploitation de bug (article 15).
+          **32.3** Il est interdit d'intervenir dans le combat de boss d'un autre groupe pour lui prendre la victoire ou le butin.
+      - nom: "Article 33 — Récompenses et classements"
+        texte: |-
+          **33.1** La roue de la fortune, les récompenses de connexion et les classements sont réservés à un compte par personne.
+          **33.2** Toute récompense ou place au classement obtenue par un compte secondaire, un arrangement entre joueurs ou un bug est retirée.
+  - nom: "Titre VII — Échanges et économie"
+    emoji: "💰"
+    icone: GOLD_INGOT
+    articles:
+      - nom: "Article 34 — Échanges"
+        texte: |-
+          **34.1** Un échange convenu doit être honoré. Constituent une arnaque : le faux échange, l'objet remplacé au dernier moment, le paiement promis et jamais versé, la fausse description d'un objet.
+          **34.2** Pour un échange important, il est recommandé de procéder devant un témoin ou un membre du staff. Sans preuve, le staff ne peut pas rembourser.
+      - nom: "Article 35 — Argent réel"
+        texte: |-
+          **35.1** Il est interdit de vendre ou d'acheter des objets, des coins, des services en jeu ou des comptes contre de l'argent réel, une carte cadeau ou un service hors du jeu.
+      - nom: "Article 36 — Prêts et dettes"
+        texte: |-
+          **36.1** Les prêts d'objets ou de coins entre joueurs se font à leurs risques. Le staff n'intervient pas dans un prêt non rendu, sauf s'il s'agit d'une arnaque caractérisée (article 34).
+  - nom: "Titre VIII — Staff et procédures"
+    emoji: "🎫"
+    icone: BELL
+    articles:
+      - nom: "Article 37 — Le staff"
+        texte: |-
+          **37.1** Le staff veille au respect du règlement. Ses décisions s'appliquent immédiatement, même si elles sont contestées.
+          **37.2** Le staff est impartial : un membre du staff ne traite pas un dossier qui le concerne, lui, un proche ou son clan.
+          **37.3** Les outils du staff ne servent jamais à l'avantage personnel de celui qui les utilise ou de son clan. Un membre du staff qui en abuse perd ses fonctions et est sanctionné comme un joueur.
+          **37.4** Réclamer une place dans le staff avec insistance est interdit (article 6).
+      - nom: "Article 38 — Tickets"
+        texte: |-
+          **38.1** Toute demande au staff passe par un ticket sur Discord : remboursement, contestation, bug, signalement, compte.
+          **38.2** Un ticket indique le pseudo du joueur, ce qui s'est passé, la date, l'heure approximative et l'endroit.
+      - nom: "Article 39 — Signalements et preuves"
+        texte: |-
+          **39.1** Un signalement est appuyé si possible par une capture d'écran ou une vidéo. Le staff vérifie aussi l'historique du serveur (article 45).
+          **39.2** Un faux signalement, ou une preuve modifiée, est sanctionné.
+      - nom: "Article 40 — Remboursements"
+        texte: |-
+          **40.1** Sont remboursées, sur ticket ouvert dans les 48 heures : les pertes dues à un bug, à un crash ou à un ralentissement du serveur ; ce qui a été perdu du fait d'une violation du règlement par un autre joueur (casse interdite, arnaque, triche).
+          **40.2** Ne sont pas remboursés : la mort en PvP autorisé, le pillage pendant une guerre, le vol hors territoire, la trahison, la déconnexion en combat, l'échec d'un Éveil, et les erreurs du joueur (lave, chute, objet jeté ou disparu au sol).
+          **40.3** Le staff vérifie la perte avant tout remboursement. Une demande mensongère est sanctionnée.
+  - nom: "Titre IX — Sanctions"
+    emoji: "⚖️"
+    icone: ANVIL
+    articles:
+      - nom: "Article 41 — Principes"
+        texte: |-
+          **41.1** Les sanctions sont, par ordre de gravité : l'avertissement, la mise en muet, l'expulsion, le bannissement temporaire et le bannissement définitif.
+          **41.2** S'y ajoutent, selon le cas : le retrait des gains obtenus illégalement, la réparation des dégâts, le remboursement de la victime, la fermeture d'un compte secondaire.
+          **41.3** La récidive s'apprécie sur les trois derniers mois. Plusieurs fautes commises lors d'un même incident entraînent la sanction de la plus grave, au niveau supérieur.
+          **41.4** Le staff peut aller directement au-delà du barème pour une faute grave ou intentionnelle. Il peut l'alléger lorsque le joueur reconnaît sa faute et répare spontanément.
+      - nom: "Article 42 — Barème"
+        texte: |-
+          Sanction de la 1re, de la 2e puis de la 3e faute :
+          • Spam, flood, publicité, mendicité (art. 6) : Avertissement → Muet 1 h → Muet 24 h
+          • Insulte, provocation (art. 5) : Avertissement → Muet 6 h → Muet 3 j
+          • Harcèlement, menaces, discrimination, propos haineux (art. 5) : Bannissement 3 j → Bannissement 14 j → Définitif
+          • Nuisance au chat vocal (art. 7) : Avertissement → Muet 6 h → Muet 3 j
+          • Contenu choquant (pseudo, skin, nom, construction) (art. 8) : Modification exigée → Expulsion → Bannissement 3 j
+          • Divulgation d'informations personnelles (art. 9) : Bannissement 7 j → Bannissement 30 j → Définitif
+          • Usurpation du staff ou d'un joueur (art. 10) : Avertissement → Bannissement 3 j → Bannissement 14 j
+          • Compte secondaire, prêté ou partagé (art. 11) : Fermeture du compte + avertissement → Bannissement 7 j → Définitif
+          • Mod non autorisé (art. 13) : Avertissement → Bannissement 3 j → Bannissement 14 j
+          • Triche : client, x-ray, freecam, macros, auto-clic (art. 14) : Retrait des gains + bannissement 7 j → Bannissement 30 j → Définitif
+          • Exploitation d'un bug (art. 15) : Retrait des gains + avertissement → Bannissement 3 j → Bannissement 14 j
+          • Duplication d'objets (art. 15) : Retrait des gains + bannissement 7 j → Bannissement 30 j → Définitif
+          • Casse hors territoire (art. 16) : Réparation + avertissement → Bannissement 1 j → Bannissement 7 j
+          • Base non conforme, territoire ou construction pour gêner (art. 17, 18) : Mise en conformité par le staff → Avertissement → Bannissement 1 j
+          • Camping, spawn-kill, acharnement (art. 19, 24) : Avertissement → Bannissement 1 j → Bannissement 3 j
+          • Piège interdit (art. 21) : Remboursement + bannissement 1 j → Bannissement 3 j → Bannissement 14 j
+          • AFK à une ferme (art. 20) : Expulsion → Expulsion + avertissement → Bannissement 1 j
+          • Ferme ou machine qui ralentit le serveur (art. 20) : Avertissement → Retrait par le staff → Bannissement 1 j
+          • Fuite ou déconnexion en combat (art. 26) : Avertissement → Bannissement 1 j → Bannissement 3 j
+          • Guerre, combat ou Éveil arrangé (art. 28, 31) : Retrait des gains + avertissement → Retrait + bannissement 3 j → Bannissement 14 j
+          • Gêne d'un Éveil protégé (art. 31) : Avertissement → Bannissement 1 j → Bannissement 3 j
+          • Sabotage de groupe, vol de boss (art. 32) : Avertissement → Bannissement 1 j → Bannissement 3 j
+          • Abus de récompenses ou de classement (art. 33) : Retrait + avertissement → Bannissement 3 j → Bannissement 14 j
+          • Arnaque (art. 34) : Remboursement + bannissement 1 j → Bannissement 7 j → Définitif
+          • Vente contre de l'argent réel (art. 35) : Bannissement 30 j → Définitif
+          • Faux signalement, fausse preuve, demande mensongère (art. 39, 40) : Avertissement → Bannissement 3 j → Bannissement 14 j
+          • Contournement d'une sanction (art. 44) : Sanction doublée → Définitif
+      - nom: "Article 43 — Contestation"
+        texte: |-
+          **43.1** Une sanction se conteste par ticket, dans les sept jours, calmement et avec les éléments utiles.
+          **43.2** La contestation est examinée par un membre du staff autre que celui qui a prononcé la sanction. La sanction s'applique pendant l'examen.
+          **43.3** Une contestation publique, sur le chat ou sur Discord, n'est pas examinée et peut être sanctionnée (article 6).
+      - nom: "Article 44 — Contournement"
+        texte: |-
+          **44.1** Contourner une sanction (compte secondaire, changement de pseudo, compte d'un tiers) entraîne le doublement de la sanction, puis le bannissement définitif de tous les comptes concernés.
+  - nom: "Titre X — Données et dispositions finales"
+    emoji: "📄"
+    icone: PAPER
+    articles:
+      - nom: "Article 45 — Données enregistrées"
+        texte: |-
+          **45.1** Pour régler les litiges, rembourser et repérer la triche, le serveur enregistre : les blocs posés et cassés, les conteneurs ouverts et leur contenu, les objets pris ou déposés, les messages du chat et les commandes.
+          **45.2** Il enregistre aussi l'inventaire et le coffre de l'Ender de chaque joueur, à la connexion, à la déconnexion, à la mort et régulièrement pendant le jeu. Ces photos sont conservées 30 jours, 60 jours pour celles prises à la mort.
+          **45.3** Il enregistre enfin le temps de jeu, les connexions et l'adresse IP, pour la sécurité des comptes. Le mot de passe n'est jamais conservé en clair. Le chat vocal n'est pas enregistré.
+          **45.4** Seul le staff accède à ces données, dans la limite de son rôle. Tout joueur peut demander, par ticket, quelles données le concernent et leur suppression lorsqu'il quitte le serveur.
+      - nom: "Article 46 — Modification du règlement"
+        texte: |-
+          **46.1** Le règlement peut être modifié à tout moment par l'administration du serveur.
+          **46.2** Toute modification est publiée sur Discord. Une modification importante doit être acceptée de nouveau en jeu avant de pouvoir continuer à jouer.
+      - nom: "Article 47 — Entrée en vigueur"
+        texte: |-
+          **47.1** Le présent règlement entre en vigueur dès sa publication. Il remplace toute version antérieure.
+          **47.2** Les faits commis avant son entrée en vigueur sont jugés selon le règlement alors applicable.

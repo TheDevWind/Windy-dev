@@ -27,8 +27,9 @@ resource-pack:
     public-address: ""
   # Deuxième pack, à part : l'habillage des écrans du jeu (coffres, fours, enclume, boutons, barre d'objets).
   # Il est envoyé en même temps que le premier (une seule invite). Chaque joueur peut le retirer avec /ecrans.
+  # MAJ 1.22.0 : désactivé par défaut (retour à l'ancien pack de textures)
   game-pack:
-    enabled: true
+    enabled: false
     # Laisser vide si l'hébergement intégré (self-host) est actif : l'adresse est trouvée toute seule.
     # Sinon : lien DIRECT vers windyclans-jeu.zip (créé dans plugins/WindyClans/ au démarrage).
     url: ""
@@ -94,6 +95,24 @@ pvp:
   disable-in-spawn: true
   # PvP interdit dans les capitales (hors guerre)
   disable-in-capitals: true
+  # Protection des nouveaux joueurs (règlement, art. 25) : pendant ces minutes de jeu, un nouveau
+  # ne peut ni infliger ni subir de dégâts d'un autre joueur (0 = désactivée). /protection pour voir.
+  newbie-protection-minutes: 120
+
+# ---------------------------------------------------------- Règlement (MAJ 1.21.0)
+rules:
+  # le joueur doit accepter le règlement en jeu à la première connexion et à chaque nouvelle version
+  require-accept: true
+
+# ---------------------------------------------------------- Clans inactifs (règlement, art. 18.3)
+inactive-clans:
+  enabled: true
+  # aucun membre connecté depuis ce nombre de jours : les territoires du clan sont libérés
+  days: 30
+  # avertissement sur Discord (et en message privé aux membres liés) ce nombre de jours avant
+  warn-days-before: 7
+  # clans jamais libérés (nom ou tag)
+  exempt: []
 
 bank:
   # Monnaie de la banque de clan : "windy:piece" (la pièce du serveur, voir items.yml) ou un matériau (ex. EMERALD)
@@ -173,6 +192,8 @@ teleport:
   tpa-cooldown-seconds: 10
   # Téléportation interdite pendant ce temps après un coup en PvP
   combat-block-seconds: 15
+  # Nombre de homes par joueur (/sethome <nom>, /home <nom>, /homes)
+  max-homes: 3
 
 bluemap:
   enabled: true

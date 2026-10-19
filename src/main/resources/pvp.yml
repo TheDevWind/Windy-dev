@@ -1,0 +1,89 @@
+# ==========================================================================================
+#  WindyClans - Arène PvP (MAJ 1.22.0)
+# ------------------------------------------------------------------------------------------
+#  /pvp : menu. Modes : 1v1, 2v2 et classé (1v1 avec points). Pas des combats de clans :
+#  clans, alliances, protection des nouveaux et PvP du spawn ne comptent pas dans l'arène.
+#  Chaque combattant reçoit un KIT DONNÉ PAR LE SERVEUR. Son stuff est mis de côté (aussi sur
+#  disque, dans pvp-sauvegardes.yml) et rendu à la fin du combat, même après une déconnexion
+#  ou un redémarrage. Rien ne se perd, rien du kit ne sort de l'arène.
+#  Les arènes sont construites toutes seules dans le monde vide "windy_pvp".
+#
+#  Kits : "OBJET:quantité{enchantement:niveau,...}" (noms Minecraft : sharpness, protection,
+#  power, unbreaking, ...). On peut aussi créer un kit depuis son inventaire en jeu :
+#  /pvp admin kit creer <id> [nom]  (enregistré dans pvp-kits.yml), puis l'ajouter à un mode.
+# ==========================================================================================
+config-version: 1
+
+settings:
+  countdown-seconds: 5        # immobiles avant le combat
+  max-duration-seconds: 300   # au-delà : égalité
+  hunger: false               # la faim baisse-t-elle pendant un combat ?
+  broadcast: true             # annoncer les résultats dans le chat
+
+# kits tirés au hasard pour chaque combat (le même pour tous les joueurs du combat)
+modes:
+  1v1:
+    kits: [chevalier, archer, guerrier]
+  2v2:
+    kits: [chevalier, archer, guerrier]
+  ranked:
+    kits: [chevalier]
+
+ranked:
+  start: 1000          # points de départ
+  k-factor: 32         # points en jeu par combat (Elo)
+  window: 150          # écart de points accepté au départ…
+  window-grow: 50      # …et élargi de tant toutes les 10 s d'attente
+  tiers:               # rang affiché : le plus haut atteint
+    "&8Bronze": 0
+    "&7Argent": 1100
+    "&6Or": 1250
+    "&bDiamant": 1400
+    "&5Champion": 1600
+
+kits:
+  chevalier:
+    name: "Chevalier"
+    icon: DIAMOND_SWORD
+    armor:
+      helmet: "DIAMOND_HELMET{protection:2}"
+      chestplate: "DIAMOND_CHESTPLATE{protection:2}"
+      leggings: "DIAMOND_LEGGINGS{protection:2}"
+      boots: "DIAMOND_BOOTS{protection:2}"
+    offhand: "SHIELD"
+    items:
+      - "DIAMOND_SWORD{sharpness:2}"
+      - "DIAMOND_AXE"
+      - "BOW{power:1}"
+      - "GOLDEN_APPLE:4"
+      - "COOKED_BEEF:16"
+      - "ARROW:16"
+  archer:
+    name: "Archer"
+    icon: BOW
+    armor:
+      helmet: "IRON_HELMET{protection:1}"
+      chestplate: "LEATHER_CHESTPLATE{protection:3}"
+      leggings: "IRON_LEGGINGS{protection:1}"
+      boots: "LEATHER_BOOTS{feather_falling:4}"
+    items:
+      - "IRON_SWORD{sharpness:1}"
+      - "BOW{power:3,punch:1}"
+      - "CROSSBOW{quick_charge:2}"
+      - "GOLDEN_APPLE:3"
+      - "COOKED_BEEF:16"
+      - "ARROW:64"
+  guerrier:
+    name: "Guerrier"
+    icon: NETHERITE_AXE
+    armor:
+      helmet: "IRON_HELMET{protection:2}"
+      chestplate: "DIAMOND_CHESTPLATE{protection:1}"
+      leggings: "DIAMOND_LEGGINGS{protection:1}"
+      boots: "IRON_BOOTS{protection:2}"
+    offhand: "SHIELD"
+    items:
+      - "NETHERITE_AXE{sharpness:1}"
+      - "IRON_SWORD{sharpness:2}"
+      - "GOLDEN_APPLE:4"
+      - "COOKED_BEEF:16"

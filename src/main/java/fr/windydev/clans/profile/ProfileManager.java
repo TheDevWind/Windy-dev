@@ -330,6 +330,8 @@ public class ProfileManager implements Listener {
                p.level = Math.min(p.level, this.levelCap(p));
                p.souls = s.getLong("souls");
                p.awakenRetryAt = s.getLong("awaken-retry-at");
+               p.awakenInterrupts = Math.max(0, s.getInt("awaken-interrupts.count"));
+               p.awakenInterruptRank = s.getInt("awaken-interrupts.rank");
                ConfigurationSection skl = s.getConfigurationSection("skills");
                if (skl != null) {
                   for (String nk : skl.getKeys(false)) {
@@ -370,6 +372,11 @@ public class ProfileManager implements Listener {
          y.set(b + "souls", p.souls);
          if (p.awakenRetryAt > System.currentTimeMillis()) {
             y.set(b + "awaken-retry-at", p.awakenRetryAt);
+         }
+
+         if (p.awakenInterrupts > 0) {
+            y.set(b + "awaken-interrupts.rank", p.awakenInterruptRank);
+            y.set(b + "awaken-interrupts.count", p.awakenInterrupts);
          }
 
          for (Entry<String, Integer> e : p.skills.entrySet()) {
@@ -445,7 +452,8 @@ public class ProfileManager implements Listener {
    }
 
    public boolean mustChoose(Player p) {
-      return this.chooseOnJoin && this.of(p).race == null && !this.races.isEmpty();
+      // le règlement passe avant le choix de la race (MAJ 1.21.0)
+      return this.chooseOnJoin && this.of(p).race == null && !this.races.isEmpty() && (this.plugin.rules() == null || !this.plugin.rules().pending(p));
    }
 
    public int tierCoins() {
@@ -657,6 +665,7 @@ public class ProfileManager implements Listener {
 
    public void setRank(Profile pr, int rank) {
       pr.rank = Math.max(1, Math.min(5, rank));
+      pr.awakenInterrupts = 0;
       pr.level = Math.min(pr.level, this.levelCap(pr));
       this.skillsChanged(pr);
    }
@@ -666,6 +675,8 @@ public class ProfileManager implements Listener {
       if (pr.rank < 5) {
          pr.rank++;
          pr.awakenRetryAt = 0L;
+         pr.awakenInterrupts = 0;
+         pr.awakenInterruptRank = 0;
          int before = pr.level;
          this.climb(pr);
          this.skillsChanged(pr);
@@ -689,12 +700,31 @@ public class ProfileManager implements Listener {
 
          pr.souls += amount;
          this.dirty = true;
+         this.plugin.quests().progress(p, fr.windydev.clans.quest.QuestManager.Kind.SOULS, "", (int)Math.min(Integer.MAX_VALUE, amount));
       }
    }
 
    public void failAwakening(Profile pr, long retryAt, double soulLoss) {
       pr.awakenRetryAt = retryAt;
       pr.souls = Math.round(pr.souls * (1.0 - soulLoss));
+      this.dirty = true;
+   }
+
+   /** Compte une interruption de l'Éveil visant le rang donné et rend le nouveau total. */
+   public int addInterrupt(Profile pr, int rank) {
+      if (pr.awakenInterruptRank != rank) {
+         pr.awakenInterruptRank = rank;
+         pr.awakenInterrupts = 0;
+      }
+
+      pr.awakenInterrupts++;
+      this.dirty = true;
+      return pr.awakenInterrupts;
+   }
+
+   public void setInterrupts(Profile pr, int rank, int count) {
+      pr.awakenInterruptRank = rank;
+      pr.awakenInterrupts = Math.max(0, count);
       this.dirty = true;
    }
 
@@ -840,7 +870,7 @@ public class ProfileManager implements Listener {
          this.plugin.powers().reapply(p);
       }
 
-      AttributeInstance hp = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+      AttributeInstance hp = p.getAttribute(Attribute.MAX_HEALTH);
       if (hp != null && p.getHealth() > hp.getValue()) {
          p.setHealth(hp.getValue());
       }
@@ -904,7 +934,7 @@ public class ProfileManager implements Listener {
          case "forest" -> forest(p);
          case "altitude" -> p.getLocation().getY() >= 120.0;
          case "low-health" -> {
-            AttributeInstance hp = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+            AttributeInstance hp = p.getAttribute(Attribute.MAX_HEALTH);
             yield hp != null && p.getHealth() <= hp.getValue() * 0.3;
          }
          case "axe" -> p.getInventory().getItemInMainHand().getType().name().endsWith("_AXE");
@@ -957,6 +987,7 @@ public class ProfileManager implements Listener {
                Profile pr = this.of(p);
                pr.playMinutes++;
                this.dirty = true;
+               this.plugin.quests().progress(p, fr.windydev.clans.quest.QuestManager.Kind.PLAY, "", 1);
                int m = this.activeMinutes.merge(p.getUniqueId(), 1, Integer::sum);
                long day = System.currentTimeMillis() / 86400000L;
                if (day != this.playDay) {
@@ -1052,7 +1083,8 @@ public class ProfileManager implements Listener {
    private void openChoiceWhenReady(Player p, int tries) {
       Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
          if (p.isOnline() && this.mustChoose(p)) {
-            if (!this.plugin.pack().settled(p) && tries < 20) {
+            if (!this.plugin.pack().settled(p) && tries < 20 || this.plugin.rules().pending(p) && tries < 400) {
+               // le règlement doit d'abord être accepté (art. 2.2)
                this.openChoiceWhenReady(p, tries + 1);
             } else {
                this.plugin.msg(p, "&dBienvenue ! &7Choisis ta race : chacune donne des bonus qui grandissent à chaque Éveil.");
@@ -1204,6 +1236,16 @@ public class ProfileManager implements Listener {
          }
 
          if (xp > 0L) {
+            this.plugin
+               .quests()
+               .progress(
+                  p,
+                  ore != null
+                     ? fr.windydev.clans.quest.QuestManager.Kind.MINE
+                     : (Tag.LOGS.isTagged(m) ? fr.windydev.clans.quest.QuestManager.Kind.CHOP : fr.windydev.clans.quest.QuestManager.Kind.HARVEST),
+                  m.name(),
+                  1
+               );
             if (ore != null) {
                xp = Math.round(xp * (1.0 + this.stat(p, "mining-xp")));
             }
@@ -1244,6 +1286,7 @@ public class ProfileManager implements Listener {
       if (caster != null) {
          this.of(caster).rituals++;
          this.addXp(caster, (long)this.ritualPerTier * Math.max(1, tier), "rituels");
+         this.plugin.quests().progress(caster, fr.windydev.clans.quest.QuestManager.Kind.RITUAL, "", 1);
       }
    }
 
@@ -1255,6 +1298,7 @@ public class ProfileManager implements Listener {
             this.addXp(p, (long)this.bossPerLevel * bossLevel, "combat");
             this.addSouls(p, this.soulBoss, true);
             this.plugin.msg(p, "&5☠ &d+" + Math.round(this.soulBoss * (1.0 + this.stat(p, "soul-gain"))) + " âmes &7pour la victoire.");
+            this.plugin.quests().progress(p, fr.windydev.clans.quest.QuestManager.Kind.BOSS, String.valueOf(bossLevel), 1);
          }
       }
    }

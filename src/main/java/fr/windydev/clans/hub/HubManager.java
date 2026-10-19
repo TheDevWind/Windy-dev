@@ -589,8 +589,8 @@ public class HubManager implements Listener {
    public void onPvp(EntityDamageByEntityEvent e) {
       if (e.getEntity() instanceof Player && this.inZone(e.getEntity().getLocation())) {
          Entity src = e.getDamager() instanceof org.bukkit.entity.Projectile pr && pr.getShooter() instanceof Entity sh ? sh : e.getDamager();
-         if (src instanceof Player || src instanceof Mob) {
-            e.setCancelled(true); // la place du spawn est une zone sûre
+         if (src instanceof Player || src instanceof Mob && !src.getScoreboardTags().contains(fr.windydev.clans.events.WeeklyEvent.TAG)) {
+            e.setCancelled(true); // la place du spawn est une zone sûre (sauf le boss mondial de l'évènement)
          }
       }
    }

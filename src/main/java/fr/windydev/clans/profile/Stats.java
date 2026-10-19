@@ -105,20 +105,20 @@ public final class Stats {
    }
 
    static {
-      put("max-health", "Cœurs", "GENERIC_MAX_HEALTH", Operation.ADD_NUMBER, Stats.Fmt.HEARTS);
-      put("speed", "Vitesse", "GENERIC_MOVEMENT_SPEED", Operation.ADD_SCALAR, Stats.Fmt.PCT);
-      put("jump", "Saut", "GENERIC_JUMP_STRENGTH", Operation.ADD_SCALAR, Stats.Fmt.PCT);
-      put("safe-fall", "Amorti", "GENERIC_SAFE_FALL_DISTANCE", Operation.ADD_NUMBER, Stats.Fmt.BLOCKS);
-      put("fall-damage", "Dégâts chute", "GENERIC_FALL_DAMAGE_MULTIPLIER", Operation.ADD_SCALAR, Stats.Fmt.PCT);
-      put("scale", "Taille", "GENERIC_SCALE", Operation.ADD_SCALAR, Stats.Fmt.SIZE);
-      put("attack-damage", "Force", "GENERIC_ATTACK_DAMAGE", Operation.ADD_NUMBER, Stats.Fmt.NUM);
-      put("armor", "Armure", "GENERIC_ARMOR", Operation.ADD_NUMBER, Stats.Fmt.NUM);
-      put("knockback-resistance", "Anti-recul", "GENERIC_KNOCKBACK_RESISTANCE", Operation.ADD_NUMBER, Stats.Fmt.PCT);
+      put("max-health", "Cœurs", "MAX_HEALTH", Operation.ADD_NUMBER, Stats.Fmt.HEARTS);
+      put("speed", "Vitesse", "MOVEMENT_SPEED", Operation.ADD_SCALAR, Stats.Fmt.PCT);
+      put("jump", "Saut", "JUMP_STRENGTH", Operation.ADD_SCALAR, Stats.Fmt.PCT);
+      put("safe-fall", "Amorti", "SAFE_FALL_DISTANCE", Operation.ADD_NUMBER, Stats.Fmt.BLOCKS);
+      put("fall-damage", "Dégâts chute", "FALL_DAMAGE_MULTIPLIER", Operation.ADD_SCALAR, Stats.Fmt.PCT);
+      put("scale", "Taille", "SCALE", Operation.ADD_SCALAR, Stats.Fmt.SIZE);
+      put("attack-damage", "Force", "ATTACK_DAMAGE", Operation.ADD_NUMBER, Stats.Fmt.NUM);
+      put("armor", "Armure", "ARMOR", Operation.ADD_NUMBER, Stats.Fmt.NUM);
+      put("knockback-resistance", "Anti-recul", "KNOCKBACK_RESISTANCE", Operation.ADD_NUMBER, Stats.Fmt.PCT);
       put("mining-speed", "Minage", "PLAYER_BLOCK_BREAK_SPEED", Operation.ADD_SCALAR, Stats.Fmt.PCT);
-      put("oxygen", "Souffle", "GENERIC_OXYGEN_BONUS", Operation.ADD_NUMBER, Stats.Fmt.NUM);
+      put("oxygen", "Souffle", "OXYGEN_BONUS", Operation.ADD_NUMBER, Stats.Fmt.NUM);
       put("submerged-mining", "Minage eau", "PLAYER_SUBMERGED_MINING_SPEED", Operation.ADD_SCALAR, Stats.Fmt.PCT);
-      put("gravity", "Gravité", "GENERIC_GRAVITY", Operation.ADD_SCALAR, Stats.Fmt.PCT);
-      put("luck", "Chance", "GENERIC_LUCK", Operation.ADD_NUMBER, Stats.Fmt.NUM);
+      put("gravity", "Gravité", "GRAVITY", Operation.ADD_SCALAR, Stats.Fmt.PCT);
+      put("luck", "Chance", "LUCK", Operation.ADD_NUMBER, Stats.Fmt.NUM);
       put("xp-gain", "XP gagnée", null, null, Stats.Fmt.PCT);
       put("coin-gain", "Coins gagnés", null, null, Stats.Fmt.PCT);
       put("bow-damage", "Arc", null, null, Stats.Fmt.PCT);
@@ -131,9 +131,9 @@ public final class Stats {
       put("rune-chance", "Runes", null, null, Stats.Fmt.CHANCE);
       put("ability-cooldown", "Recharge armes", null, null, Stats.Fmt.REDUCE);
       put("double-jump", "Double saut", null, null, Stats.Fmt.SECONDS);
-      put("attack-speed", "Vitesse d'attaque", "GENERIC_ATTACK_SPEED", Operation.ADD_SCALAR, Stats.Fmt.PCT);
-      put("armor-toughness", "Robustesse", "GENERIC_ARMOR_TOUGHNESS", Operation.ADD_NUMBER, Stats.Fmt.NUM);
-      put("water-speed", "Nage", "GENERIC_WATER_MOVEMENT_EFFICIENCY", Operation.ADD_NUMBER, Stats.Fmt.PCT);
+      put("attack-speed", "Vitesse d'attaque", "ATTACK_SPEED", Operation.ADD_SCALAR, Stats.Fmt.PCT);
+      put("armor-toughness", "Robustesse", "ARMOR_TOUGHNESS", Operation.ADD_NUMBER, Stats.Fmt.NUM);
+      put("water-speed", "Nage", "WATER_MOVEMENT_EFFICIENCY", Operation.ADD_NUMBER, Stats.Fmt.PCT);
       put("sneak-speed", "Vitesse accroupi", "PLAYER_SNEAKING_SPEED", Operation.ADD_SCALAR, Stats.Fmt.PCT);
       put("damage", "Dégâts", null, null, Stats.Fmt.PCT);
       put("ranged-damage", "Dégâts à distance", null, null, Stats.Fmt.PCT);

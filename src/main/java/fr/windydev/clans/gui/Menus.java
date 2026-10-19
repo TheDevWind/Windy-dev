@@ -399,6 +399,18 @@ public class Menus {
          e -> this.then(p, () -> this.actions.toggleScoreboard(p), () -> this.noClan(p))
       );
       m.set(31, ItemBuilder.of(Material.BARRIER).name("&cFermer").build(), e -> p.closeInventory());
+      int left = this.plugin.quests().openCount(p);
+      m.set(
+         28,
+         ItemBuilder.of(Material.WRITABLE_BOOK)
+            .amount(Math.max(1, left))
+            .name("&6Quêtes")
+            .lore(left > 0 ? "&7Quêtes du jour à faire : &f" + left : "&a✔ Quêtes du jour faites", "", "&eClic : ouvrir")
+            .glow(left > 0)
+            .build(),
+         e -> this.plugin.quests().menu(p)
+      );
+      m.set(34, ItemBuilder.of(Material.MOSSY_STONE_BRICKS).name("&5Donjons").lore("&7Rejoins un groupe ouvert", "&7ou lance le tien.", "", "&eClic : ouvrir").build(), e -> this.plugin.dungeons().menu(p));
       m.fillBorder();
       m.open(p);
    }
@@ -1841,6 +1853,26 @@ public class Menus {
          self ? e -> this.evolution(viewer) : null
       );
       m.set(45, this.back(), e -> this.main(viewer));
+      if (self) {
+         int left = this.plugin.quests().openCount(viewer);
+         m.set(
+            46,
+            ItemBuilder.of(Material.WRITABLE_BOOK)
+               .amount(Math.max(1, left))
+               .name("&6Quêtes")
+               .lore(
+                  left > 0 ? "&7Quêtes du jour à faire : &f" + left : "&a✔ Quêtes du jour faites",
+                  "&7Série : &f" + this.plugin.quests().streak(viewer.getUniqueId()) + " jour(s)",
+                  "&7Points de la semaine : &e" + this.plugin.quests().points(viewer.getUniqueId()),
+                  "",
+                  "&eClic : ouvrir"
+               )
+               .glow(left > 0)
+               .build(),
+            e -> this.plugin.quests().menu(viewer)
+         );
+      }
+
       m.set(
          47,
          ItemBuilder.of(Material.ENCHANTED_BOOK).name("&dLes races").lore("&7Voir toutes les races", "&7et leurs bonus.", "", "&eClic : ouvrir").build(),
@@ -2473,11 +2505,27 @@ public class Menus {
                   .build()
             );
             long wait = pr.awakenRetryAt() - System.currentTimeMillis();
+            List<String> waitLore = new ArrayList<>(wait <= 0L ? List.of("&7Aucune attente.") : List.of("&7Nouvel essai dans &f" + Text.formatTime(wait / 1000L) + "&7."));
+            int lim = aw.interruptLimit(target);
+            int done = pr.interrupts(target);
+            waitLore.add("");
+            if (lim <= 0) {
+               waitLore.add("&7Interruptions : &f" + done + " &8(pas de limite pour cet Éveil)");
+            } else if (aw.shieldedNext(pr)) {
+               waitLore.add("&a⛨ Éveil protégé &7: interrompu " + done + "/" + lim);
+               waitLore.add("&7Personne ne pourra te frapper ni");
+               waitLore.add("&7briser ton sanctuaire.");
+            } else {
+               waitLore.add("&7Interruptions : &f" + done + "/" + lim);
+               waitLore.add("&8À " + lim + ", l'Éveil se fait sans PvP.");
+            }
+
             m.set(
                25,
                ItemBuilder.of(Material.CLOCK)
                   .name(wait <= 0L ? "&a✔ Prêt" : "&c✖ Échec récent")
-                  .lore(wait <= 0L ? List.of("&7Aucune attente.") : List.of("&7Nouvel essai dans &f" + Text.formatTime(wait / 1000L) + "&7."))
+                  .lore(waitLore)
+                  .glow(aw.shieldedNext(pr))
                   .build()
             );
             List<Awakening.Offering> offers = aw.offeringsFor(pr.race(), target);
@@ -2566,7 +2614,12 @@ public class Menus {
                   "&7le cœur est brisé : tu perds la moitié",
                   "&7des offrandes et des âmes, et tu",
                   "&7attends " + aw.failHours() + " h. Le clan qui t'a",
-                  "&7interrompu gagne une récompense."
+                  "&7interrompu gagne une récompense.",
+                  "",
+                  "&a⛨ Limite &7: après &f3 &7interruptions",
+                  "&7(rang II), &f5 &7(III) ou &f15 &7(IV) par",
+                  "&7d'autres joueurs, l'Éveil se fait",
+                  "&7sans PvP. Pas de limite pour le rang V."
                )
                .build()
          );

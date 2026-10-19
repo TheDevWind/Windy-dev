@@ -96,7 +96,7 @@ public class ArmorSets implements Listener {
          }
       }
 
-      AttributeInstance hp = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+      AttributeInstance hp = p.getAttribute(Attribute.MAX_HEALTH);
       if (hp != null) {
          AttributeModifier cur = null;
          for (AttributeModifier m : hp.getModifiers()) {
@@ -164,7 +164,7 @@ public class ArmorSets implements Listener {
    @EventHandler
    public void onQuit(PlayerQuitEvent e) {
       this.worn.remove(e.getPlayer().getUniqueId());
-      AttributeInstance hp = e.getPlayer().getAttribute(Attribute.GENERIC_MAX_HEALTH);
+      AttributeInstance hp = e.getPlayer().getAttribute(Attribute.MAX_HEALTH);
       if (hp != null) {
          for (AttributeModifier m : hp.getModifiers()) {
             if (m.getKey().equals(this.hpKey)) {

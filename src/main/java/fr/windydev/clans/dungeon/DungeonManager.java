@@ -132,6 +132,16 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
    private int mobsCap = 14;
    private String mutationSetting = "auto";
    private double mutationLoot = 1.5;
+   // MAJ 1.21.0 : groupes ouverts, mode solo, bonus de la première victoire du jour
+   private int publicLobbySeconds = 120;
+   private double soloHp = 0.7;
+   private double soloDamage = 0.8;
+   private double soloBossHp = 0.65;
+   private int soloLives = 1;
+   private int searchCooldown = 300;
+   private fr.windydev.clans.quest.Reward firstWin = fr.windydev.clans.quest.Reward.NONE;
+   private final Set<UUID> openPref = new HashSet<>();
+   private final Map<UUID, Long> lastSearch = new HashMap<>();
    private final EclatShop shop;
 
    /** Mutations de la semaine (v1.2). */
@@ -267,6 +277,7 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
          this.plugin.getLogger().info("donjons.yml mis à jour (glyphes runiques). Ancienne version : donjons-ancien.yml");
       }
 
+      fr.windydev.clans.util.YamlMerge.addMissing(this.plugin, f, y, "donjons.yml", List.of("settings.open-group", "settings.solo", "settings.first-win"));
       try (InputStream in = this.plugin.getResource("donjons.yml")) {
          if (in != null) {
             y.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8)));
@@ -292,6 +303,15 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
       this.mobsCap = Math.max(1, y.getInt("settings.mobs-cap", 14));
       this.mutationSetting = y.getString("settings.mutation", "auto");
       this.mutationLoot = Math.max(1.0, y.getDouble("settings.mutation-loot-bonus", 1.5));
+      this.publicLobbySeconds = Math.max(10, y.getInt("settings.open-group.lobby-seconds", 120));
+      this.searchCooldown = Math.max(0, y.getInt("settings.open-group.search-cooldown", 300));
+      this.soloHp = Math.max(0.1, y.getDouble("settings.solo.health", 0.7));
+      this.soloDamage = Math.max(0.1, y.getDouble("settings.solo.damage", 0.8));
+      this.soloBossHp = Math.max(0.1, y.getDouble("settings.solo.boss-health", 0.65));
+      this.soloLives = Math.max(0, y.getInt("settings.solo.extra-lives", 1));
+      this.firstWin = y.isConfigurationSection("settings.first-win")
+         ? fr.windydev.clans.quest.Reward.of(y.getConfigurationSection("settings.first-win"))
+         : new fr.windydev.clans.quest.Reward(30L, 500L, 0L, 0L, List.of("windy:eclat_1:2"));
       this.shop.load();
       this.defs.clear();
       ConfigurationSection ds = y.getConfigurationSection("dungeons");
@@ -509,8 +529,14 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
 
          lore.add("");
          lore.add(cd > 0L ? "&7Butin de fin : &cdans " + Text.formatTime(cd) : "&7Butin de fin : &adisponible");
+         lore.add(this.firstWinToday(p.getUniqueId()) ? "&7Bonus du jour : &8déjà reçu" : "&7Bonus du jour : &adisponible &8(1re victoire)");
          lore.add("");
-         lore.add(hasSeal ? "&e▶ Clic : lancer (le groupe a " + this.lobbySeconds + " s pour rejoindre)" : "&cIl te faut le sceau pour entrer.");
+         boolean open = this.openPref.contains(p.getUniqueId());
+         lore.add(
+            hasSeal
+               ? "&e▶ Clic : lancer " + (open ? "&a(groupe ouvert à tous, " + this.publicLobbySeconds + " s)" : "(clan et alliés, " + this.lobbySeconds + " s)")
+               : "&cIl te faut le sceau pour entrer."
+         );
          String id = d.id;
          m.set(slots[i++], ItemBuilder.of(d.icon).name(d.name).lore(lore).glow(hasSeal).build(), e -> {
             p.closeInventory();
@@ -520,11 +546,56 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
 
       DungeonInstance lobby = this.joinableFor(p);
       if (lobby != null) {
-         m.set(53, ItemBuilder.of(Material.LIME_DYE).name("&aRejoindre le groupe").lore("&7" + lobby.def.name + " &8• &f" + lobby.participants.size() + "/" + this.maxPlayers).glow(true).build(), e -> {
+         String lead = Bukkit.getOfflinePlayer(lobby.leader).getName();
+         m.set(53, ItemBuilder.of(Material.LIME_DYE)
+            .name("&aRejoindre le groupe")
+            .lore("&7" + lobby.def.name + " &8• &f" + lobby.participants.size() + "/" + this.maxPlayers, "&7Chef : &f" + lead + (lobby.open ? " &a(groupe ouvert)" : ""))
+            .glow(true)
+            .build(), e -> {
             p.closeInventory();
-            this.join(p);
+            this.join(p, null);
          });
       }
+
+      boolean open = this.openPref.contains(p.getUniqueId());
+      m.set(45, ItemBuilder.of(open ? Material.LIME_CANDLE : Material.GRAY_CANDLE)
+         .name(open ? "&aGroupe ouvert à tous : oui" : "&7Groupe ouvert à tous : non")
+         .lore(
+            "&7Oui : tout le serveur et Discord sont",
+            "&7prévenus, n'importe qui peut rejoindre",
+            "&7(même sans clan). Départ dans " + this.publicLobbySeconds + " s,",
+            "&7ou plus tôt avec &f/donjon partir&7.",
+            "&7Non : ton clan et tes alliés seulement.",
+            "",
+            "&eClic : changer"
+         )
+         .glow(open)
+         .build(), e -> {
+         if (!this.openPref.remove(p.getUniqueId())) {
+            this.openPref.add(p.getUniqueId());
+         }
+
+         this.menu(p);
+      });
+      m.set(46, ItemBuilder.of(Material.BELL)
+         .name("&eChercher un groupe")
+         .lore("&7Prévient tout le serveur et Discord", "&7que tu cherches des joueurs (ou un", "&7sceau) pour un donjon.", "", "&eClic : envoyer l'appel")
+         .build(), e -> {
+         p.closeInventory();
+         this.search(p);
+      });
+      m.set(52, ItemBuilder.of(Material.TOTEM_OF_UNDYING)
+         .name("&dSeul ou en groupe")
+         .lore(
+            "&7Seul : monstres &f-" + Math.round((1.0 - this.soloHp) * 100.0) + " % PV&7, &f-" + Math.round((1.0 - this.soloDamage) * 100.0) + " % dégâts&7,",
+            "&7gardiens &f-" + Math.round((1.0 - this.soloBossHp) * 100.0) + " % PV &7et &f+" + this.soloLives + " vie&7.",
+            "&7En groupe : plus de monstres, mais",
+            "&7chacun reçoit le butin.",
+            "",
+            "&6Bonus de la première victoire du jour :"
+         )
+         .lore(this.firstWin.lines(this.plugin))
+         .build());
 
       Mutation mu = this.mutation();
       if (mu != null) {
@@ -617,7 +688,9 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
    }
 
    private boolean canJoin(Player p, DungeonInstance inst) {
-      if (inst.clan == null) {
+      if (inst.open) {
+         return true;
+      } else if (inst.clan == null) {
          return false;
       } else {
          Clan mine = this.plugin.clans().of(p);
@@ -626,16 +699,64 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
    }
 
    private DungeonInstance joinableFor(Player p) {
+      return this.joinableFor(p, null);
+   }
+
+   private DungeonInstance joinableFor(Player p, String leaderName) {
       if (this.instanceOf(p.getUniqueId()) != null) {
          return null;
       } else {
+         DungeonInstance any = null;
+
          for (DungeonInstance inst : this.instances.values()) {
             if (inst.state == DungeonInstance.State.LOBBY && inst.participants.size() < this.maxPlayers && this.canJoin(p, inst)) {
-               return inst;
+               String lead = Bukkit.getOfflinePlayer(inst.leader).getName();
+               if (leaderName == null || leaderName.equalsIgnoreCase(lead)) {
+                  // les groupes de son clan passent avant les groupes ouverts
+                  if (!inst.open) {
+                     return inst;
+                  }
+
+                  if (any == null) {
+                     any = inst;
+                  }
+               }
             }
          }
 
-         return null;
+         return any;
+      }
+   }
+
+   private boolean firstWinToday(UUID u) {
+      return this.data.getLong("first-win." + u, -1L) == this.plugin.quests().today();
+   }
+
+   /** Appel « je cherche un groupe » (en jeu et sur Discord), une fois toutes les X minutes. */
+   public void search(Player p) {
+      long now = System.currentTimeMillis();
+      long last = this.lastSearch.getOrDefault(p.getUniqueId(), 0L);
+      if (now - last < this.searchCooldown * 1000L) {
+         this.plugin.msg(p, "&cTu as déjà lancé un appel : réessaie dans " + Text.formatTime((this.searchCooldown * 1000L - (now - last)) / 1000L) + ".");
+      } else {
+         this.lastSearch.put(p.getUniqueId(), now);
+         Profile pr = this.plugin.profiles().of(p);
+         boolean seal = false;
+
+         for (DungeonDef d : this.defs.values()) {
+            seal |= d.seal != null && !d.seal.isEmpty() && this.hasSeal(p, d);
+         }
+
+         String what = seal ? "a un sceau et cherche des joueurs" : "cherche un groupe";
+         Bukkit.broadcast(
+            Text.c(this.plugin.settings().prefix + "&5⚔ &f" + p.getName() + " &7(niv. " + pr.level() + ") " + what + " pour un donjon ! ")
+               .append(
+                  Text.c("&d&l[DONJONS]")
+                     .clickEvent(ClickEvent.runCommand("/donjon"))
+                     .hoverEvent(HoverEvent.showText(Text.c("&7Ouvrir le menu des donjons (groupe ouvert à tous)")))
+               )
+         );
+         this.plugin.discord().send("dungeon-group", "🔎 **" + p.getName() + "** (niv. " + pr.level() + ") " + what + " pour un donjon : rejoins-le en jeu avec `/donjon` !");
       }
    }
 
@@ -644,8 +765,8 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
       if (d != null) {
          boolean admin = this.admin(p);
          Clan c = this.plugin.clans().of(p);
-         if (c == null && !admin) {
-            this.plugin.msg(p, "&cIl faut un clan pour entrer dans un donjon.");
+         if (c == null && !admin && !this.openPref.contains(p.getUniqueId())) {
+            this.plugin.msg(p, "&cSans clan, lance un groupe ouvert à tous (bouton dans le menu des donjons) ou rejoins un groupe.");
          } else if (c != null && !c.rank(p.getUniqueId()).atLeast(this.rank) && !admin) {
             this.plugin.msg(p, "&cIl faut être au moins " + this.rank.colored() + " &cpour lancer un donjon.");
          } else if (this.instanceOf(p.getUniqueId()) != null) {
@@ -664,12 +785,31 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
             int slot = this.freeSlot();
             DungeonInstance inst = new DungeonInstance(slot, d, c, p.getUniqueId());
             inst.sealTaken = admin;
-            inst.lobbyEnd = System.currentTimeMillis() + this.lobbySeconds * 1000L;
+            inst.open = this.openPref.contains(p.getUniqueId());
+            int wait = inst.open ? this.publicLobbySeconds : this.lobbySeconds;
+            inst.lobbyEnd = System.currentTimeMillis() + wait * 1000L;
             this.instances.put(slot, inst);
             this.plan(inst);
-            String msg = this.plugin.settings().prefix + "&5⚔ &f" + p.getName() + " &7ouvre le donjon " + d.name + " &7: départ dans &f" + this.lobbySeconds + " s&7. ";
+            String msg = this.plugin.settings().prefix
+               + "&5⚔ &f"
+               + p.getName()
+               + " &7ouvre le donjon "
+               + d.name
+               + (inst.open ? " &a(groupe ouvert à tous)" : "")
+               + " &7: départ dans &f"
+               + wait
+               + " s&7. ";
             Set<Player> notify = new HashSet<>();
-            if (c != null) {
+            if (inst.open) {
+               notify.addAll(Bukkit.getOnlinePlayers());
+               this.plugin
+                  .discord()
+                  .send(
+                     "dungeon-group",
+                     "⚔️ **" + p.getName() + "** ouvre le donjon **" + Text.strip(d.name) + "** à tout le monde : départ dans " + wait + " s. En jeu : `/donjon rejoindre " + p.getName() + "`"
+                  );
+               this.plugin.msg(p, "&7Départ quand le groupe est prêt : &f/donjon partir");
+            } else if (c != null) {
                notify.addAll(this.plugin.clans().onlineMembers(c));
 
                for (UUID allyId : c.allies()) {
@@ -683,11 +823,15 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
             }
 
             for (Player m : notify) {
+               if (m == p) {
+                  continue;
+               }
+
                m.sendMessage(
                   Text.c(msg)
                      .append(
                         Text.c("&a&l[REJOINDRE]")
-                           .clickEvent(ClickEvent.runCommand("/donjon rejoindre"))
+                           .clickEvent(ClickEvent.runCommand("/donjon rejoindre " + p.getName()))
                            .hoverEvent(HoverEvent.showText(Text.c("&aRejoindre le groupe (" + this.maxPlayers + " joueurs max)")))
                      )
                );
@@ -700,9 +844,15 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
    }
 
    public void join(Player p) {
-      DungeonInstance inst = this.joinableFor(p);
+      this.join(p, null);
+   }
+
+   public void join(Player p, String leader) {
+      DungeonInstance inst = this.joinableFor(p, leader);
       if (inst == null) {
-         this.plugin.msg(p, "&cAucun groupe de donjon à rejoindre (clan ou alliés).");
+         this.plugin.msg(p, "&cAucun groupe de donjon à rejoindre (clan, alliés ou groupe ouvert).");
+      } else if (this.plugin.rift().isRift(p.getWorld()) || this.plugin.bosses().isArena(p.getWorld())) {
+         this.plugin.msg(p, "&cTermine d'abord ta faille ou ton combat de boss.");
       } else {
          inst.participants.add(p.getUniqueId());
          Profile pr = this.plugin.profiles().of(p);
@@ -812,7 +962,8 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
       Room entrance = inst.floors.get(0).get(0);
       inst.checkpoint = entrance.center(w);
       inst.checkpoint.setDirection(new Vector(entrance.nextDx, 0, entrance.nextDz));
-      inst.lives = this.lives;
+      inst.solo = players.size() == 1;
+      inst.lives = this.lives + (inst.solo ? this.soloLives : 0);
       inst.state = DungeonInstance.State.RUNNING;
       inst.startedAt = System.currentTimeMillis();
       inst.deadline = inst.startedAt + this.timeLimit * 1000L;
@@ -828,6 +979,18 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
       }
 
       this.groupMsg(inst, "&7Vies du groupe : &c" + inst.lives + " &8• &7Temps : &f" + Text.formatTime(this.timeLimit) + " &8• &7Videz chaque salle pour ouvrir la suivante.");
+      if (inst.solo) {
+         this.groupMsg(
+            inst,
+            "&dMode solo &7: monstres à &f"
+               + Math.round(this.soloHp * 100.0)
+               + " % &7de leurs PV et &f"
+               + Math.round(this.soloDamage * 100.0)
+               + " % &7de leurs dégâts, gardiens à &f"
+               + Math.round(this.soloBossHp * 100.0)
+               + " %&7."
+         );
+      }
    }
 
    private List<Player> present(DungeonInstance inst) {
@@ -1021,7 +1184,7 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
             }
          }
 
-         double max = boss.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+         double max = boss.getAttribute(Attribute.MAX_HEALTH).getValue();
          if (inst.bossBar != null) {
             inst.bossBar.progress((float)Math.max(0.0, Math.min(1.0, boss.getHealth() / max)));
          }
@@ -1173,13 +1336,12 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
             e.remove();
          } else {
             String affix = elite ? (this.mut("explosifs") ? "explosif" : AFFIXES[this.rnd.nextInt(AFFIXES.length)]) : null;
-            double hp = this.base(le, Attribute.GENERIC_MAX_HEALTH, 20.0) * this.scaleHp(level, players) * ("blinde".equals(affix) ? 1.5 : 1.0) * (elite ? 1.4 : 1.0)
-               * (this.mut("colosses") ? 1.3 : 1.0);
-            this.attr(le, Attribute.GENERIC_MAX_HEALTH, hp);
-            le.setHealth(hp);
-            double dmg = (1.0 + this.dmgPerLevel * (level - 1)) * (elite ? 1.2 : 1.0);
+            double hp = this.base(le, Attribute.MAX_HEALTH, 20.0) * this.scaleHp(level, players) * ("blinde".equals(affix) ? 1.5 : 1.0) * (elite ? 1.4 : 1.0)
+               * (this.mut("colosses") ? 1.3 : 1.0) * (inst.solo ? this.soloHp : 1.0);
+            fr.windydev.clans.feature.BigHealth.apply(le, hp);
+            double dmg = (1.0 + this.dmgPerLevel * (level - 1)) * (elite ? 1.2 : 1.0) * (inst.solo ? this.soloDamage : 1.0);
             this.tag(le, inst, level, dmg, dmg, affix, false);
-            this.attr(le, Attribute.GENERIC_FOLLOW_RANGE, 32.0);
+            this.attr(le, Attribute.FOLLOW_RANGE, 32.0);
             if ("rapide".equals(affix)) {
                le.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, -1, 1, false, false));
             } else if (this.mut("frenesie")) {
@@ -1229,14 +1391,13 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
          if (!(e instanceof LivingEntity le)) {
             e.remove();
          } else {
-            double hp = spec.health() * (1.0 + this.groupScaling * Math.max(0, players - 1));
-            this.attr(le, Attribute.GENERIC_MAX_HEALTH, hp);
-            le.setHealth(hp);
-            this.attr(le, Attribute.GENERIC_ATTACK_DAMAGE, spec.damage());
-            this.attr(le, Attribute.GENERIC_KNOCKBACK_RESISTANCE, 0.6);
-            this.attr(le, Attribute.GENERIC_FOLLOW_RANGE, 40.0);
-            this.attr(le, Attribute.GENERIC_SCALE, spec.scale());
-            this.tag(le, inst, level, 1.0, Math.max(1.0, spec.damage() / 5.0), null, true);
+            double hp = spec.health() * (1.0 + this.groupScaling * Math.max(0, players - 1)) * (inst.solo ? this.soloBossHp : 1.0);
+            fr.windydev.clans.feature.BigHealth.apply(le, hp);
+            this.attr(le, Attribute.ATTACK_DAMAGE, spec.damage() * (inst.solo ? this.soloDamage : 1.0));
+            this.attr(le, Attribute.KNOCKBACK_RESISTANCE, 0.6);
+            this.attr(le, Attribute.FOLLOW_RANGE, 40.0);
+            this.attr(le, Attribute.SCALE, spec.scale());
+            this.tag(le, inst, level, 1.0, Math.max(1.0, spec.damage() / 5.0) * (inst.solo ? this.soloDamage : 1.0), null, true);
             le.customName(Text.c(spec.name()));
             le.setCustomNameVisible(true);
             le.setRemoveWhenFarAway(false);
@@ -1388,7 +1549,7 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
             }
             break;
          case "heal":
-            double max = boss.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+            double max = boss.getAttribute(Attribute.MAX_HEALTH).getValue();
             if (boss.getHealth() < max / 2.0) {
                boss.setHealth(Math.min(max, boss.getHealth() + max * 0.2));
                w.spawnParticle(Particle.HEART, boss.getLocation().add(0.0, 2.0, 0.0), 12, 0.6, 0.6, 0.6, 0.0);
@@ -1504,8 +1665,16 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
          this.plugin.clans().dirty();
       }
 
+      long today = this.plugin.quests().today();
       for (Player p : present) {
          this.plugin.profiles().addXp(p, inst.def.completionXp, "combat");
+         this.plugin.quests().dungeonDone(p);
+         if (this.data.getLong("first-win." + p.getUniqueId(), -1L) != today && !this.firstWin.empty()) {
+            this.data.set("first-win." + p.getUniqueId(), today);
+            String got = this.firstWin.give(this.plugin, p, "combat");
+            this.plugin.msg(p, "&6☀ Bonus de la première victoire du jour &8(" + got + "&8)");
+         }
+
          long left = this.rewardLeft(p.getUniqueId());
          if (left > 0L) {
             this.plugin.msg(p, "&7Butin de fin déjà récupéré récemment : de nouveau disponible dans &f" + Text.formatTime(left) + "&7.");
@@ -1674,7 +1843,7 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
             double mul = pdc.getOrDefault(projectile ? this.keyPdmg : this.keyDmg, PersistentDataType.DOUBLE, 1.0);
             e.setDamage(e.getDamage() * mul);
             if ("vampirique".equals(pdc.get(this.keyAffix, PersistentDataType.STRING)) && source instanceof LivingEntity le) {
-               double max = le.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+               double max = le.getAttribute(Attribute.MAX_HEALTH).getValue();
                le.setHealth(Math.min(max, le.getHealth() + e.getFinalDamage() * 0.3));
             }
          }
@@ -1682,7 +1851,7 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
          if (this.isMob(victim) && victim instanceof LivingEntity le) {
             PersistentDataContainer pdc = victim.getPersistentDataContainer();
             if ("invocateur".equals(pdc.get(this.keyAffix, PersistentDataType.STRING)) && !pdc.has(this.keyInv, PersistentDataType.BYTE)) {
-               double max = le.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+               double max = le.getAttribute(Attribute.MAX_HEALTH).getValue();
                if (le.getHealth() - e.getFinalDamage() < max / 2.0) {
                   pdc.set(this.keyInv, PersistentDataType.BYTE, (byte)1);
                   DungeonInstance inst = this.instanceOfMob(victim);
@@ -1845,8 +2014,24 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
          switch (sub) {
             case "rejoindre":
             case "join":
-               this.join(p);
+               this.join(p, args.length > 1 ? args[1] : null);
                break;
+            case "chercher":
+            case "groupe":
+            case "lfg":
+               this.search(p);
+               break;
+            case "partir":
+            case "go": {
+               DungeonInstance mine = this.instanceOf(p.getUniqueId());
+               if (mine != null && mine.state == DungeonInstance.State.LOBBY && mine.leader.equals(p.getUniqueId())) {
+                  mine.lobbyEnd = System.currentTimeMillis();
+                  this.groupMsg(mine, "&a" + p.getName() + " lance le départ !");
+               } else {
+                  this.plugin.msg(p, "&cSeul le chef d'un groupe en attente peut lancer le départ.");
+               }
+               break;
+            }
             case "quitter":
             case "leave":
                this.leave(p);
@@ -1894,7 +2079,7 @@ public class DungeonManager implements Listener, CommandExecutor, TabCompleter {
    @Override
    public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
       if (args.length == 1) {
-         List<String> l = new ArrayList<>(List.of("rejoindre", "quitter"));
+         List<String> l = new ArrayList<>(List.of("rejoindre", "quitter", "chercher", "partir", "boutique"));
          if (sender.hasPermission("windyclans.admin")) {
             l.addAll(List.of("stop", "reset", "sceau"));
          }

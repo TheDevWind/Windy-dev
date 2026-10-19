@@ -40,6 +40,10 @@ final class DungeonInstance {
    BossBar bar;
    BossBar bossBar;
    boolean sealTaken;
+   /** Groupe ouvert à tous (recherche de groupe, MAJ 1.21.0). */
+   boolean open;
+   /** Partie lancée à un seul joueur : monstres affaiblis. */
+   boolean solo;
    long floorTransitionAt;
 
    DungeonInstance(int slot, DungeonDef def, Clan clan, UUID leader) {

@@ -65,13 +65,15 @@ public class Awakening implements Listener {
    private final Map<Item, UUID> thrown = new HashMap<>();
    private final Map<Integer, Awakening.RankDef> ranks = new HashMap<>();
    private final Map<String, Map<Integer, List<Awakening.Offering>>> raceOfferings = new HashMap<>();
-   private int stayRadius = 10;
+   private int stayRadius = 25;
    private int pvpRadius = 30;
    private int failHours = 24;
    private int waveEvery = 30;
    private int precision = 50;
-   private int rewardCoins = 250;
-   private int rewardXp = 200;
+   private int rewardCoins = 50;
+   private int rewardXp = 40;
+   /** Interruptions par d'autres joueurs avant qu'un Éveil se déroule sans PvP (0 = aucune limite). */
+   private final Map<Integer, Integer> interruptLimit = new HashMap<>(Map.of(2, 3, 3, 5, 4, 15, 5, 0));
    private double failLoss = 0.5;
    private final NamespacedKey mobKey;
    SanctuaryVisuals visuals;
@@ -99,14 +101,78 @@ public class Awakening implements Listener {
       }
 
       YamlConfiguration y = YamlConfiguration.loadConfiguration(f);
-      this.stayRadius = y.getInt("settings.stay-radius", 10);
-      this.pvpRadius = y.getInt("settings.pvp-radius", 30);
+      if (y.getInt("config-version", 1) < 2) {
+         // MAJ 1.21.0 : récompense d'interruption divisée par 5 et limite d'interruptions par Éveil
+         if (y.getInt("settings.interrupt-reward.coins", 250) == 250) {
+            y.set("settings.interrupt-reward.coins", 50);
+         }
+
+         if (y.getInt("settings.interrupt-reward.clan-xp", 200) == 200) {
+            y.set("settings.interrupt-reward.clan-xp", 40);
+         }
+
+         if (!y.isConfigurationSection("settings.interrupt-limit")) {
+            y.set("settings.interrupt-limit.2", 3);
+            y.set("settings.interrupt-limit.3", 5);
+            y.set("settings.interrupt-limit.4", 15);
+            y.set("settings.interrupt-limit.5", 0);
+            y.setComments(
+               "settings.interrupt-limit",
+               List.of(
+                  "interruptions par d'autres joueurs (rituelliste tué, cœur ou sanctuaire brisé) avant que",
+                  "les tentatives suivantes du même Éveil se déroulent sans PvP (0 = aucune limite)"
+               )
+            );
+         }
+
+         y.set("config-version", 2);
+
+         try {
+            y.save(f);
+            this.plugin.getLogger().info("eveil.yml mis à jour : récompense d'interruption 50 coins / 40 XP, limite d'interruptions 3/5/15/aucune.");
+         } catch (Exception var15) {
+            this.plugin.getLogger().warning("eveil.yml : mise à jour impossible : " + var15.getMessage());
+         }
+      }
+
+      if (y.getInt("config-version", 1) < 3) {
+         // MAJ 1.22.0 : zone du rituel agrandie (les vagues apparaissent jusqu'à 10 blocs, on sortait de la zone en se battant)
+         if (y.getInt("settings.stay-radius", 10) == 10) {
+            y.set("settings.stay-radius", 25);
+         }
+
+         if (y.getInt("settings.pvp-radius", 30) == 30) {
+            y.set("settings.pvp-radius", 45);
+         }
+
+         y.set("config-version", 3);
+
+         try {
+            y.save(f);
+            this.plugin.getLogger().info("eveil.yml mis à jour : zone du rituel 25 blocs, PvP forcé à 45 blocs.");
+         } catch (Exception var17) {
+            this.plugin.getLogger().warning("eveil.yml : mise à jour impossible : " + var17.getMessage());
+         }
+      }
+
+      this.stayRadius = y.getInt("settings.stay-radius", 25);
+      this.pvpRadius = Math.max(this.stayRadius, y.getInt("settings.pvp-radius", 45));
       this.failHours = y.getInt("settings.fail-cooldown-hours", 24);
       this.failLoss = y.getDouble("settings.fail-loss", 0.5);
       this.waveEvery = Math.max(5, y.getInt("settings.wave-every", 30));
       this.precision = Math.max(1, y.getInt("settings.broadcast-precision", 50));
-      this.rewardCoins = y.getInt("settings.interrupt-reward.coins", 250);
-      this.rewardXp = y.getInt("settings.interrupt-reward.clan-xp", 200);
+      this.rewardCoins = y.getInt("settings.interrupt-reward.coins", 50);
+      this.rewardXp = y.getInt("settings.interrupt-reward.clan-xp", 40);
+      this.interruptLimit.putAll(Map.of(2, 3, 3, 5, 4, 15, 5, 0));
+      ConfigurationSection lim = y.getConfigurationSection("settings.interrupt-limit");
+      if (lim != null) {
+         for (String k : lim.getKeys(false)) {
+            try {
+               this.interruptLimit.put(Integer.parseInt(k), Math.max(0, lim.getInt(k)));
+            } catch (NumberFormatException var16) {
+            }
+         }
+      }
       requireInfused = y.getBoolean("settings.infused.require-infused-core", true);
       this.requireLink = y.getBoolean("settings.infused.require-link", true);
       this.ranks.clear();
@@ -233,6 +299,26 @@ public class Awakening implements Listener {
 
    public int failHours() {
       return this.failHours;
+   }
+
+   /** Limite d'interruptions de l'Éveil vers ce rang (0 = aucune limite). */
+   public int interruptLimit(int rank) {
+      return this.interruptLimit.getOrDefault(rank, 0);
+   }
+
+   /** Vrai si la prochaine tentative de cet Éveil se déroule sans PvP. */
+   public boolean shieldedNext(Profile pr) {
+      int target = pr.rank + 1;
+      int lim = this.interruptLimit(target);
+      return lim > 0 && pr.interrupts(target) >= lim;
+   }
+
+   public int rewardCoins() {
+      return this.rewardCoins;
+   }
+
+   public int rewardXp() {
+      return this.rewardXp;
    }
 
    public void start() {
@@ -375,7 +461,7 @@ public class Awakening implements Listener {
 
    public boolean forcedPvp(Location l) {
       for (Entry<Block, Awakening.Rite> e : this.rites.entrySet()) {
-         if (e.getValue().def != null) {
+         if (e.getValue().def != null && !e.getValue().shielded) {
             Block b = e.getKey();
             if (b.getWorld() == l.getWorld() && b.getLocation().distanceSquared(l) <= (double)this.pvpRadius * this.pvpRadius) {
                return true;
@@ -600,6 +686,10 @@ public class Awakening implements Listener {
       }
 
       rite.def = d;
+      rite.shielded = this.shieldedNext(pr);
+      rite.killedBy = null;
+      rite.died = false;
+      rite.breaker = null;
       rite.needed = this.offeringsFor(pr.race, d.rank());
       rite.soulsPaid = d.souls();
       this.pm.spendSouls(pr, d.souls());
@@ -629,7 +719,29 @@ public class Awakening implements Listener {
                + ")."
          )
       );
-      Bukkit.broadcast(Text.c("&7   Durée : &f" + Text.formatTime(rite.total / 20) + " &8• &7Le PvP est ouvert à " + this.pvpRadius + " blocs du sanctuaire."));
+      int lim = this.interruptLimit(d.rank());
+      if (rite.shielded) {
+         Bukkit.broadcast(
+            Text.c(
+               "&7   Durée : &f"
+                  + Text.formatTime(rite.total / 20)
+                  + " &8• &a⛨ Éveil protégé &7: déjà interrompu "
+                  + pr.interrupts(d.rank())
+                  + " fois, personne ne peut frapper le rituelliste ni briser son sanctuaire."
+            )
+         );
+      } else {
+         Bukkit.broadcast(
+            Text.c(
+               "&7   Durée : &f"
+                  + Text.formatTime(rite.total / 20)
+                  + " &8• &7Le PvP est ouvert à "
+                  + this.pvpRadius
+                  + " blocs du sanctuaire."
+                  + (lim > 0 ? " &8(interruptions : " + pr.interrupts(d.rank()) + "/" + lim + ")" : "")
+            )
+         );
+      }
 
       for (Player o : Bukkit.getOnlinePlayers()) {
          o.playSound(o.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.5F, 0.6F);
@@ -638,7 +750,7 @@ public class Awakening implements Listener {
       p.showTitle(
          Title.title(
             Text.c("&5✦ Éveil ✦"),
-            Text.c("&dReste près du sanctuaire et survis"),
+            Text.c(rite.shielded ? "&aÉveil protégé &7: seuls les monstres t'attaquent" : "&dReste près du sanctuaire et survis"),
             Times.times(Duration.ofMillis(300L), Duration.ofSeconds(3L), Duration.ofMillis(700L))
          )
       );
@@ -647,7 +759,21 @@ public class Awakening implements Listener {
          this.visuals.refreshLater(core);
       }
 
-      this.plugin.discord().send("eveil", "✦ **" + p.getName() + "** commence son Éveil pour devenir **" + next + "** (X≈" + x + " Z≈" + z + ") !");
+      this.plugin
+         .discord()
+         .send(
+            "eveil",
+            "✦ **"
+               + p.getName()
+               + "** commence son Éveil pour devenir **"
+               + next
+               + "** (X≈"
+               + x
+               + " Z≈"
+               + z
+               + ")"
+               + (rite.shielded ? " — 🛡 Éveil protégé, sans PvP." : " !")
+         );
    }
 
    private void run(Block core, Awakening.Rite r) {
@@ -659,16 +785,24 @@ public class Awakening implements Listener {
          fail = "le cœur du sanctuaire a été brisé";
       } else if (structureTier(core) < r.def.rank()) {
          fail = "le sanctuaire a été défait";
+         if (r.breaker != null && System.currentTimeMillis() - r.brokeAt < 15000L) {
+            this.failRite(core, r, p, fail, Bukkit.getPlayer(r.breaker), r.breaker);
+            return;
+         }
       } else if (p == null || !p.isOnline()) {
          fail = "le rituelliste a quitté le serveur";
-      } else if (p.isDead()) {
+      } else if (p.isDead() || r.died) {
          fail = "le rituelliste est mort";
+         if (r.killedBy != null) {
+            this.failRite(core, r, p, fail, Bukkit.getPlayer(r.killedBy), r.killedBy);
+            return;
+         }
       } else if (p.getWorld() != w || p.getLocation().distance(c) > this.stayRadius) {
          fail = "le rituelliste s'est éloigné du sanctuaire";
       }
 
       if (fail != null) {
-         this.failRite(core, r, p, fail, null);
+         this.failRite(core, r, p, fail, null, null);
       } else {
          r.ticks += 5;
          double prog = Math.min(1.0, (double)r.ticks / r.total);
@@ -874,6 +1008,15 @@ public class Awakening implements Listener {
    }
 
    private void failRite(Block core, Awakening.Rite r, Player p, String reason, Player breaker) {
+      this.failRite(core, r, p, reason, breaker, breaker == null ? null : breaker.getUniqueId());
+   }
+
+   /**
+    * Échec d'un Éveil. "by" est le joueur qui l'a interrompu (rituelliste tué, cœur ou sanctuaire brisé) :
+    * l'interruption compte pour la limite et donne la récompense à son clan, sauf s'il est du clan
+    * du rituelliste ou de ses alliés.
+    */
+   private void failRite(Block core, Awakening.Rite r, Player p, String reason, Player breaker, UUID by) {
       this.rites.remove(core);
       this.release(r);
       Profile pr = this.pm.get(r.owner);
@@ -912,9 +1055,19 @@ public class Awakening implements Listener {
       core.getWorld().playSound(c, Sound.ENTITY_WITHER_DEATH, 0.8F, 1.4F);
       core.getWorld().spawnParticle(Particle.LARGE_SMOKE, c, 60, 0.6, 1.0, 0.6, 0.05);
       String name = pr == null ? "?" : pr.name;
-      UUID by = breaker != null ? breaker.getUniqueId() : (r.lastHitBy != null && System.currentTimeMillis() - r.lastHitAt < 30000L ? r.lastHitBy : null);
-      Player who = by == null ? null : Bukkit.getPlayer(by);
-      Clan clan = who == null ? null : this.plugin.clans().of(who);
+      if (by != null && by.equals(r.owner)) {
+         by = null;
+      }
+
+      Player who = by == null ? null : (breaker != null ? breaker : Bukkit.getPlayer(by));
+      String whoName = who != null ? who.getName() : (by == null ? null : this.plugin.clans().nameOf(by));
+      Clan clan = by == null ? null : this.plugin.clans().of(by);
+      Clan ownerClan = this.plugin.clans().of(r.owner);
+      boolean friendly = clan != null && ownerClan != null && (clan == ownerClan || clan.allies().contains(ownerClan.id()));
+      boolean counted = by != null && !r.shielded && !friendly;
+      int rank = r.def.rank();
+      int count = counted && pr != null ? this.pm.addInterrupt(pr, rank) : (pr == null ? 0 : pr.interrupts(rank));
+      int lim = this.interruptLimit(rank);
       Bukkit.broadcast(
          Text.c(
             this.plugin.settings().prefix
@@ -922,31 +1075,46 @@ public class Awakening implements Listener {
                + name
                + " &7a échoué : &c"
                + reason
-               + (who != null ? " &7(interrompu par &f" + who.getName() + (clan != null ? " &7de " + clan.coloredName() : "") + "&7)" : "")
+               + (whoName != null ? " &7(interrompu par &f" + whoName + (clan != null ? " &7de " + clan.coloredName() : "") + "&7)" : "")
                + "&7."
          )
       );
-      if (clan != null) {
-         int mult = Math.max(1, r.def.rank() - 1);
+      if (counted && clan != null) {
+         int mult = Math.max(1, rank - 1);
          clan.bank(clan.bank() + (long)this.rewardCoins * mult);
          this.plugin.clans().addXp(clan, (long)this.rewardXp * mult);
          this.plugin.clans().dirty();
-         clan.addLog("Éveil de " + name + " interrompu par " + who.getName() + " (+" + this.rewardCoins * mult + " coins)");
-         this.plugin
-            .msg(
-               who,
-               "&6+"
-                  + this.rewardCoins * mult
-                  + " "
-                  + this.plugin.settings().currencyName
-                  + " &7pour ton clan et &d+"
-                  + this.rewardXp * mult
-                  + " XP de clan&7."
-            );
+         clan.addLog("Éveil de " + name + " interrompu par " + whoName + " (+" + this.rewardCoins * mult + " coins)");
+         if (who != null) {
+            this.plugin
+               .msg(
+                  who,
+                  "&6+"
+                     + this.rewardCoins * mult
+                     + " "
+                     + this.plugin.settings().currencyName
+                     + " &7pour ton clan et &d+"
+                     + this.rewardXp * mult
+                     + " XP de clan&7."
+               );
+         }
+      } else if (by != null && friendly && who != null) {
+         this.plugin.msg(who, "&7Interrompre l'Éveil d'un membre de ton clan ou d'un allié ne rapporte rien.");
+      }
+
+      if (counted) {
+         this.plugin.bot().staffLog("✦ Éveil interrompu", name + " (rang " + Stats.roman(rank) + ") par " + whoName + " — " + reason + " — interruptions " + count + (lim > 0 ? "/" + lim : ""));
       }
 
       if (p != null && p.isOnline()) {
          this.plugin.msg(p, "&cTon Éveil a échoué. &7Tu as perdu la moitié des offrandes et des âmes. Nouvel essai dans &f" + this.failHours + " h&7.");
+         if (counted && lim > 0) {
+            if (count >= lim) {
+               this.plugin.msg(p, "&a⛨ Interruptions : &f" + count + "/" + lim + "&a. Tes prochaines tentatives de cet Éveil se dérouleront sans PvP.");
+            } else {
+               this.plugin.msg(p, "&7Interruptions par d'autres joueurs : &f" + count + "/" + lim + "&7. À " + lim + ", tes tentatives de cet Éveil se dérouleront sans PvP.");
+            }
+         }
       }
 
       if (this.visuals != null) {
@@ -1041,7 +1209,14 @@ public class Awakening implements Listener {
    public void onBreak(BlockBreakEvent e) {
       Block b = e.getBlock();
       Awakening.Rite r = this.rites.get(b);
-      if (r != null) {
+      if (r == null) {
+         // un bloc du sanctuaire (pilier, or, diamant...) d'un Éveil en cours : on retient qui l'a cassé
+         Awakening.Rite owner = this.riteOfStructure(b);
+         if (owner != null && !e.getPlayer().getUniqueId().equals(owner.owner)) {
+            owner.breaker = e.getPlayer().getUniqueId();
+            owner.brokeAt = System.currentTimeMillis();
+         }
+      } else {
          if (r.def == null) {
             this.spill(b, r, 1.0);
             this.rites.remove(b);
@@ -1049,6 +1224,171 @@ public class Awakening implements Listener {
             Player owner = Bukkit.getPlayer(r.owner);
             Player breaker = e.getPlayer() == owner ? null : e.getPlayer();
             this.failRite(b, r, owner, "le cœur du sanctuaire a été brisé", breaker);
+         }
+      }
+   }
+
+   /** L'Éveil en cours dont ce bloc fait partie du sanctuaire (cœur, piliers, sommets, socle). */
+   private Awakening.Rite riteOfStructure(Block b) {
+      for (Entry<Block, Awakening.Rite> en : this.rites.entrySet()) {
+         Awakening.Rite r = en.getValue();
+         Block core = en.getKey();
+         if (r.def != null
+            && core.getWorld() == b.getWorld()
+            && Math.abs(core.getX() - b.getX()) <= 3
+            && Math.abs(core.getZ() - b.getZ()) <= 3
+            && b.getY() - core.getY() >= -1
+            && b.getY() - core.getY() <= 2
+            && (b.equals(core) || structureBlocks(core).contains(b))) {
+            return r;
+         }
+      }
+
+      return null;
+   }
+
+   public static List<Block> structureBlocks(Block core) {
+      List<Block> l = new ArrayList<>();
+      l.add(core);
+      l.add(core.getRelative(0, -1, 0));
+
+      for (int[] c : CARD) {
+         for (int y = 0; y <= 2; y++) {
+            l.add(core.getRelative(c[0], y, c[1]));
+         }
+      }
+
+      for (int[] d : DIAG) {
+         for (int y = 0; y <= 2; y++) {
+            l.add(core.getRelative(d[0], y, d[1]));
+         }
+      }
+
+      for (int[] sx : SIDE) {
+         l.add(core.getRelative(sx[0], 0, sx[1]));
+      }
+
+      return l;
+   }
+
+   private Awakening.Rite shieldedOf(UUID player) {
+      for (Awakening.Rite r : this.rites.values()) {
+         if (r.def != null && r.shielded && r.owner.equals(player)) {
+            return r;
+         }
+      }
+
+      return null;
+   }
+
+   /** Éveil protégé : personne ne brise le sanctuaire, à part le rituelliste lui-même. */
+   @EventHandler(
+      priority = EventPriority.LOW,
+      ignoreCancelled = true
+   )
+   public void onShieldBreak(BlockBreakEvent e) {
+      Awakening.Rite r = this.riteOfStructure(e.getBlock());
+      if (r != null && r.shielded && !e.getPlayer().getUniqueId().equals(r.owner) && !this.plugin.bypass().contains(e.getPlayer().getUniqueId())) {
+         e.setCancelled(true);
+         e.getPlayer().sendActionBar(Text.c("&a⛨ Éveil protégé &7: ce sanctuaire ne peut pas être brisé."));
+      }
+   }
+
+   @EventHandler(
+      priority = EventPriority.LOW,
+      ignoreCancelled = true
+   )
+   public void onShieldExplode(org.bukkit.event.entity.EntityExplodeEvent e) {
+      if (e.getEntity() instanceof org.bukkit.entity.TNTPrimed t && t.getSource() instanceof Player src) {
+         for (Block b : e.blockList()) {
+            Awakening.Rite r = this.riteOfStructure(b);
+            if (r != null && !r.shielded && !src.getUniqueId().equals(r.owner)) {
+               r.breaker = src.getUniqueId();
+               r.brokeAt = System.currentTimeMillis();
+            }
+         }
+      }
+
+      e.blockList().removeIf(b -> {
+         Awakening.Rite r = this.riteOfStructure(b);
+         return r != null && r.shielded;
+      });
+   }
+
+   @EventHandler(
+      priority = EventPriority.LOW,
+      ignoreCancelled = true
+   )
+   public void onShieldBlockExplode(org.bukkit.event.block.BlockExplodeEvent e) {
+      e.blockList().removeIf(b -> {
+         Awakening.Rite r = this.riteOfStructure(b);
+         return r != null && r.shielded;
+      });
+   }
+
+   @EventHandler(
+      priority = EventPriority.LOW,
+      ignoreCancelled = true
+   )
+   public void onShieldPistonPush(org.bukkit.event.block.BlockPistonExtendEvent e) {
+      for (Block b : e.getBlocks()) {
+         Awakening.Rite r = this.riteOfStructure(b);
+         if (r != null && r.shielded) {
+            e.setCancelled(true);
+            return;
+         }
+      }
+   }
+
+   @EventHandler(
+      priority = EventPriority.LOW,
+      ignoreCancelled = true
+   )
+   public void onShieldPistonPull(org.bukkit.event.block.BlockPistonRetractEvent e) {
+      for (Block b : e.getBlocks()) {
+         Awakening.Rite r = this.riteOfStructure(b);
+         if (r != null && r.shielded) {
+            e.setCancelled(true);
+            return;
+         }
+      }
+   }
+
+   /** Éveil protégé : personne ne frappe le rituelliste, et il ne frappe personne. */
+   @EventHandler(
+      priority = EventPriority.LOWEST,
+      ignoreCancelled = true
+   )
+   public void onShieldHit(EntityDamageByEntityEvent e) {
+      if (e.getEntity() instanceof Player v) {
+         Player att = ProtectionListener.attacker(e.getDamager());
+         if (att != null && att != v) {
+            if (this.shieldedOf(v.getUniqueId()) != null) {
+               e.setCancelled(true);
+               att.sendActionBar(Text.c("&a⛨ Éveil protégé &7: " + v.getName() + " ne peut pas être attaqué."));
+            } else if (this.shieldedOf(att.getUniqueId()) != null) {
+               e.setCancelled(true);
+               att.sendActionBar(Text.c("&a⛨ Éveil protégé &7: tu ne peux frapper personne pendant ton Éveil."));
+            }
+         }
+      }
+   }
+
+   /** Rituelliste tué par un joueur : l'interruption lui est attribuée. */
+   @EventHandler(
+      priority = EventPriority.MONITOR
+   )
+   public void onOwnerDeath(org.bukkit.event.entity.PlayerDeathEvent e) {
+      Player v = e.getEntity();
+      for (Awakening.Rite r : this.rites.values()) {
+         if (r.def != null && r.owner.equals(v.getUniqueId())) {
+            r.died = true;
+            Player k = v.getKiller();
+            if (k != null && k != v) {
+               r.killedBy = k.getUniqueId();
+            } else if (r.lastHitBy != null && System.currentTimeMillis() - r.lastHitAt < 8000L) {
+               r.killedBy = r.lastHitBy;
+            }
          }
       }
    }
@@ -1120,6 +1460,12 @@ public class Awakening implements Listener {
       long soulsPaid;
       UUID lastHitBy;
       long lastHitAt;
+      /** Éveil protégé (limite d'interruptions atteinte) : pas de PvP. */
+      boolean shielded;
+      UUID killedBy;
+      boolean died;
+      UUID breaker;
+      long brokeAt;
       BossBar bar;
       final Set<UUID> barViewers = new HashSet<>();
       final List<UUID> mobs = new ArrayList<>();

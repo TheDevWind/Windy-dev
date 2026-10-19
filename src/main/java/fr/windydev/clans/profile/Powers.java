@@ -274,8 +274,8 @@ public class Powers implements Listener {
                      p.setFlying(true);
                      break;
                   case "nain":
-                     this.mod(p, Attribute.GENERIC_SCALE, "power_titan", 0.5, Operation.ADD_SCALAR);
-                     this.mod(p, Attribute.GENERIC_MAX_HEALTH, "power_titan", 20.0, Operation.ADD_NUMBER);
+                     this.mod(p, Attribute.SCALE, "power_titan", 0.5, Operation.ADD_SCALAR);
+                     this.mod(p, Attribute.MAX_HEALTH, "power_titan", 20.0, Operation.ADD_NUMBER);
                      this.engine.heal(p, 20.0);
                      break;
                   case "elfe":
@@ -363,7 +363,7 @@ public class Powers implements Listener {
       p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, d, 0));
       this.frenzyUntil.put(p.getUniqueId(), now() + d * 50L);
       if (plus) {
-         this.mod(p, Attribute.GENERIC_KNOCKBACK_RESISTANCE, "power_frenzy", 1.0, Operation.ADD_NUMBER);
+         this.mod(p, Attribute.KNOCKBACK_RESISTANCE, "power_frenzy", 1.0, Operation.ADD_NUMBER);
          Bukkit.getScheduler().runTaskLater(this.plugin, () -> this.unmod(p, "power_frenzy"), d);
       }
 
@@ -489,7 +489,7 @@ public class Powers implements Listener {
    private boolean stone(Player p, boolean plus) {
       int d = (plus ? 12 : 8) * 20;
       p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, d, 2));
-      this.mod(p, Attribute.GENERIC_KNOCKBACK_RESISTANCE, "power_stone", 1.0, Operation.ADD_NUMBER);
+      this.mod(p, Attribute.KNOCKBACK_RESISTANCE, "power_stone", 1.0, Operation.ADD_NUMBER);
       this.stoneUntil.put(p.getUniqueId(), now() + d * 50L);
       if (plus) {
          this.stoneReflect.add(p.getUniqueId());
@@ -754,7 +754,7 @@ public class Powers implements Listener {
                   this.plugin,
                   () -> {
                      if (p.isOnline() && !p.isDead()) {
-                        AttributeInstance hp = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                        AttributeInstance hp = p.getAttribute(Attribute.MAX_HEALTH);
                         p.setHealth(Math.max(1.0, (hp == null ? 20.0 : hp.getValue()) * 0.5));
                         p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 4));
                         p.showTitle(
@@ -831,7 +831,7 @@ public class Powers implements Listener {
    private void unmod(Player p, String name) {
       NamespacedKey k = new NamespacedKey(this.plugin, name);
 
-      for (Attribute a : List.of(Attribute.GENERIC_SCALE, Attribute.GENERIC_MAX_HEALTH, Attribute.GENERIC_KNOCKBACK_RESISTANCE)) {
+      for (Attribute a : List.of(Attribute.SCALE, Attribute.MAX_HEALTH, Attribute.KNOCKBACK_RESISTANCE)) {
          AttributeInstance inst = p.getAttribute(a);
          if (inst != null) {
             for (AttributeModifier m : new ArrayList<AttributeModifier>(inst.getModifiers())) {
@@ -842,7 +842,7 @@ public class Powers implements Listener {
          }
       }
 
-      AttributeInstance hp = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+      AttributeInstance hp = p.getAttribute(Attribute.MAX_HEALTH);
       if (hp != null && p.getHealth() > hp.getValue()) {
          p.setHealth(hp.getValue());
       }

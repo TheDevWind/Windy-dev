@@ -38,7 +38,10 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
       "magie",
       "faille",
       "hub",
-      "roue"
+      "roue",
+      "evenement",
+      "inactifs",
+      "reglement"
    );
    private final WindyClans plugin;
 
@@ -53,7 +56,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
          case "profil":
          case "profile":
             if (args.length < 4 && (args.length != 3 || !args[2].equalsIgnoreCase("reset"))) {
-               this.plugin.msg(s, "&c/clanadmin profil <joueur> <niveau|xp|race|rang|ames|reset> <valeur|aucune>");
+               this.plugin.msg(s, "&c/clanadmin profil <joueur> <niveau|xp|race|rang|ames|interruptions|reset> <valeur|aucune>");
                return true;
             }
 
@@ -108,13 +111,18 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
                   pm.setSouls(pr, this.parse(args[3]));
                   this.plugin.msg(s, "&a" + pr.name() + " a " + pr.souls() + " âmes.");
                   return true;
+               case "interruptions":
+               case "interruption":
+                  pm.setInterrupts(pr, pr.rank() + 1, this.parse(args[3]));
+                  this.plugin.msg(s, "&a" + pr.name() + " : " + pr.interrupts(pr.rank() + 1) + " interruption(s) pour l'Éveil du rang " + (pr.rank() + 1) + ".");
+                  return true;
                case "reset":
                case "competences":
                   pm.resetSkills(pr);
                   this.plugin.msg(s, "&aPoints de compétence de " + pr.name() + " rendus.");
                   return true;
                default:
-                  this.plugin.msg(s, "&c/clanadmin profil <joueur> <niveau|xp|race|rang|ames|reset> <valeur|aucune>");
+                  this.plugin.msg(s, "&c/clanadmin profil <joueur> <niveau|xp|race|rang|ames|interruptions|reset> <valeur|aucune>");
                   return true;
             }
          case "reload":
@@ -263,6 +271,21 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
          case "roue":
             this.plugin.wheel().admin(s, args);
             break;
+         case "evenement":
+         case "event":
+            this.plugin.weeklyEvent().admin(s, args);
+            return true;
+         case "inactifs":
+            this.plugin.inactive().report(s);
+            if (args.length > 1 && args[1].equalsIgnoreCase("verifier")) {
+               this.plugin.inactive().check();
+               this.plugin.msg(s, "&aVérification des clans inactifs faite.");
+            }
+
+            return true;
+         case "reglement":
+            this.plugin.rules().onCommand(s, cmd, "reglement", args.length > 1 ? java.util.Arrays.copyOfRange(args, 1, args.length) : new String[]{"recharger"});
+            return true;
          case "magie":
          case "magic":
             this.plugin.magic().admin(s, args);
@@ -293,11 +316,16 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
                "&f/clanadmin setlevel|addxp|setbanque <clan> <n>",
                "&f/clanadmin objet <id> [joueur] &7- donner un objet de rituel",
                "&f/clanadmin boss <clan> [niveau] &7- rendre un boss de nouveau disponible",
-               "&f/clanadmin profil <joueur> <niveau|xp|race|rang|ames|reset> <valeur> &7- profils des joueurs",
+               "&f/clanadmin profil <joueur> <niveau|xp|race|rang|ames|interruptions|reset> <valeur> &7- profils des joueurs",
                "&f/clanadmin magie <joueur> <apprendre|oublier> <sort|tout> &7- sorts (mana, info, fragment aussi)",
                "&f/clanadmin faille <ouvrir|fermer|info> &7- Faille arcanique",
                "&f/clanadmin hub <installer|annuler|holo|pnj|suppr|liste> &7- place du spawn, hologrammes, PNJ",
                "&f/clanadmin roue <joueur> reset &7- rend le tour de roue du jour",
+               "&f/clanadmin evenement <lancer [boss|tresor|faille]|arreter|info|lieu> &7- évènement de la semaine",
+               "&f/clanadmin inactifs [verifier] &7- clans inactifs (libération des territoires)",
+               "&f/clanadmin reglement <recharger|joueur <nom>> &7- règlement (acceptations, Discord)",
+               "&f/quetes admin <joueur> ... &7- quêtes (finir, jour, semaine, serie, points, parcours-reset)",
+               "&f/protection <retirer|rendre> <joueur> &7- protection des nouveaux",
                "&f/clanadmin sauvegarder"
             }) {
                s.sendMessage(Text.c(l));
@@ -321,6 +349,14 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
       } else if (args[0].equalsIgnoreCase("hub")) {
          return args.length == 2 ? ClanCommand.filter(List.of("installer", "annuler", "reconstruire", "holo", "pnj", "suppr", "liste", "recharger"), args[1])
             : (args.length == 4 && args[1].equalsIgnoreCase("pnj") ? ClanCommand.filter(fr.windydev.clans.hub.HubManager.ACTIONS, args[3]) : List.of());
+      } else if (args[0].equalsIgnoreCase("evenement")) {
+         return args.length == 2
+            ? ClanCommand.filter(List.of("lancer", "arreter", "info", "lieu"), args[1])
+            : (args.length == 3 && args[1].equalsIgnoreCase("lancer") ? ClanCommand.filter(List.of("boss", "tresor", "faille"), args[2]) : List.of());
+      } else if (args[0].equalsIgnoreCase("inactifs")) {
+         return args.length == 2 ? ClanCommand.filter(List.of("verifier"), args[1]) : List.of();
+      } else if (args[0].equalsIgnoreCase("reglement")) {
+         return args.length == 2 ? ClanCommand.filter(List.of("recharger", "joueur"), args[1]) : List.of();
       } else if (args[0].equalsIgnoreCase("faille")) {
          return args.length == 2 ? ClanCommand.filter(List.of("ouvrir", "fermer", "info"), args[1]) : List.of();
       } else if (args[0].equalsIgnoreCase("magie")) {

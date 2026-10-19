@@ -51,6 +51,56 @@ public class TeleportService implements Listener, CommandExecutor, TabCompleter 
       this.plugin = plugin;
       this.file = new File(plugin.getDataFolder(), "homes.yml");
       this.homes = YamlConfiguration.loadConfiguration(this.file);
+      this.migrateHomes();
+   }
+
+   /** MAJ 1.22.0 : plusieurs homes par joueur. L'ancien home unique devient le home « home ». */
+   private void migrateHomes() {
+      boolean changed = false;
+
+      for (String k : this.homes.getKeys(false)) {
+         if (this.homes.contains(k + ".world") && !this.homes.isConfigurationSection(k + ".homes")) {
+            String base = k + ".homes." + DEFAULT_HOME;
+
+            for (String f : new String[]{"world", "x", "y", "z", "yaw", "pitch"}) {
+               this.homes.set(base + "." + f, this.homes.get(k + "." + f));
+               this.homes.set(k + "." + f, null);
+            }
+
+            changed = true;
+         }
+      }
+
+      if (changed) {
+         this.save();
+         this.plugin.getLogger().info("homes.yml mis à jour : chaque ancien home devient le home « " + DEFAULT_HOME + " ».");
+      }
+   }
+
+   private static final String DEFAULT_HOME = "home";
+
+   /** Nombre de homes autorisés (teleport.max-homes, 3 par défaut). */
+   private int maxHomes() {
+      return Math.max(1, this.plugin.getConfig().getInt("teleport.max-homes", 3));
+   }
+
+   private List<String> homeNames(UUID id) {
+      org.bukkit.configuration.ConfigurationSection s = this.homes.getConfigurationSection(id + ".homes");
+      return s == null ? new ArrayList<>() : new ArrayList<>(s.getKeys(false));
+   }
+
+   private static String cleanName(String raw) {
+      String n = raw == null ? "" : raw.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_-]", "");
+      if (n.length() > 16) {
+         n = n.substring(0, 16);
+      }
+
+      return n.isEmpty() ? DEFAULT_HOME : n;
+   }
+
+   /** Le joueur a-t-il placé son home ? (parcours des nouveaux) */
+   public boolean hasHome(UUID id) {
+      return !this.homeNames(id).isEmpty();
    }
 
    private int warmup() {
@@ -78,20 +128,16 @@ public class TeleportService implements Listener, CommandExecutor, TabCompleter 
          String var6 = cmd.getName().toLowerCase(Locale.ROOT);
          switch (var6) {
             case "sethome":
-               this.setHome(p);
+               this.setHome(p, args.length > 0 ? args[0] : null);
                break;
             case "home":
-               this.home(p);
+               this.home(p, args.length > 0 ? args[0] : null);
+               break;
+            case "homes":
+               this.listHomes(p);
                break;
             case "delhome":
-               if (!this.homes.contains(p.getUniqueId().toString())) {
-                  this.msg(p, "&cTu n'as pas de home.");
-                  return true;
-               }
-
-               this.homes.set(p.getUniqueId().toString(), null);
-               this.save();
-               this.msg(p, "&7Home supprimé.");
+               this.delHome(p, args.length > 0 ? args[0] : null);
                break;
             case "spawn":
                this.spawn(p);
@@ -139,6 +185,10 @@ public class TeleportService implements Listener, CommandExecutor, TabCompleter 
             out.add("refuse");
          }
 
+         if ((name.equals("home") || name.equals("delhome") || name.equals("sethome")) && s instanceof Player p) {
+            out.addAll(this.homeNames(p.getUniqueId()));
+         }
+
          if (name.equals("tpa") || name.equals("tpaccept") || name.equals("tpdeny")) {
             for (Player o : Bukkit.getOnlinePlayers()) {
                if (o != s) {
@@ -153,11 +203,20 @@ public class TeleportService implements Listener, CommandExecutor, TabCompleter 
       }
    }
 
-   private void setHome(Player p) {
-      String k = p.getUniqueId().toString();
-      boolean had = this.homes.contains(k);
+   private void setHome(Player p, String raw) {
+      UUID id = p.getUniqueId();
+      List<String> names = this.homeNames(id);
+      String n = cleanName(raw);
+      boolean had = names.contains(n);
+      if (!had && names.size() >= this.maxHomes()) {
+         this.msg(p, "&cTu as déjà " + names.size() + " homes (maximum " + this.maxHomes() + ") : &f" + String.join(", ", names)
+            + "&c. Déplace-en un avec &f/sethome <nom>&c ou supprime-le avec &f/delhome <nom>&c.");
+         return;
+      }
+
       Location l = p.getLocation();
-      this.homes.set(k + ".name", p.getName());
+      String k = id + ".homes." + n;
+      this.homes.set(id + ".name", p.getName());
       this.homes.set(k + ".world", l.getWorld().getName());
       this.homes.set(k + ".x", l.getX());
       this.homes.set(k + ".y", l.getY());
@@ -165,11 +224,13 @@ public class TeleportService implements Listener, CommandExecutor, TabCompleter 
       this.homes.set(k + ".yaw", (double)l.getYaw());
       this.homes.set(k + ".pitch", (double)l.getPitch());
       this.save();
-      this.msg(p, had ? "&aHome déplacé ici &7(tu n'as droit qu'à un seul home)." : "&aHome défini ici. &7Reviens-y avec &f/home&7.");
+      int count = had ? names.size() : names.size() + 1;
+      this.msg(p, (had ? "&aHome &f" + n + "&a déplacé ici." : "&aHome &f" + n + "&a défini ici. &7Reviens-y avec &f/home " + n + "&7.")
+         + " &8(" + count + "/" + this.maxHomes() + ")");
    }
 
-   private Location homeOf(UUID id) {
-      String k = id.toString();
+   private Location homeOf(UUID id, String n) {
+      String k = id + ".homes." + n;
       if (!this.homes.contains(k + ".world")) {
          return null;
       } else {
@@ -187,12 +248,71 @@ public class TeleportService implements Listener, CommandExecutor, TabCompleter 
       }
    }
 
-   private void home(Player p) {
-      if (this.homeOf(p.getUniqueId()) == null) {
-         this.msg(p, "&cTu n'as pas de home. &7Place-le avec &f/sethome&7.");
+   /** Sans nom : le seul home, ou « home », sinon la liste. */
+   private String pickHome(Player p, String raw) {
+      List<String> names = this.homeNames(p.getUniqueId());
+      if (raw != null) {
+         return cleanName(raw);
+      } else if (names.size() == 1) {
+         return names.get(0);
       } else {
-         this.teleport(p, () -> this.homeOf(p.getUniqueId()), "ton home");
+         return names.contains(DEFAULT_HOME) ? DEFAULT_HOME : null;
       }
+   }
+
+   private void home(Player p, String raw) {
+      List<String> names = this.homeNames(p.getUniqueId());
+      if (names.isEmpty()) {
+         this.msg(p, "&cTu n'as pas de home. &7Place-le avec &f/sethome [nom]&7.");
+         return;
+      }
+
+      String n = this.pickHome(p, raw);
+      if (n == null) {
+         this.listHomes(p);
+      } else if (this.homeOf(p.getUniqueId(), n) == null) {
+         this.msg(p, "&cAucun home nommé &f" + n + "&c. Tes homes : &f" + String.join(", ", names) + "&c.");
+      } else {
+         this.teleport(p, () -> this.homeOf(p.getUniqueId(), n), "ton home " + n);
+      }
+   }
+
+   private void delHome(Player p, String raw) {
+      List<String> names = this.homeNames(p.getUniqueId());
+      String n = this.pickHome(p, raw);
+      if (names.isEmpty()) {
+         this.msg(p, "&cTu n'as pas de home.");
+      } else if (n == null || !names.contains(n)) {
+         this.msg(p, "&cPrécise le home à supprimer : &f/delhome <nom> &7(" + String.join(", ", names) + ")");
+      } else {
+         this.homes.set(p.getUniqueId() + ".homes." + n, null);
+         this.save();
+         this.msg(p, "&7Home &f" + n + "&7 supprimé.");
+      }
+   }
+
+   private void listHomes(Player p) {
+      List<String> names = this.homeNames(p.getUniqueId());
+      if (names.isEmpty()) {
+         this.msg(p, "&7Tu n'as pas de home. &f/sethome [nom] &7pour en placer un (" + this.maxHomes() + " maximum).");
+         return;
+      }
+
+      TextComponent.Builder b = Component.text().append(Text.c("&7Tes homes (" + names.size() + "/" + this.maxHomes() + ") : "));
+      for (int i = 0; i < names.size(); i++) {
+         String n = names.get(i);
+         if (i > 0) {
+            b.append(Component.text(", ", NamedTextColor.DARK_GRAY));
+         }
+
+         b.append(
+            Component.text(n, NamedTextColor.AQUA, TextDecoration.UNDERLINED)
+               .clickEvent(ClickEvent.runCommand("/home " + n))
+               .hoverEvent(HoverEvent.showText(Component.text("Se téléporter à " + n)))
+         );
+      }
+
+      p.sendMessage(b.build());
    }
 
    private void save() {

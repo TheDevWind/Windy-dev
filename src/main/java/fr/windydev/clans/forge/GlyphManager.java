@@ -225,17 +225,17 @@ public class GlyphManager implements Listener {
       meta.lore(Text.lore(this.plugin.items().fullLore(d, lore)));
       if (d.isArmor()) {
          EquipmentSlotGroup group = d.material().getEquipmentSlot().getGroup();
-         if (meta.hasAttributeModifiers() && meta.getAttributeModifiers(Attribute.GENERIC_ARMOR) != null) {
-            for (AttributeModifier m : new ArrayList<>(meta.getAttributeModifiers(Attribute.GENERIC_ARMOR))) {
+         if (meta.hasAttributeModifiers() && meta.getAttributeModifiers(Attribute.ARMOR) != null) {
+            for (AttributeModifier m : new ArrayList<>(meta.getAttributeModifiers(Attribute.ARMOR))) {
                if (m.getKey().equals(this.bastionKey)) {
-                  meta.removeAttributeModifier(Attribute.GENERIC_ARMOR, m);
+                  meta.removeAttributeModifier(Attribute.ARMOR, m);
                }
             }
          }
 
          int b = g.getOrDefault("bastion", 0);
          if (b > 0) {
-            meta.addAttributeModifier(Attribute.GENERIC_ARMOR, new AttributeModifier(this.bastionKey, b, Operation.ADD_NUMBER, group));
+            meta.addAttributeModifier(Attribute.ARMOR, new AttributeModifier(this.bastionKey, b, Operation.ADD_NUMBER, group));
          }
       }
 
@@ -410,7 +410,7 @@ public class GlyphManager implements Listener {
       if (e.getDamager() instanceof Player p && e.getEntity() instanceof LivingEntity) {
          int s = this.level(p.getInventory().getItemInMainHand(), "soif");
          if (s > 0 && e.getFinalDamage() > 0.0) {
-            double max = p.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+            double max = p.getAttribute(Attribute.MAX_HEALTH).getValue();
             p.setHealth(Math.min(max, p.getHealth() + e.getFinalDamage() * 0.03 * s));
          }
       }

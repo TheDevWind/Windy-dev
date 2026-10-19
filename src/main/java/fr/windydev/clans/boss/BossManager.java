@@ -496,8 +496,7 @@ public class BossManager implements Listener {
          boss.getPersistentDataContainer().set(this.key, PersistentDataType.STRING, f.clan.id().toString());
          int n = Math.max(1, f.alive.size());
          double hp = d.health() * (1.0 + this.groupScaling * (n - 1));
-         this.attr(boss, Attribute.GENERIC_MAX_HEALTH, hp);
-         boss.setHealth(hp);
+         fr.windydev.clans.feature.BigHealth.apply(boss, hp);
          if (n > 1) {
             for (UUID u : f.alive) {
                Player pl = Bukkit.getPlayer(u);
@@ -506,11 +505,11 @@ public class BossManager implements Listener {
                }
             }
          }
-         this.attr(boss, Attribute.GENERIC_ATTACK_DAMAGE, d.damage());
-         this.attr(boss, Attribute.GENERIC_MOVEMENT_SPEED, d.speed());
-         this.attr(boss, Attribute.GENERIC_KNOCKBACK_RESISTANCE, 0.7);
-         this.attr(boss, Attribute.GENERIC_FOLLOW_RANGE, 48.0);
-         this.attr(boss, Attribute.GENERIC_SCALE, d.scale());
+         this.attr(boss, Attribute.ATTACK_DAMAGE, d.damage());
+         this.attr(boss, Attribute.MOVEMENT_SPEED, d.speed());
+         this.attr(boss, Attribute.KNOCKBACK_RESISTANCE, 0.7);
+         this.attr(boss, Attribute.FOLLOW_RANGE, 48.0);
+         this.attr(boss, Attribute.SCALE, d.scale());
 
          for (String spec : d.effects()) {
             Entry<PotionEffectType, Integer> eff = Settings.parseEffect(spec);
@@ -596,7 +595,7 @@ public class BossManager implements Listener {
                boss.teleport(f.center);
             }
 
-            double max = boss.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+            double max = boss.getAttribute(Attribute.MAX_HEALTH).getValue();
             if (f.bar != null) {
                f.bar.progress((float)Math.max(0.0, Math.min(1.0, boss.getHealth() / max)));
             }
@@ -724,7 +723,7 @@ public class BossManager implements Listener {
             }
             break;
          case "heal":
-            double max = boss.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+            double max = boss.getAttribute(Attribute.MAX_HEALTH).getValue();
             if (boss.getHealth() > max / 2.0) {
                return;
             }
