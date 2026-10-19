@@ -1,0 +1,51 @@
+# ==========================================================================================
+#  WindyClans - élixirs magiques (baies arcaniques, extracteur, infuseur, tank, réseau)
+#
+#  Baies Tier I : buissons de baies sucrées (poussent à l'état sauvage, ou replantés).
+#  Tank magique : carré creux de VERRE MAGIQUE (3x3, 5x5, 7x7 ou 9x9), sur 1 à 5 couches,
+#                 vide à l'intérieur. Il stocke un seul tier de fluide à la fois (en mB).
+#                 capacité = base x (x4 par taille au-dessus de 3x3) x (x2 par couche en plus)
+#  Extracteur   : clic droit avec des baies -> fluide du même tier dans un tank du réseau.
+#  Infuseur     : clic droit avec une baie de tier N -> tente d'en faire une baie de tier N+1
+#                 (consomme la baie + du fluide de tier N, avec un risque d'échec) ;
+#                 avec un bloc d'améthyste -> améthyste infusée du tier du fluide.
+#  Réseau       : une machine utilise les tanks qui la touchent, et tous ceux qui lui sont
+#                 reliés (directement ou non) avec la baguette de liaison.
+# ==========================================================================================
+config-version: 3
+
+baies:
+  # la pousse naturelle des buissons est annulée avec cette probabilité
+  # (0.5 = 2x plus lent, 0.85 = environ 7x plus lent)
+  slow-growth: 0.85
+  # nombre maximum de baies par récolte d'un buisson (vanilla : 2 à 3)
+  harvest-max: 1
+
+tank:
+  # capacité d'un tank 3x3 sur une couche
+  base-capacity: 10000
+  size-multiplier: 4
+  layer-multiplier: 2
+  max-size: 9
+  max-layers: 5
+
+network:
+  # distance maximale d'un lien (en blocs)
+  link-distance: 16
+
+extraction:
+  # mB de fluide obtenus par baie
+  per-berry: 100
+
+upgrade:
+  # passage de tier d'une baie : coût en fluide du tier de départ, et risque d'échec
+  1: {fluid: 400, fail-chance: 0.6}
+  2: {fluid: 800, fail-chance: 0.75}
+
+amethyst:
+  # coût en fluide pour infuser un bloc d'améthyste (sans risque d'échec)
+  fluid: 300
+
+lodestone:
+  # coût en fluide pour infuser une magnétite (cœur de sanctuaire d'Éveil). Le tier = celui du fluide utilisé.
+  fluid: 1000

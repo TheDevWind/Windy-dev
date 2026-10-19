@@ -1,0 +1,185 @@
+# ==========================================================
+#  WindyClans - configuration
+#  Codes couleur : &a &b &c ... &l (gras)  |  /clanadmin reload pour recharger
+# ==========================================================
+
+# Nom du serveur affiché en haut du scoreboard
+server-name: "&6&lWINDY_MC"
+# Ligne du bas du scoreboard (IP, Discord...). Laisser vide pour masquer.
+server-footer: "&7gm57-dc02.ouiheberg.com:3409"
+prefix: "&8[&6Clans&8] &r"
+
+# ---------------------------------------------------------- Interface (menus + HUD)
+resource-pack:
+  # Pack principal : menus, HUD et objets du serveur.
+  # Lien DIRECT vers windyclans-pack.zip (créé dans plugins/WindyClans/ au démarrage).
+  # Le plus simple : l'envoyer sur https://mc-packs.net et coller ici le "Download link".
+  url: ""
+  # Laisser vide : calculé automatiquement depuis le pack intégré au plugin.
+  sha1: ""
+  # true = le joueur doit accepter le pack pour jouer
+  required: true
+  prompt: "&bInterface WINDY_MC &7- accepte le pack pour les menus et le HUD."
+  # Option avancée : le plugin héberge lui-même le pack (il faut un 2e port ouvert chez l'hébergeur)
+  self-host:
+    enabled: false
+    port: 0
+    public-address: ""
+  # Deuxième pack, à part : l'habillage des écrans du jeu (coffres, fours, enclume, boutons, barre d'objets).
+  # Il est envoyé en même temps que le premier (une seule invite). Chaque joueur peut le retirer avec /ecrans.
+  game-pack:
+    enabled: true
+    # Laisser vide si l'hébergement intégré (self-host) est actif : l'adresse est trouvée toute seule.
+    # Sinon : lien DIRECT vers windyclans-jeu.zip (créé dans plugins/WindyClans/ au démarrage).
+    url: ""
+    sha1: ""
+
+# Bouton "Menu du clan" dans l'inventaire (touche E), à côté du personnage
+inventory-button:
+  enabled: true
+
+# Objet "Menu" dans la barre d'objets (alternative au bouton d'inventaire)
+menu-item:
+  enabled: false
+  # case de la barre (1 à 9)
+  slot: 9
+
+# false = les joueurs utilisent uniquement les menus (/clan ouvre juste le menu)
+player-commands: false
+
+clan:
+  name-min: 3
+  name-max: 16
+  tag-min: 2
+  tag-max: 5
+  max-members: 20
+  invite-expire-seconds: 300
+  home-warmup-seconds: 3
+
+claims:
+  # Mondes où l'on peut claim (noms des dossiers de monde)
+  worlds: [world]
+  # Nombre de chunks claimables = base + (membres x per-member) + (niveau x per-level)
+  base: 4
+  per-member: 2
+  per-level: 3
+  # Rayon (en chunks) autour de la capitale qui compte comme "zone capitale"
+  capital-radius: 1
+  # Rayon (en chunks) autour du spawn du monde principal où personne ne peut claim
+  spawn-radius: 6
+  # Distance mini (en chunks) entre un nouveau claim et le territoire d'un autre clan
+  buffer-chunks: 1
+  # Explosions (creeper, TNT) dans les territoires
+  allow-explosions: false
+  # Les alliés peuvent ouvrir portes/boutons/leviers
+  allies-can-use-doors: true
+
+# Grade minimum pour chaque action : RECRUE, MEMBRE, OFFICIER, CHEF
+ranks:
+  build: MEMBRE
+  containers: MEMBRE
+  doors: RECRUE
+  invite: OFFICIER
+  kick: OFFICIER
+  claim: OFFICIER
+  bank-withdraw: OFFICIER
+  chest: MEMBRE
+  relations: CHEF
+  war: CHEF
+  set-home: CHEF
+  promote: CHEF
+
+pvp:
+  # PvP interdit dans la zone de spawn
+  disable-in-spawn: true
+  # PvP interdit dans les capitales (hors guerre)
+  disable-in-capitals: true
+
+bank:
+  # Monnaie de la banque de clan : "windy:piece" (la pièce du serveur, voir items.yml) ou un matériau (ex. EMERALD)
+  currency: "windy:piece"
+  currency-name: "coins"
+
+levels:
+  # XP nécessaire pour passer du niveau N au niveau N+1 = base x N^exponent
+  xp-base: 100
+  xp-exponent: 1.5
+  max-level: 20
+  xp:
+    hostile-mob-kill: 1
+    war-kill: 25
+    war-win: 300
+    # XP donnée toutes les 5 minutes par membre connecté
+    online-per-5min: 2
+  # Nombre d'avant-postes (claims séparés de la capitale) = niveau / outpost-every-levels
+  outpost-every-levels: 3
+  # Lignes du coffre de clan = 1 + niveau / chest-row-every-levels (max 6)
+  chest-row-every-levels: 2
+  # Effets donnés aux membres dans leur zone capitale, à partir d'un niveau
+  capital-effects:
+    3: "HASTE:0"
+    5: "REGENERATION:0"
+    8: "SPEED:0"
+    12: "RESISTANCE:0"
+
+war:
+  preparation-minutes: 10
+  duration-minutes: 30
+  # Délai avant de pouvoir redéclarer la guerre au même clan
+  cooldown-hours: 24
+  # Membres du clan attaqué connectés au début, sinon la guerre est annulée
+  min-defenders-online: 1
+  # Pourcentage de la banque du perdant donné au gagnant
+  loot-percent: 10
+  # Pendant la guerre, les coffres ennemis (hors capitale) peuvent être ouverts
+  allow-container-raid: true
+
+scoreboard:
+  enabled-by-default: true
+  update-ticks: 20
+
+discord:
+  # URL du webhook Discord (Paramètres du salon > Intégrations > Webhooks). Vide = désactivé.
+  webhook-url: ""
+  username: "Clans"
+  events:
+    clan-create: true
+    clan-disband: true
+    alliance: true
+    war: true
+    level-up: true
+
+# ---------------------------------------------------------- Bot Discord (intégré au plugin)
+# Voir le guide : créer l'application sur https://discord.com/developers/applications
+discord-bot:
+  enabled: false
+  token: ""
+  # ID du serveur Discord (clic droit sur le serveur > Copier l'identifiant)
+  guild-id: ""
+  staff-role-name: "Staff WINDY_MC"
+  category-name: "WINDY_MC"
+  stats-interval-minutes: 5
+  # Lien du wiki posté dans le salon d'infos (vide = lien par défaut)
+  wiki-url: ""
+  # Nom exact du salon d'infos (vide = premier salon dont le nom contient "info", sinon ℹ️-infos-serveur est créé)
+  info-channel: ""
+
+teleport:
+  # Délai sans bouger avant /home, /spawn et /tpa (annulé si on bouge ou prend des dégâts)
+  warmup-seconds: 3
+  # Durée de validité d'une demande /tpa
+  tpa-expire-seconds: 60
+  # Délai entre deux /tpa d'un même joueur
+  tpa-cooldown-seconds: 10
+  # Téléportation interdite pendant ce temps après un coup en PvP
+  combat-block-seconds: 15
+
+bluemap:
+  enabled: true
+  marker-set-label: "Territoires des clans"
+  fill-opacity: 0.35
+
+hologram:
+  # Défini avec /clanadmin hologramme (à l'endroit où tu te trouves)
+  location: ""
+  size: 10

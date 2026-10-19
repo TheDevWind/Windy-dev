@@ -1,0 +1,43 @@
+# ==========================================================================================
+#  Règlement de WINDY_MC, publié par le bot dans le salon 📜-règlement.
+#  Modifie ce fichier puis tape /setup sur Discord (ou redémarre) : le message est mis à jour.
+#  Maximum 9 sections ; chaque texte fait au plus 1000 caractères.
+# ==========================================================================================
+titre: "📜 Règlement de WINDY_MC"
+introduction: |-
+  En jouant sur WINDY_MC ou en rejoignant ce Discord, tu acceptes ce règlement.
+  Le staff peut sanctionner un comportement contraire à l'esprit du jeu, même s'il n'est pas listé ici.
+
+sections:
+  - titre: "🤝 1. Respect"
+    texte: |-
+      • Pas d'insultes, de harcèlement, de discrimination ni de propos haineux, en jeu comme sur Discord.
+      • Pas de spam, de publicité ni de contenu choquant.
+      • Une décision du staff se conteste calmement, dans un ticket.
+  - titre: "🚫 2. Triche et bugs"
+    texte: |-
+      • Interdits : cheats (fly, kill aura, auto-clic…), x-ray, et mods ou packs qui donnent un avantage.
+      • Minimaps autorisées sans affichage des joueurs, des entités ni des grottes.
+      • Exploiter un bug (duplication, passage dans un mur…) est interdit : signale-le dans 🎫-tickets.
+      • Un seul compte par joueur. Ne donne jamais ton mot de passe (/login) : tu es responsable de ton compte.
+  - titre: "🏰 3. Bases et territoires"
+    texte: |-
+      • **Toute base doit avoir une entrée en surface ou un point d'accès trouvable** : une porte, un tunnel ou un puits visible depuis l'extérieur.
+      • Interdit : base entièrement murée sans accès, bunker sans entrée, base cachée dans la bedrock ou en l'air sans moyen d'y monter.
+      • Une base qui ne respecte pas cette règle peut être ouverte par le staff.
+      • Pas de murs, de pièges ni de constructions collées à un autre clan juste pour le gêner.
+  - titre: "⚔️ 4. PvP et guerres"
+    texte: |-
+      • Le PvP est libre hors du spawn et des capitales.
+      • **Une guerre doit avoir une raison** : conflit de territoire, vol, trahison, vengeance, rivalité… Le jeu la demande à la déclaration et l'annonce à tout le serveur.
+      • Une guerre sans raison crédible, ou déclarée encore et encore pour harceler un clan, peut être annulée par le staff.
+      • Pas de spawn-kill, et pas de déconnexion en plein combat pour éviter la mort.
+      • Interrompre l'Éveil d'un joueur est autorisé : c'est prévu par le jeu.
+  - titre: "💰 5. Échanges"
+    texte: |-
+      • Les arnaques sont interdites : un échange promis doit être honoré.
+      • Pas de vente d'objets ou de coins contre de l'argent réel.
+  - titre: "⚖️ 6. Sanctions"
+    texte: |-
+      Selon la gravité : avertissement, mute, exclusion, bannissement temporaire ou définitif.
+      Pour contester une sanction, ouvre un ticket.

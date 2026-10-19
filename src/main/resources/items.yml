@@ -1,0 +1,687 @@
+# ==========================================================
+#  Objets personnalisés (obtenus par rituel)
+#  model = custom_model_data : la texture doit exister dans le pack de ressources
+# ==========================================================
+marteau_runique:
+  material: DIAMOND_PICKAXE
+  name: "&d&lMarteau runique"
+  lore:
+    - "&7Mine en &63x3&7 d'un seul coup."
+    - "&8Accroupi : mine un seul bloc."
+    - ""
+    - "&5✦ Forgé par rituel"
+  model: 7801
+  ability:
+    type: area-mine
+    # 1 = 3x3, 2 = 5x5
+    radius: 1
+
+marteau_titan:
+  material: NETHERITE_PICKAXE
+  name: "&c&lMarteau du Titan"
+  lore:
+    - "&7Mine en &65x5&7 d'un seul coup."
+    - "&8Accroupi : mine un seul bloc."
+    - ""
+    - "&5✦ Forgé par rituel"
+  model: 7802
+  ability:
+    type: area-mine
+    radius: 2
+
+# ------------------------------------------------ runes (obtenues sur les boss)
+rune_terre:
+  material: FLINT
+  name: "&aRune de terre"
+  lore: ["&7Lâchée par les boss de niveau 1 et 2.", "&8Offrande de rituel"]
+  model: 7811
+rune_feu:
+  material: FLINT
+  name: "&6Rune de feu"
+  lore: ["&7Lâchée par les boss de niveau 3 et 4.", "&8Offrande de rituel"]
+  model: 7812
+rune_glace:
+  material: FLINT
+  name: "&bRune de glace"
+  lore: ["&7Lâchée par les boss de niveau 5 et 6.", "&8Offrande de rituel"]
+  model: 7813
+rune_foudre:
+  material: FLINT
+  name: "&eRune de foudre"
+  lore: ["&7Lâchée par les boss de niveau 7 et 8.", "&8Offrande de rituel"]
+  model: 7814
+rune_vide:
+  material: FLINT
+  name: "&dRune du vide"
+  lore: ["&7Lâchée par les boss de niveau 9 et 10.", "&8Offrande de rituel"]
+  model: 7815
+
+# ------------------------------------------------ monnaie
+piece:
+  material: GOLD_NUGGET
+  name: "&6&lCoin"
+  lore: ["&7Monnaie de WINDY_MC.", "&8Se dépose à la banque du clan."]
+  model: 7821
+
+# ------------------------------------------------ sacs magiques (rituel du chaudron)
+# rows : lignes de rangement (9 cases par ligne)
+sac_1:
+  material: RABBIT_HIDE
+  name: "&d&lSacoche runique"
+  lore:
+    - "&6Clic droit &7: ouvrir le sac (&f18 cases&7)."
+    - "&7Le contenu reste dans le sac, même"
+    - "&7s'il change de main."
+    - "&8Rituel du chaudron - tier I"
+  model: 7881
+  tier: 1
+  ability: {type: bag, rows: 2}
+sac_2:
+  material: RABBIT_HIDE
+  name: "&5&lSac du Vide"
+  lore:
+    - "&6Clic droit &7: ouvrir le sac (&f36 cases&7)."
+    - "&7Le contenu reste dans le sac, même"
+    - "&7s'il change de main."
+    - "&8Rituel du chaudron - tier II"
+  model: 7882
+  tier: 2
+  glint: true
+  ability: {type: bag, rows: 4}
+
+# ------------------------------------------------ armes forgées par rituel (tier I, II, III = tier de l'autel)
+# damage-bonus : dégâts en plus de l'arme normale   speed-bonus : vitesse d'attaque en plus (négatif = plus lent)
+epee_1:
+  material: DIAMOND_SWORD
+  name: "&d&lLame de parade I"
+  lore:
+    - "&6Clic droit &7: parade pendant &f0.6 s&7."
+    - "&7Bloque les coups et renvoie &f30 %&7 des dégâts."
+    - "&8Recharge : 10 s"
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier I)"
+  model: 7831
+  tier: 1
+  damage-bonus: 1
+  ability:
+    type: parry
+    window: 0.6
+    reflect: 30
+    cooldown: 10
+epee_2:
+  material: DIAMOND_SWORD
+  name: "&5&lLame de parade II"
+  lore:
+    - "&6Clic droit &7: parade pendant &f0.8 s&7."
+    - "&7Bloque les coups et renvoie &f45 %&7 des dégâts."
+    - "&8Recharge : 8 s"
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier II)"
+  model: 7832
+  tier: 2
+  damage-bonus: 2
+  ability:
+    type: parry
+    window: 0.8
+    reflect: 45
+    cooldown: 8
+epee_3:
+  material: NETHERITE_SWORD
+  name: "&6&lLame de parade III"
+  lore:
+    - "&6Clic droit &7: parade pendant &f1.0 s&7."
+    - "&7Bloque les coups et renvoie &f60 %&7 des dégâts."
+    - "&8Recharge : 6 s"
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier III)"
+  model: 7833
+  tier: 3
+  damage-bonus: 2
+  ability:
+    type: parry
+    window: 1.0
+    reflect: 60
+    cooldown: 6
+arc_1:
+  material: BOW
+  name: "&d&lArc chercheur I"
+  lore:
+    - "&7Les flèches suivent l'ennemi le plus proche"
+    - "&7(portée &f8 blocs&7)."
+    - "&8Tir chargé à moitié minimum."
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier I)"
+  model: 7861
+  tier: 1
+  ability:
+    type: homing
+    range: 8
+    turn: 0.12
+    damage-bonus: 0.5
+arc_2:
+  material: BOW
+  name: "&5&lArc chercheur II"
+  lore:
+    - "&7Les flèches suivent l'ennemi le plus proche"
+    - "&7(portée &f12 blocs&7)."
+    - "&8Tir chargé à moitié minimum."
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier II)"
+  model: 7862
+  tier: 2
+  ability:
+    type: homing
+    range: 12
+    turn: 0.18
+    damage-bonus: 1
+arc_3:
+  material: BOW
+  name: "&6&lArc chercheur III"
+  lore:
+    - "&7Les flèches suivent l'ennemi le plus proche"
+    - "&7(portée &f16 blocs&7)."
+    - "&8Tir chargé à moitié minimum."
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier III)"
+  model: 7863
+  tier: 3
+  ability:
+    type: homing
+    range: 16
+    turn: 0.25
+    damage-bonus: 1.5
+trident_1:
+  material: TRIDENT
+  name: "&d&lTrident harpon I"
+  lore:
+    - "&7Lancé : la cible touchée est"
+    - "&7attirée vers toi &8(force 0.8)&7."
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier I)"
+  model: 7871
+  tier: 1
+  glint: true
+  ability:
+    type: harpoon
+    strength: 0.8
+    damage-bonus: 0
+trident_2:
+  material: TRIDENT
+  name: "&5&lTrident harpon II"
+  lore:
+    - "&7Lancé : la cible touchée est"
+    - "&7attirée vers toi &8(force 1.1)&7."
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier II)"
+  model: 7872
+  tier: 2
+  damage-bonus: 1
+  glint: true
+  ability:
+    type: harpoon
+    strength: 1.1
+    damage-bonus: 1
+trident_3:
+  material: TRIDENT
+  name: "&6&lTrident harpon III"
+  lore:
+    - "&7Lancé : la cible touchée est"
+    - "&7attirée vers toi &8(force 1.4)&7."
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier III)"
+  model: 7873
+  tier: 3
+  damage-bonus: 2
+  glint: true
+  ability:
+    type: harpoon
+    strength: 1.4
+    damage-bonus: 2
+hache_1:
+  material: DIAMOND_AXE
+  name: "&d&lHache du bûcheron I"
+  lore:
+    - "&7Coupe l'arbre entier d'un coup"
+    - "&7(jusqu'à &f32 bûches&7)."
+    - "&8Accroupi : une seule bûche."
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier I)"
+  model: 7841
+  tier: 1
+  ability:
+    type: timber
+    max-logs: 32
+hache_2:
+  material: DIAMOND_AXE
+  name: "&5&lHache du bûcheron II"
+  lore:
+    - "&7Coupe l'arbre entier d'un coup"
+    - "&7(jusqu'à &f64 bûches&7)."
+    - "&8Accroupi : une seule bûche."
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier II)"
+  model: 7842
+  tier: 2
+  damage-bonus: 0.5
+  ability:
+    type: timber
+    max-logs: 64
+hache_3:
+  material: NETHERITE_AXE
+  name: "&6&lHache du bûcheron III"
+  lore:
+    - "&7Coupe l'arbre entier d'un coup"
+    - "&7(jusqu'à &f128 bûches&7)."
+    - "&8Accroupi : une seule bûche."
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier III)"
+  model: 7843
+  tier: 3
+  damage-bonus: 1
+  ability:
+    type: timber
+    max-logs: 128
+hache_guerre_1:
+  material: DIAMOND_AXE
+  name: "&d&lHache de guerre I"
+  lore:
+    - "&6Clic droit &7: cri de guerre."
+    - "&7Force I pour toi et ton clan"
+    - "&7à 8 blocs pendant &f8 s&7."
+    - "&8Recharge : 30 s"
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier I)"
+  model: 7851
+  tier: 1
+  damage-bonus: 1.5
+  speed-bonus: -0.2
+  ability:
+    type: warcry
+    radius: 8
+    duration: 8
+    amplifier: 0
+    cooldown: 30
+hache_guerre_2:
+  material: DIAMOND_AXE
+  name: "&5&lHache de guerre II"
+  lore:
+    - "&6Clic droit &7: cri de guerre."
+    - "&7Force I pour toi et ton clan"
+    - "&7à 10 blocs pendant &f10 s&7."
+    - "&8Recharge : 30 s"
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier II)"
+  model: 7852
+  tier: 2
+  damage-bonus: 2.5
+  speed-bonus: -0.2
+  ability:
+    type: warcry
+    radius: 10
+    duration: 10
+    amplifier: 0
+    cooldown: 30
+hache_guerre_3:
+  material: NETHERITE_AXE
+  name: "&6&lHache de guerre III"
+  lore:
+    - "&6Clic droit &7: cri de guerre."
+    - "&7Force II pour toi et ton clan"
+    - "&7à 12 blocs pendant &f12 s&7."
+    - "&8Recharge : 25 s"
+    - ""
+    - "&5✦ Forgé par rituel &8(autel tier III)"
+  model: 7853
+  tier: 3
+  damage-bonus: 3
+  speed-bonus: -0.2
+  ability:
+    type: warcry
+    radius: 12
+    duration: 12
+    amplifier: 1
+    cooldown: 25
+
+# ------------------------------------------------ arbre de compétences
+parchemin_oubli:
+  material: PAPER
+  name: "&d&lParchemin d'oubli"
+  lore:
+    - "&7Rend tous tes points de compétence."
+    - "&8Accroupi + clic droit pour l'utiliser."
+    - ""
+    - "&5✦ Préparé au chaudron runique"
+  model: 8020
+  glint: true
+
+# ------------------------------------------------ élixirs magiques (extracteur / infuseur / tank)
+baie_1:
+  version: 2
+  material: SWEET_BERRIES
+  name: "&aBaie arcanique &7I"
+  lore: ["&7Pousse à l'état sauvage.", "&7S'utilise dans l'extracteur ou l'infuseur.", "", "&2✦ Cueillie sur un buisson"]
+  model: 8024
+baie_2:
+  version: 2
+  material: SWEET_BERRIES
+  name: "&bBaie arcanique &7II"
+  lore: ["&7S'utilise dans l'extracteur ou l'infuseur.", "", "&2✦ Obtenue à l'infuseur"]
+  model: 8025
+baie_3:
+  version: 2
+  material: SWEET_BERRIES
+  name: "&dBaie arcanique &7III"
+  lore: ["&7S'utilise dans l'extracteur ou l'infuseur.", "", "&2✦ Obtenue à l'infuseur"]
+  model: 8026
+amethyste_infusee_1:
+  version: 3
+  material: AMETHYST_BLOCK
+  name: "&a&lAméthyste infusée &7I"
+  lore: ["&7Obligatoire : les 4 piliers d'un", "&7autel de rituel doivent être infusés.", "&7Le plus faible tier fixe le tier de l'autel.", "", "&5✦ Infusée au fluide magique"]
+  model: 8030
+  glint: true
+amethyste_infusee_2:
+  version: 3
+  material: AMETHYST_BLOCK
+  name: "&b&lAméthyste infusée &7II"
+  lore: ["&7Obligatoire : les 4 piliers d'un", "&7autel de rituel doivent être infusés.", "&7Le plus faible tier fixe le tier de l'autel.", "", "&5✦ Infusée au fluide magique"]
+  model: 8031
+  glint: true
+amethyste_infusee_3:
+  version: 3
+  material: AMETHYST_BLOCK
+  name: "&d&lAméthyste infusée &7III"
+  lore: ["&7Obligatoire : les 4 piliers d'un", "&7autel de rituel doivent être infusés.", "&7Le plus faible tier fixe le tier de l'autel.", "", "&5✦ Infusée au fluide magique"]
+  model: 8032
+  glint: true
+extracteur:
+  version: 2
+  material: NOTE_BLOCK
+  name: "&d&lExtracteur magique"
+  lore:
+    - "&7Clic droit avec des baies arcaniques :"
+    - "&7en extrait le fluide magique."
+    - "&7À relier à un tank (baguette de liaison)"
+    - "&7ou à poser collé à un tank."
+    - ""
+    - "&5✦ Assemblé au chaudron runique"
+  model: 8040
+  glint: true
+infuseur:
+  version: 2
+  material: NOTE_BLOCK
+  name: "&d&lInfuseur magique"
+  lore:
+    - "&7Clic droit avec une baie : tente de"
+    - "&7la faire passer au tier supérieur."
+    - "&7Clic droit avec un bloc d'améthyste :"
+    - "&7l'infuse avec le fluide du réseau."
+    - ""
+    - "&5✦ Assemblé au chaudron runique"
+  model: 8041
+  glint: true
+verre_magique:
+  material: TINTED_GLASS
+  name: "&d&lVerre magique"
+  lore:
+    - "&7Forme un tank magique : un carré creux"
+    - "&7de 3x3 à 9x9, sur 1 à 5 couches."
+    - "&7Plus il est grand, plus il stocke."
+    - ""
+    - "&5✦ Coulé au chaudron runique"
+  model: 8042
+  glint: true
+baguette_liaison:
+  material: BLAZE_ROD
+  name: "&d&lBaguette de liaison"
+  lore:
+    - "&7Clic droit sur deux éléments (machine"
+    - "&7ou tank) pour les relier (16 blocs max)."
+    - "&7Accroupi + clic droit : délier."
+    - "&7Tenue en main : montre les liens."
+    - ""
+    - "&5✦ Taillée au chaudron runique"
+  model: 8043
+  glint: true
+magnetite_infusee_1:
+  version: 1
+  material: LODESTONE
+  name: "&a&lMagnétite infusée &7I"
+  lore: ["&7Cœur d'un sanctuaire d'Éveil.", "&7Tier I : Éveil jusqu'au rang III.", "", "&5✦ Infusée au fluide magique"]
+  glint: true
+magnetite_infusee_2:
+  version: 1
+  material: LODESTONE
+  name: "&b&lMagnétite infusée &7II"
+  lore: ["&7Cœur d'un sanctuaire d'Éveil.", "&7Tier II : Éveil jusqu'au rang IV.", "", "&5✦ Infusée au fluide magique"]
+  glint: true
+magnetite_infusee_3:
+  version: 1
+  material: LODESTONE
+  name: "&d&lMagnétite infusée &7III"
+  lore: ["&7Cœur d'un sanctuaire d'Éveil.", "&7Tier III : Éveil jusqu'au rang V.", "", "&5✦ Infusée au fluide magique"]
+  glint: true
+# ------------------------------------------------ donjons (v1.2)
+sceau_donjon_1:
+  version: 1
+  material: FLOWER_BANNER_PATTERN
+  name: "&7&lSceau de la Crypte oubliée"
+  lore: ["&7Ouvre le donjon &fCrypte oubliée&7.", "&7Consommé au départ de la partie.", "", "&5✦ Préparé au chaudron runique"]
+  glint: true
+sceau_donjon_2:
+  version: 1
+  material: FLOWER_BANNER_PATTERN
+  name: "&6&lSceau des Mines englouties"
+  lore: ["&7Ouvre le donjon &fMines englouties&7.", "&7Consommé au départ de la partie.", "", "&5✦ Lâché par le Chevalier du givre"]
+  glint: true
+sceau_donjon_3:
+  version: 1
+  material: FLOWER_BANNER_PATTERN
+  name: "&b&lSceau de la Citadelle de givre"
+  lore: ["&7Ouvre le donjon &fCitadelle de givre&7.", "&7Consommé au départ de la partie.", "", "&5✦ Lâché par l'Archimage de l'orage"]
+  glint: true
+eclat_1:
+  version: 1
+  material: ECHO_SHARD
+  name: "&aÉclat de donjon &7I"
+  lore: ["&7Fragment arraché aux donjons.", "&7Sert à forger et à graver (v1.2).", "", "&5✦ Butin de donjon"]
+eclat_2:
+  version: 1
+  material: ECHO_SHARD
+  name: "&bÉclat de donjon &7II"
+  lore: ["&7Fragment arraché aux donjons.", "&7Sert à forger et à graver (v1.2).", "", "&5✦ Butin de donjon"]
+  glint: true
+eclat_3:
+  version: 1
+  material: ECHO_SHARD
+  name: "&dÉclat de donjon &7III"
+  lore: ["&7Fragment arraché aux profondeurs.", "&7Sert à forger l'Arcanite du Vide.", "", "&5✦ Butin de donjon"]
+  glint: true
+grimoire_trait:
+  version: 3
+  material: ENCHANTED_BOOK
+  name: "&9&lGrimoire : Trait arcanique"
+  lore: ["&7Sort : projectile arcanique.", "", "&eClic droit : apprendre le sort", "&8Apprentissage définitif.", "", "&5✦ Butin mythique de donjon"]
+grimoire_nova:
+  version: 3
+  material: ENCHANTED_BOOK
+  name: "&9&lGrimoire : Nova de givre"
+  lore: ["&7Sort : onde de givre autour de soi.", "", "&eClic droit : apprendre le sort", "&8Apprentissage définitif.", "", "&5✦ Butin mythique de donjon"]
+grimoire_chaine:
+  version: 3
+  material: ENCHANTED_BOOK
+  name: "&5&lGrimoire : Chaîne d'éclairs"
+  lore: ["&7Sort : éclair qui rebondit.", "", "&eClic droit : apprendre le sort", "&8Apprentissage définitif.", "", "&5✦ Butin mythique de donjon"]
+grimoire_ombre:
+  version: 3
+  material: ENCHANTED_BOOK
+  name: "&5&lGrimoire : Pas de l'ombre"
+  lore: ["&7Sort : téléportation furtive.", "", "&eClic droit : apprendre le sort", "&8Apprentissage définitif.", "", "&5✦ Butin mythique de donjon"]
+grimoire_egide:
+  version: 3
+  material: ENCHANTED_BOOK
+  name: "&5&lGrimoire : Égide"
+  lore: ["&7Sort : bouclier de groupe.", "", "&eClic droit : apprendre le sort", "&8Apprentissage définitif.", "", "&5✦ Butin mythique de donjon"]
+grimoire_meteore:
+  version: 3
+  material: ENCHANTED_BOOK
+  name: "&6&lGrimoire : Météore"
+  lore: ["&7Sort : pluie de feu céleste.", "", "&eClic droit : apprendre le sort", "&8Apprentissage définitif.", "", "&5✦ Butin mythique de donjon"]
+
+# ------------------------------------------------ magie (v1.2) : catalyseurs
+tome_arcanes:
+  version: 1
+  material: BOOK
+  name: "&dTome des arcanes"
+  lore: ["&7Catalyseur de magie (comme un bâton).", "&d+15 mana &8• &d-5 % recharge", "", "&fClic droit &7: lancer le sort", "&fAccroupi + clic droit &7: sort suivant", "", "&5✦ Chaudron runique"]
+  model: 8055
+  tier: 1
+  glint: true
+baton_1:
+  version: 1
+  material: BLAZE_ROD
+  name: "&dBâton d'apprenti"
+  lore: ["&7Catalyseur de magie.", "", "&fClic droit &7: lancer le sort", "&fAccroupi + clic droit &7: sort suivant", "", "&5✦ Chaudron runique"]
+  model: 8051
+  tier: 1
+baton_2:
+  version: 1
+  material: BLAZE_ROD
+  name: "&5&lBâton arcanique"
+  lore: ["&7Catalyseur de magie.", "&d+25 mana &8• &d-10 % recharge &8• &d+10 % dégâts", "", "&fClic droit &7: lancer le sort", "&fAccroupi + clic droit &7: sort suivant", "", "&5✦ Forgé par rituel"]
+  model: 8052
+  tier: 2
+baton_3:
+  version: 1
+  material: BLAZE_ROD
+  name: "&d&lSceptre du Vide"
+  lore: ["&7Catalyseur de magie.", "&d+50 mana &8• &d-20 % recharge &8• &d+25 % dégâts", "", "&fClic droit &7: lancer le sort", "&fAccroupi + clic droit &7: sort suivant", "", "&5✦ Forgé par rituel"]
+  model: 8053
+  tier: 3
+  glint: true
+
+# ------------------------------------------------ armures (v1.2)
+acier_casque:
+  version: 1
+  material: IRON_HELMET
+  name: "&7&lCasque d'Acier runique"
+  lore: ["&7Forgé à partir d'une pièce en fer.", "&9+2 armure &8• &9+0.75 robustesse", "&7Set complet : &c+2 cœurs max", "", "&5✦ Forgé par rituel"]
+  model: 8061
+  tier: 1
+  armor: {armor: 2, toughness: 0.75, knockback: 0, look: "windy:acier"}
+acier_plastron:
+  version: 1
+  material: IRON_CHESTPLATE
+  name: "&7&lPlastron d'Acier runique"
+  lore: ["&7Forgé à partir d'une pièce en fer.", "&9+7 armure &8• &9+0.75 robustesse", "&7Set complet : &c+2 cœurs max", "", "&5✦ Forgé par rituel"]
+  model: 8062
+  tier: 1
+  armor: {armor: 7, toughness: 0.75, knockback: 0, look: "windy:acier"}
+acier_jambieres:
+  version: 1
+  material: IRON_LEGGINGS
+  name: "&7&lJambières d'Acier runique"
+  lore: ["&7Forgé à partir d'une pièce en fer.", "&9+6 armure &8• &9+0.75 robustesse", "&7Set complet : &c+2 cœurs max", "", "&5✦ Forgé par rituel"]
+  model: 8063
+  tier: 1
+  armor: {armor: 6, toughness: 0.75, knockback: 0, look: "windy:acier"}
+acier_bottes:
+  version: 1
+  material: IRON_BOOTS
+  name: "&7&lBottes d'Acier runique"
+  lore: ["&7Forgé à partir d'une pièce en fer.", "&9+2 armure &8• &9+0.75 robustesse", "&7Set complet : &c+2 cœurs max", "", "&5✦ Forgé par rituel"]
+  model: 8064
+  tier: 1
+  armor: {armor: 2, toughness: 0.75, knockback: 0, look: "windy:acier"}
+argent_casque:
+  version: 1
+  material: DIAMOND_HELMET
+  name: "&b&lCasque d'Argent lunaire"
+  lore: ["&7Forgé à partir d'une pièce en diamant.", "&9+3 armure &8• &9+2.5 robustesse &8• &9+0.5 recul résisté", "&7Set complet : &fimmunité à la lenteur et au givre", "", "&5✦ Forgé par rituel"]
+  model: 8071
+  tier: 2
+  armor: {armor: 3, toughness: 2.5, knockback: 0.05, look: "windy:argent"}
+argent_plastron:
+  version: 1
+  material: DIAMOND_CHESTPLATE
+  name: "&b&lPlastron d'Argent lunaire"
+  lore: ["&7Forgé à partir d'une pièce en diamant.", "&9+8 armure &8• &9+2.5 robustesse &8• &9+0.5 recul résisté", "&7Set complet : &fimmunité à la lenteur et au givre", "", "&5✦ Forgé par rituel"]
+  model: 8072
+  tier: 2
+  armor: {armor: 8, toughness: 2.5, knockback: 0.05, look: "windy:argent"}
+argent_jambieres:
+  version: 1
+  material: DIAMOND_LEGGINGS
+  name: "&b&lJambières d'Argent lunaire"
+  lore: ["&7Forgé à partir d'une pièce en diamant.", "&9+6 armure &8• &9+2.5 robustesse &8• &9+0.5 recul résisté", "&7Set complet : &fimmunité à la lenteur et au givre", "", "&5✦ Forgé par rituel"]
+  model: 8073
+  tier: 2
+  armor: {armor: 6, toughness: 2.5, knockback: 0.05, look: "windy:argent"}
+argent_bottes:
+  version: 1
+  material: DIAMOND_BOOTS
+  name: "&b&lBottes d'Argent lunaire"
+  lore: ["&7Forgé à partir d'une pièce en diamant.", "&9+3 armure &8• &9+2.5 robustesse &8• &9+0.5 recul résisté", "&7Set complet : &fimmunité à la lenteur et au givre", "", "&5✦ Forgé par rituel"]
+  model: 8074
+  tier: 2
+  armor: {armor: 3, toughness: 2.5, knockback: 0.05, look: "windy:argent"}
+arcanite_casque:
+  version: 1
+  material: NETHERITE_HELMET
+  name: "&5&lCasque d'Arcanite du Vide"
+  lore: ["&7Forgé à partir d'une pièce en netherite.", "&9+3 armure &8• &9+3.5 robustesse &8• &9+1.25 recul résisté", "&7Set complet : &dRésistance I 5 s après un coup &8(recharge 30 s)", "", "&5✦ Forgé par rituel"]
+  model: 8081
+  tier: 3
+  armor: {armor: 3, toughness: 3.5, knockback: 0.125, look: "windy:arcanite"}
+arcanite_plastron:
+  version: 1
+  material: NETHERITE_CHESTPLATE
+  name: "&5&lPlastron d'Arcanite du Vide"
+  lore: ["&7Forgé à partir d'une pièce en netherite.", "&9+9 armure &8• &9+3.5 robustesse &8• &9+1.25 recul résisté", "&7Set complet : &dRésistance I 5 s après un coup &8(recharge 30 s)", "", "&5✦ Forgé par rituel"]
+  model: 8082
+  tier: 3
+  armor: {armor: 9, toughness: 3.5, knockback: 0.125, look: "windy:arcanite"}
+arcanite_jambieres:
+  version: 1
+  material: NETHERITE_LEGGINGS
+  name: "&5&lJambières d'Arcanite du Vide"
+  lore: ["&7Forgé à partir d'une pièce en netherite.", "&9+7 armure &8• &9+3.5 robustesse &8• &9+1.25 recul résisté", "&7Set complet : &dRésistance I 5 s après un coup &8(recharge 30 s)", "", "&5✦ Forgé par rituel"]
+  model: 8083
+  tier: 3
+  armor: {armor: 7, toughness: 3.5, knockback: 0.125, look: "windy:arcanite"}
+arcanite_bottes:
+  version: 1
+  material: NETHERITE_BOOTS
+  name: "&5&lBottes d'Arcanite du Vide"
+  lore: ["&7Forgé à partir d'une pièce en netherite.", "&9+3 armure &8• &9+3.5 robustesse &8• &9+1.25 recul résisté", "&7Set complet : &dRésistance I 5 s après un coup &8(recharge 30 s)", "", "&5✦ Forgé par rituel"]
+  model: 8084
+  tier: 3
+  armor: {armor: 3, toughness: 3.5, knockback: 0.125, look: "windy:arcanite"}
+
+# ------------------------------------------------ gravure runique (v1.2)
+glyphe_1:
+  version: 1
+  material: PAPER
+  name: "&aGlyphe runique &7I"
+  lore: ["&7Grave un glyphe de &fniveau I &7à l'autel", "&7(tier I), avec le réactif du glyphe.", "", "&5✦ Chaudron runique"]
+  model: 8091
+glyphe_2:
+  version: 1
+  material: PAPER
+  name: "&bGlyphe runique &7II"
+  lore: ["&7Grave un glyphe de &fniveau II &7à l'autel", "&7(tier II), avec le réactif du glyphe.", "", "&5✦ Lâché par les boss de clan"]
+  model: 8092
+  glint: true
+glyphe_3:
+  version: 1
+  material: PAPER
+  name: "&dGlyphe runique &7III"
+  lore: ["&7Grave un glyphe de &fniveau III &7à l'autel", "&7(tier III), avec le réactif du glyphe.", "", "&5✦ Butin de donjon"]
+  model: 8093
+  glint: true
+parchemin_effacement:
+  version: 1
+  material: PAPER
+  name: "&7Parchemin d'effacement"
+  lore: ["&7Retire un glyphe gravé à l'autel.", "&8Le glyphe est perdu.", "", "&5✦ Chaudron runique"]
+  model: 8094

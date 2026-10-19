@@ -1,0 +1,347 @@
+# ==========================================================================================
+#  Patch notes publiées automatiquement par le bot dans 📰-patch-notes.
+#  Au démarrage, si la version du plugin a une note ici et qu'elle n'a pas encore été publiée,
+#  le bot la publie. Pour une note écrite à la main : commande /patchnote sur Discord (admin).
+# ==========================================================================================
+notes:
+  "1.20.2":
+    titre: "Le spawn est protégé"
+    texte: |-
+      • Dans tout le village du spawn, rien ne se casse, ne se pose ni ne se vide : blocs, coffres, cadres, pots de fleurs, trappes, cultures.
+      • Les portes, portillons et boutons restent utilisables par tous.
+      • Le feu ne s'y propage pas et les créatures n'y abîment rien.
+  "1.20.0":
+    titre: "Nouvelles interfaces"
+    texte: |-
+      **🎨 Tout a changé de tête**
+      • Les menus du serveur passent à un nouveau style : ivoire, bleu nuit et filets dorés, avec des boutons ronds et des titres gravés.
+      • Le tableau de bord en jeu, la barre de mana, les emplacements de sorts et les icônes suivent le même style.
+      • Les écrans du jeu aussi : coffres, fours, enclume, table d'enchantement, inventaire, barre d'objets et boutons des menus.
+
+      **🧩 Deux packs au lieu d'un**
+      • Le pack du serveur (menus, HUD, objets) reste obligatoire.
+      • L'habillage des écrans du jeu est un pack à part : **/ecrans** le retire ou le remet, et ton choix est gardé.
+  "1.19.1":
+    titre: "La maison sur le rocher"
+    texte: |-
+      La maison au toit de feuillage près de la mare ne flotte plus : elle est posée sur un vrai rocher, avec une falaise au-dessus de l'eau et des talus d'herbe sur les côtés.
+  "1.19.0":
+    titre: "Le spawn épouse le terrain"
+    texte: |-
+      **⛰️ Un village qui n'est plus plat**
+      • Le quartier des marchands est sur une butte, le marché et le campement dans un creux, la mare au fond d'une cuvette.
+      • Les chemins suivent la pente, sans jamais plus d'un bloc à monter.
+      • Autour de l'enceinte, le terrain rejoint le relief naturel en pente douce : plus de falaise ni de vide sous le village.
+  "1.18.1":
+    resume: true
+    titre: "La grande mise à jour"
+    parties:
+      - titre: "La grande mise à jour (1/3) : donjons et butin"
+        texte: |-
+          WINDY_MC passe en **v1.2**. Voici tout ce qui arrive d'un coup.
+
+          **⚔️ Donjons**
+          • Menu du clan > **Boss et donjons** > **Donjons**, ou **/donjon**.
+          • Trois donjons : **Crypte oubliée** (niveau 10 conseillé), **Mines englouties** (25), **Citadelle de givre** (40).
+          • Il faut un **Sceau de donjon** : celui de la Crypte se prépare au chaudron, les deux autres se gagnent sur les boss de clan.
+          • 1 à 5 joueurs, 3 étages tirés au hasard, 3 vies pour le groupe, 40 min maximum.
+          • **Mutation de la semaine** : chaque lundi, une règle change et le butin de fin est meilleur.
+          • **Records** : les meilleurs temps s'affichent au spawn et sur Discord.
+
+          **🛒 Boutique d'Éclats**
+          Les Éclats de donjon s'échangent contre des glyphes, des sceaux, des runes et des grimoires.
+
+          **🛡 Armures runiques et gravure**
+          • Trois armures à forger à l'autel : **Acier runique**, **Argent lunaire**, **Arcanite du Vide**, chacune avec un bonus de set.
+          • **Gravure** : 9 glyphes à poser sur les objets magiques (Tranchant runique, Soif, Écho, Aimant, Fonte...).
+          • **Réparation au fluide** : un objet magique usé se remet à neuf sur l'autel.
+          • Chaque objet spécial affiche sa **rareté**, de Commun à Mythique.
+          • Les boss de clan ont +50 % de PV par joueur en plus dans l'arène.
+      - titre: "La grande mise à jour (2/3) : la magie"
+        texte: |-
+          **🪄 Catalyseurs et sorts**
+          • Le **Bâton d'apprenti** se prépare au chaudron, puis s'éveille à l'autel en Bâton arcanique et en Sceptre du Vide.
+          • **6 sorts** à apprendre avec les grimoires des donjons : Trait arcanique, Nova de givre, Chaîne d'éclairs, Pas de l'ombre, Égide, Météore.
+          • Bâton en main : **clic droit** lance, **accroupi + clic droit** change de sort. Tes 3 sorts se choisissent avec **/grimoire**.
+
+          **🔋 Charge**
+          Garde le clic droit enfoncé pour charger Trait, Nova, Chaîne et Météore. Relâche juste au tintement : **charge parfaite**, +20 % de dégâts.
+
+          **⚗️ Réactions élémentaires**
+          Chaque sort pose son élément sur la cible pendant 6 s. Un sort d'un autre élément le fait réagir : Gelé + Météore = **Brisure** (dégâts x2), Électrisé + Nova = **Stase**, et bien d'autres. La liste est dans Profil > Grimoire.
+
+          **🔗 Enchaînement**
+          Un sort différent dans les 2,5 s après avoir touché : +10 % de dégâts et -10 % de mana par niveau, jusqu'à 3.
+
+          **🌀 Faille arcanique**
+          Environ une fois par jour, quand il y a du monde, une faille s'ouvre pendant 30 min : **/faille**.
+          • Tuez les créatures pour charger le rituel, puis abattez l'**Avatar de la faille**.
+          • Chaque rituel réussi donne un **Fragment d'éveil**. Avec 3 fragments, tu lances tes sorts **sans catalyseur**, pour toujours (touche **F**).
+      - titre: "La grande mise à jour (3/3) : spawn, roue et équilibrage"
+        texte: |-
+          **🏰 Un village médiéval au spawn**
+          • Une place autour du pavillon, avec des **PNJ** qui ouvrent les menus d'un clic droit : boutique, donjons, boss, grimoire, classement, faille, roue.
+          • Autour : la porte de l'Ouest et ses deux tours, le quartier des marchands, le quartier du feuillage et sa mare, le marché, le campement, la ferme et son moulin.
+          • Des **panneaux** expliquent chaque partie du serveur. Des habitants et des chats se promènent.
+          • Tout le village est une zone sûre : pas de combat, pas de casse.
+
+          **✪ Roue de la fortune**
+          Un tour gratuit **chaque jour** avec **/roue** ou auprès du Maître de la roue. Tous les 7 jours d'affilée : un lot **rare ou mieux** garanti. Le tour revient chaque nuit à 4 h.
+
+          **🫐 Baies arcaniques**
+          Le fluide magique était trop facile à obtenir : les buissons poussent bien plus lentement et donnent 1 baie par récolte.
+
+          **⚑ Staff**
+          Les modérateurs et administrateurs prennent leur service avec **/service** : leurs pouvoirs ne sont plus actifs en permanence, et ce qu'ils font en service est enregistré.
+  "1.18.0":
+    titre: "Le village médiéval"
+    texte: |-
+      **🏰 Un vrai village médiéval autour de la place**
+      • On entre par la **porte de l'Ouest**, entre deux tours de guet.
+      • **Quartier des marchands** : maisons à tuiles et chantier des grues.
+      • **Quartier du feuillage** : maisons aux toits vivants, mare et grands arbres.
+      • **Marché et campement** : étals, tentes et feu de camp.
+      • **La ferme** : chaumières, champs et moulin.
+      • Enceinte de pierre, sentiers jusqu'aux portes, lampadaires, habitants et chats.
+
+      **🏆 Classements**
+      Meilleurs clans, meilleurs joueurs et records des donjons s'affichent le long des grandes allées.
+  "1.17.0":
+    titre: "Le spawn devient un village"
+    texte: |-
+      **🏘️ Un village autour de la place**
+      • Cinq maisons à colombages aux cheminées qui fument, et la **Taverne du Vent** avec son tavernier.
+      • Une **fontaine**, un **étang** avec son pont, une **tour de guet** à escalader et le **Monument de la Faille**.
+      • Des arches aux quatre entrées, de nouvelles allées et un muret d'enceinte.
+      • Des **habitants** et des chats se promènent : parle-leur, ils donnent des conseils.
+
+      **🏆 Classements au spawn**
+      Meilleurs clans, meilleurs joueurs et records des donjons s'affichent près de la fontaine et du monument, mis à jour chaque minute.
+  "1.16.0":
+    titre: "Prise de service du staff"
+    texte: |-
+      **⚑ Service du staff**
+      Les modérateurs et les administrateurs n'ont plus leurs pouvoirs en permanence.
+      • **/service** : ils prennent leur service et reçoivent leurs droits. **/service** à nouveau pour terminer.
+      • Le service s'arrête tout seul à la déconnexion et après 2 h.
+      • Chaque commande tapée en service est enregistrée et visible par les responsables.
+  "1.15.0":
+    titre: "Roue de la fortune et nouveau spawn"
+    texte: |-
+      **✪ Roue de la fortune**
+      Un tour gratuit **chaque jour** avec **/roue** ou auprès du Maître de la roue au spawn : Coins, XP, âmes, baies, Éclats, runes, glyphes...
+      • Chaque jour d'affilée augmente ta série.
+      • Tous les 7 jours de série : un lot **rare ou mieux** garanti.
+      • Le tour revient chaque nuit à 4 h.
+
+      **🏛️ Nouveau spawn**
+      • Une place autour du pavillon, avec des allées, des étals et la grande roue.
+      • Des **PNJ** ouvrent les menus d'un clic droit : boutique d'Éclats, donjons, boss, grimoire, classement, faille, roue.
+      • Des **panneaux** expliquent chaque partie du serveur et ses commandes.
+      • La place est une zone sûre : pas de combat, pas de casse.
+  "1.14.1":
+    titre: "La Faille arcanique"
+    texte: |-
+      **🌀 Faille arcanique**
+      Environ une fois par jour, quand il y a du monde, une faille s'ouvre pendant 30 min. Tape **/faille** ou clique sur l'annonce pour entrer dans le sanctuaire.
+      • Tuez les créatures pour charger le rituel. Trois gardiens sortent en chemin.
+      • À 100 %, l'**Avatar de la faille** apparaît : abattez-le avant la fin du temps.
+      • On garde son inventaire et on réapparaît sur place.
+
+      **✦ Incantation innée**
+      Chaque rituel réussi donne un **Fragment d'éveil** à ceux qui ont assez combattu. Avec **3 fragments**, tu lances tes sorts **sans catalyseur**, pour toujours, avec n'importe quel objet en main :
+      • **F** : lancer le sort
+      • **Accroupi + clic gauche dans le vide** : sort suivant
+      Le catalyseur garde ses avantages : charge, mana et puissance en plus.
+
+      **🫐 Baies arcaniques**
+      Le fluide magique était trop facile à obtenir : les buissons poussent bien plus lentement et donnent 1 baie par récolte.
+  "1.14.0":
+    titre: "La magie prend du panache"
+    texte: |-
+      Les sorts ont été refaits pour être plus beaux et plus intéressants à jouer.
+
+      **✨ Du spectacle**
+      • Vrais projectiles en 3D : l'orbe du Trait, le météore qui tombe du ciel, les éclairs entre les cibles, les pics de glace de la Nova, les boucliers de l'Égide.
+      • Cercles runiques au lancement, givre et cratère qui restent au sol.
+      • Chiffres de dégâts au-dessus des cibles.
+
+      **⚗️ Réactions élémentaires**
+      Chaque sort pose son élément sur la cible pendant 6 s : Arcane, Givre, Foudre, Feu, Ombre. Un sort d'un autre élément le fait réagir.
+      • Gelé + Météore = **Brisure** (dégâts x2)
+      • Gelé + Chaîne d'éclairs = **Supraconduction** (décharge de zone)
+      • Électrisé + Nova = **Stase** (cible immobilisée)
+      • Embrasé + Nova = **Choc thermique** (x1,8 et Faiblesse)
+      • Marque arcanique + autre élément = **Amplification** (x1,4 et mana rendu)
+      • Pas de l'ombre marque les ennemis à l'arrivée : le sort suivant fait une **Embuscade** (x1,6)
+      La liste complète est dans Profil > Grimoire > Réactions élémentaires.
+
+      **🔋 Charge**
+      Garde le clic droit enfoncé pour charger Trait, Nova, Chaîne et Météore.
+      • Trait chargé : jusqu'à x2 dégâts, transperce 5 cibles.
+      • Nova chargée : zone plus large, immobilise.
+      • Chaîne chargée : 3 rebonds de plus.
+      • Météore chargé : plus gros, laisse le sol en feu.
+      Une pleine charge coûte +50 % de mana. Relâche juste au tintement : **charge parfaite**, +20 % de dégâts et pas de surcoût.
+
+      **🔗 Enchaînement**
+      Lance un sort différent dans les 2,5 s après avoir touché : +10 % de dégâts et -10 % de mana par niveau, jusqu'à 3 niveaux.
+  "1.13.0":
+    titre: "v1.2 : finitions"
+    texte: |-
+      La v1.2 est complète ! Voici les dernières nouveautés.
+
+      **💎 Raretés**
+      Chaque objet spécial affiche sa rareté : Commun, Peu commun, Rare, Épique, Légendaire ou Mythique.
+
+      **🛒 Boutique d'Éclats**
+      Dans le menu Donjons (ou /donjon boutique) : échange tes Éclats contre des glyphes, des sceaux, des runes et même des grimoires. Un grimoire en double se revend contre des Éclats III.
+
+      **🧬 Mutation de la semaine**
+      Chaque lundi, les donjons changent de règle (Frénésie, Nid d'élites, Colosses, Chair tenace, Cendres vives) et le butin de fin est meilleur.
+
+      **🏆 Records des donjons**
+      Les meilleurs temps de chaque donjon s'affichent dans le menu et dans le salon statistiques. Un nouveau record du serveur est annoncé sur Discord.
+
+      **🔧 Réparation au fluide**
+      Pose un objet magique usé sur l'autel : il est remis à neuf contre du fluide magique.
+
+      **📘 Tome des arcanes**
+      Un catalyseur de magie en forme de livre, préparé au chaudron (+15 mana).
+
+      **👥 Boss adaptés au groupe**
+      Les boss de clan ont +50 % de PV par joueur en plus dans l'arène.
+  "1.12.0":
+    titre: "v1.2 : armures runiques et gravure"
+    texte: |-
+      **🛡 3 nouvelles armures**
+      Elles se forgent à l'autel à partir d'une pièce vanilla, et gardent ses enchantements :
+      • Acier runique (à partir du fer, autel tier I) : 17 d'armure. Set complet : +2 cœurs.
+      • Argent lunaire (à partir du diamant, autel tier II) : 20 d'armure, 10 de robustesse. Set complet : immunité à la lenteur et au givre.
+      • Arcanite du Vide (à partir de la netherite, autel tier III, Éclats de donjon) : 22 d'armure, 14 de robustesse. Set complet : Résistance I pendant 5 s après un coup (recharge 30 s).
+      En 1.21.4, elles ont leur propre apparence portée.
+
+      **✒ Gravure runique**
+      Les objets magiques (armes, marteaux, bâtons, armures runiques) s'enchantent à l'autel avec des glyphes : l'objet sur la table, un Glyphe runique et le réactif du glyphe sur les piliers. 9 glyphes : Tranchant runique, Soif, Écho, Aimant, Fonte, Œil du chasseur, Solidité, Bastion et Canal.
+      • Glyphe runique I : chaudron. II : boss de clan (3 à 10). III : donjons.
+      • Graver le même glyphe le fait monter de niveau. 1 à 3 emplacements selon le tier de l'objet.
+      • Parchemin d'effacement (chaudron) pour libérer un emplacement.
+      • Un objet a soit des enchantements vanilla, soit des glyphes, jamais les deux.
+
+      Le grimoire de l'autel n'affiche plus que les rituels possibles pour l'objet posé, avec des pages.
+  "1.11.0":
+    titre: "v1.2 : la magie"
+    texte: |-
+      La magie arrive sur WINDY_MC !
+
+      **🪄 Catalyseurs**
+      Le Bâton d'apprenti se prépare au chaudron runique. Il s'éveille ensuite à l'autel en Bâton arcanique (tier II), puis en Sceptre du Vide (tier III) : plus de mana, des recharges plus courtes et des sorts plus puissants.
+
+      **📖 6 sorts à apprendre**
+      Trait arcanique, Nova de givre, Chaîne d'éclairs, Pas de l'ombre, Égide et Météore. Les grimoires se trouvent dans les donjons : clic droit pour apprendre le sort, c'est définitif.
+
+      **🎮 Commandes**
+      Bâton en main : clic droit lance le sort, accroupi + clic droit passe au suivant. Tu choisis tes 3 sorts équipés dans Profil > Grimoire (ou /grimoire).
+
+      **💜 Mana et HUD**
+      100 de mana au départ, qui remonte tout seul. Avec un bâton en main, tes sorts, leurs recharges et ta barre de mana s'affichent au-dessus de la barre d'objets. Les Arcaniens ont plus de mana et des recharges plus courtes.
+
+      **⚔ PvP**
+      Les sorts font moitié moins de dégâts aux joueurs, et ne touchent jamais ton clan ni tes alliés.
+  "1.8.4":
+    titre: "Ouverture de WINDY_MC"
+    texte: |-
+      Bienvenue sur la nouvelle carte ! Tout le monde repart de zéro.
+
+      **🏰 Clans**
+      Territoire par chunk avec capitale protégée, banque en coins, coffre partagé, diplomatie et guerres de 30 minutes.
+
+      **🧬 Races et Éveil**
+      9 races au choix à la première connexion. Aux niveaux 20, 40, 60 et 80, l'Éveil fait passer ta race au rang supérieur, jusqu'au rang V. C'est un long rituel annoncé à tout le serveur, que les autres clans peuvent interrompre.
+
+      **🌳 Compétences**
+      Un arbre de compétences par race : 15 passifs, un pouvoir unique (accroupi + F) et un ultime au rang V.
+
+      **✨ Rituels et boss**
+      Autel à 3 tiers pour forger armes et marteaux, 10 boss de clan qui donnent les runes, chaudron runique pour les sacs magiques.
+
+      **🍇 Élixirs magiques**
+      Baies arcaniques, tanks de verre magique, extracteur, infuseur et baguette de liaison pour relier le tout en réseau.
+
+      **📜 Nouveau règlement**
+      Une base doit avoir un accès trouvable, et une guerre doit avoir une raison : le jeu la demande maintenant à chaque déclaration.
+
+      **🔐 Connexion**
+      Le serveur accepte les versions non officielles. Crée ton mot de passe avec `/register <mdp> <mdp>`, puis `/login <mdp>` aux connexions suivantes. Ton skin est conservé.
+
+      **📖 Wiki**
+      Tout le fonctionnement du serveur est expliqué sur le wiki : le lien est dans le salon d'infos du serveur.
+  "1.8.6":
+    titre: "Home, TPA et spawn"
+    texte: |-
+      **🏠 Home personnel**
+      Chaque joueur a droit à un home.
+      • `/sethome` : place ton home là où tu es (le refaire le déplace)
+      • `/home` : t'y ramène
+      • `/delhome` : le supprime
+
+      **🤝 Téléportation entre joueurs**
+      • `/tpa <joueur>` : demande à te téléporter à un joueur
+      • `/tpa accept` (ou `/tpaccept`) : accepte la demande, ou clique sur **[✔ Accepter]** dans le chat
+      • `/tpa refuse` (ou `/tpdeny`) : refuse la demande
+      Une demande expire au bout de 60 secondes.
+
+      **🌍 Retour au spawn**
+      • `/spawn` : te ramène au spawn du serveur
+
+      **⏳ Règles**
+      • 3 secondes sans bouger avant chaque téléportation : bouger ou prendre un coup l'annule.
+      • Impossible de se téléporter pendant 15 secondes après un combat PvP : pas de fuite en plein combat !
+
+      **🛠️ Correctif**
+      Un joueur pouvait rester bloqué sur place (il ne pouvait avancer qu'en sautant) : c'est réparé automatiquement à la connexion.
+  "1.9.0":
+    titre: "Grosse MAJ : équilibrage et autels infusés"
+    texte: |-
+      Après la première journée, la progression était trop rapide. Voici les changements.
+
+      **⚔️ Boss de clan**
+      • Les boss ont 2 à 3 fois plus de vie et tapent un peu plus fort.
+      • Chance de rune : de 25 % (boss 1) à 15 % (boss 10) au lieu de 50 %.
+      • Un boss vaincu revient au bout d'1 h (au lieu de 30 min).
+      • Moins d'XP et d'âmes par victoire.
+
+      **📈 Progression**
+      • Il faut 2 fois plus d'XP pour monter de niveau, et les paliers deviennent de plus en plus durs.
+      • Les niveaux de clan demandent aussi plus d'XP.
+      • Vos niveaux actuels sont conservés.
+
+      **🔮 Autels infusés**
+      Les autels ne marchent plus avec des blocs normaux.
+      • Autel de rituel : les 4 piliers doivent être en **Améthyste infusée**. Le plus faible tier d'améthyste fixe le tier de l'autel.
+      • Sanctuaire d'Éveil : le cœur doit être une **Magnétite infusée** (infuseur + magnétite). Tier I = rang III max, II = rang IV, III = rang V.
+      • L'autel ou le sanctuaire doit être **relié à un tank** avec la baguette de liaison.
+      • Chaque rituel et chaque Éveil **consomme du fluide magique** au lancement (perdu en cas d'échec).
+      • Le chaudron runique ne change pas : c'est toujours le point de départ.
+  "1.10.0":
+    titre: "Les donjons ouvrent leurs portes"
+    texte: |-
+      Premier morceau de la v1.2 : les **donjons**.
+
+      **⚔️ Comment ça marche**
+      • Menu du clan > **Boss et donjons** > **Donjons**.
+      • Il faut un **Sceau de donjon** : la Crypte se prépare au chaudron, les Mines et la Citadelle se gagnent sur les boss de clan.
+      • Le lanceur ouvre un groupe : ton clan et tes alliés ont 30 s pour cliquer sur **[REJOINDRE]** (5 joueurs max).
+      • 3 étages générés au hasard à chaque partie. Chaque salle se ferme quand vous entrez et se rouvre quand elle est vidée.
+      • Salle au trésor gardée par des élites, gardien à chaque étage, gardien final au bout.
+      • 3 vies pour tout le groupe, 40 min maximum.
+
+      **🏰 Les 3 donjons**
+      • **Crypte oubliée** : niveau 10 conseillé, monstres niv. 1 à 3.
+      • **Mines englouties** : niveau 25 conseillé, monstres niv. 3 à 5.
+      • **Citadelle de givre** : niveau 40 conseillé, monstres niv. 5 à 7.
+
+      **🎁 Butin**
+      • Éclats de donjon, pièces, diamants, runes, et parfois un **grimoire mythique** (les sorts arriveront avec la magie).
+      • Le butin de fin se récupère une fois toutes les 2 h par joueur.
+      • Les monstres à niveau donnent de l'XP et des âmes. Élites : Blindé, Rapide, Explosif, Invocateur, Vampirique.

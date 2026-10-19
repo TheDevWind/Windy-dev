@@ -1,0 +1,43 @@
+# ==========================================================================================
+#  WindyClans - Roue de la fortune (récompense quotidienne)
+# ------------------------------------------------------------------------------------------
+#  /roue (ou le PNJ du spawn) : un tour gratuit par jour. La journée change à "reset-hour".
+#  Série : chaque jour d'affilée augmente la série. Tous les "streak-bonus-every" jours,
+#  le tour ne peut tomber que sur une case rare ou mieux.
+#
+#  Cases : name = texte affiché, icon = MATÉRIAU ou windy:<id>, weight = chance relative,
+#  rarity = commun | rare | epique | legendaire (couleur et annonce),
+#  items = "windy:<id>:<quantité>" ou "MATÉRIAU:<quantité>", xp et souls = bonus directs.
+#  La roue affiche 16 cases : la liste est répétée s'il y en a moins.
+#
+#  Admin : /clanadmin roue <joueur> reset   (rend le tour du jour)
+# ==========================================================================================
+config-version: 1
+
+settings:
+  enabled: true
+  # heure (0-23, heure du serveur) à laquelle un nouveau tour devient disponible
+  reset-hour: 4
+  streak-bonus-every: 7
+  # message à la connexion quand le tour du jour est disponible
+  join-reminder: true
+  # annonce à tout le serveur à partir de cette rareté (epique, legendaire, ou none)
+  broadcast-from: epique
+
+segments:
+  - {name: "&f8 Coins", icon: "windy:piece", weight: 18, rarity: commun, items: ["windy:piece:8"]}
+  - {name: "&a400 XP", icon: EXPERIENCE_BOTTLE, weight: 16, rarity: commun, xp: 400}
+  - {name: "&f6 Baies arcaniques", icon: "windy:baie_1", weight: 14, rarity: commun, items: ["windy:baie_1:6"]}
+  - {name: "&b40 Âmes", icon: SOUL_LANTERN, weight: 14, rarity: commun, souls: 40}
+  - {name: "&f15 Coins", icon: "windy:piece", weight: 12, rarity: commun, items: ["windy:piece:15"]}
+  - {name: "&f3 Éclats I", icon: "windy:eclat_1", weight: 10, rarity: commun, items: ["windy:eclat_1:3"]}
+  - {name: "&91000 XP", icon: EXPERIENCE_BOTTLE, weight: 8, rarity: rare, xp: 1000}
+  - {name: "&9Rune de terre", icon: "windy:rune_terre", weight: 7, rarity: rare, items: ["windy:rune_terre:1"]}
+  - {name: "&9Sceau de la Crypte", icon: "windy:sceau_donjon_1", weight: 6, rarity: rare, items: ["windy:sceau_donjon_1:1"]}
+  - {name: "&930 Coins", icon: "windy:piece", weight: 6, rarity: rare, items: ["windy:piece:30"]}
+  - {name: "&9Glyphe runique I", icon: "windy:glyphe_1", weight: 5, rarity: rare, items: ["windy:glyphe_1:1"]}
+  - {name: "&52 Éclats II", icon: "windy:eclat_2", weight: 4, rarity: epique, items: ["windy:eclat_2:2"]}
+  - {name: "&53 Diamants", icon: DIAMOND, weight: 3, rarity: epique, items: ["DIAMOND:3"]}
+  - {name: "&5Glyphe runique II", icon: "windy:glyphe_2", weight: 2, rarity: epique, items: ["windy:glyphe_2:1"]}
+  - {name: "&675 Coins", icon: "windy:piece", weight: 1.5, rarity: legendaire, items: ["windy:piece:64", "windy:piece:11"]}
+  - {name: "&6Éclat III", icon: "windy:eclat_3", weight: 1, rarity: legendaire, items: ["windy:eclat_3:1"]}

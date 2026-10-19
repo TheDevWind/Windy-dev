@@ -1,0 +1,248 @@
+# ==========================================================================================
+#  WindyClans - profils, niveaux personnels et races
+# ==========================================================================================
+#  Chaque joueur a un niveau personnel (1 a max-level) et un rang de race (I a V).
+#  Le niveau est bloque a 20, 40, 60 et 80 tant que le joueur n'a pas accompli son Eveil
+#  (rituel, voir eveil.yml). Chaque Eveil fait passer au rang suivant : les bonus de race grandissent.
+#
+#  Valeurs des bonus : un nombre = valeur fixe ; [a, b] = a au rang I, b au rang V
+#  (entre les deux : progression reguliere). from-tier des effets : 0 = rang I ... 4 = rang V.
+# ==========================================================================================
+config-version: 2
+
+settings:
+  max-level: 100
+  tier-every: 20
+  # XP pour passer du niveau N au niveau N+1 = base + step * N + square * N * N
+  xp-curve:
+    base: 150
+    step: 25
+    square: 3
+  # coins donnes a chaque niveau gagne
+  level-reward-coins: 5
+  tier-reward-coins: 100
+  # choix de la race obligatoire a la premiere connexion (le menu se rouvre tant qu'aucune race n'est choisie)
+  # la race est ensuite definitive (le changement arrivera plus tard avec un objet achetable)
+  choose-on-join: true
+
+# ------------------------------------------------------------------------------------------
+#  Ames (necessaires a l'Eveil)
+# ------------------------------------------------------------------------------------------
+souls:
+  mob: 1              # monstre tue (pas ceux des spawners)
+  player: 25          # joueur tue (hors clan et allies), une fois par victime toutes les X minutes
+  same-victim-minutes: 10
+  boss: 200           # victoire contre un boss de clan, pour chaque participant
+  steal-on-death: 0.2 # part des ames du vaincu prise par le vainqueur
+
+# ------------------------------------------------------------------------------------------
+#  Gains d'XP
+# ------------------------------------------------------------------------------------------
+xp:
+  # anti-ferme : au-dela de "free" gains d'une meme source (meme mob, meme bloc) en 10 minutes,
+  # l'XP diminue (jusqu'a "min" x la valeur normale)
+  anti-farm:
+    free: 30
+    min: 0.2
+  # XP maximum par jour gagnee avec le temps de jeu
+  playtime-daily-cap: 600
+  mobs:
+    default: 6
+    creeper: 8
+    enderman: 10
+    witch: 10
+    blaze: 10
+    guardian: 10
+    wither_skeleton: 14
+    piglin_brute: 20
+    evoker: 25
+    ravager: 30
+    elder_guardian: 100
+    warden: 150
+    wither: 400
+    ender_dragon: 500
+  # mobs sortis d'un spawner : XP multipliee par ce facteur (anti-ferme)
+  spawner-factor: 0.2
+  # kill d'un joueur d'un clan avec qui on est en guerre
+  war-kill: 40
+  # victoire contre un boss de clan : niveau du boss x cette valeur, pour chaque participant
+  boss-per-level: 100
+  # blocs mines (les blocs poses par un joueur ne rapportent rien)
+  blocks:
+    coal_ore: 2
+    deepslate_coal_ore: 2
+    copper_ore: 2
+    deepslate_copper_ore: 2
+    iron_ore: 4
+    deepslate_iron_ore: 4
+    gold_ore: 5
+    deepslate_gold_ore: 5
+    redstone_ore: 3
+    deepslate_redstone_ore: 3
+    lapis_ore: 4
+    deepslate_lapis_ore: 4
+    diamond_ore: 15
+    deepslate_diamond_ore: 15
+    emerald_ore: 20
+    deepslate_emerald_ore: 20
+    nether_quartz_ore: 2
+    nether_gold_ore: 3
+    ancient_debris: 30
+  logs: 1
+  crops: 1
+  fishing: 6
+  # rituel reussi : tier de l'autel x cette valeur
+  ritual-per-tier: 60
+  # temps de jeu (le joueur doit avoir bouge pendant la periode)
+  playtime:
+    minutes: 5
+    xp: 20
+
+# ------------------------------------------------------------------------------------------
+#  Races
+# ------------------------------------------------------------------------------------------
+#  Statistiques possibles (bonus ou malus) :
+#   max-health (points, 2 = 1 coeur)   speed (%)        jump (%)          safe-fall (blocs)
+#   fall-damage (%)    scale (%)       attack-damage    armor             knockback-resistance
+#   mining-speed (%)   oxygen          submerged-mining (%)               gravity (%)   luck
+#   xp-gain (%)        coin-gain (%)   bow-damage (%)   trident-damage (%) melee-ignite (chance)
+#   night-damage       night-speed (%) night-lifesteal (% la nuit)       ritual-speed (%)
+#   rune-chance        ability-cooldown (%)             double-jump (secondes de recharge)
+#  Effets : type (nom Minecraft), amplifier (0 = I), when (always, underground, night, day-sun,
+#           nether, water, water-or-rain), from-tier (palier minimum)
+#  hurt : degats reguliers (when, damage, every = secondes)
+# ------------------------------------------------------------------------------------------
+races:
+  humain:
+    name: "Humain"
+    color: "&f"
+    icon: EMERALD
+    description:
+      - "Polyvalent et commerçant."
+      - "Progresse plus vite que les autres."
+    bonus:
+      xp-gain: [0.05, 0.25]
+      coin-gain: [0.10, 0.50]
+      luck: [0, 2]
+    effects:
+      - {type: HERO_OF_THE_VILLAGE, amplifier: 0, when: always, from-tier: 1}
+      - {type: HERO_OF_THE_VILLAGE, amplifier: 1, when: always, from-tier: 4}
+    malus: {}
+
+  elfe:
+    name: "Elfe"
+    color: "&a"
+    icon: BOW
+    description:
+      - "Rapide, agile, maître de l'arc."
+    bonus:
+      speed: [0.05, 0.20]
+      jump: [0.03, 0.12]
+      safe-fall: [1, 4]
+      bow-damage: [0.05, 0.30]
+    malus:
+      max-health: -4
+
+  nain:
+    name: "Nain"
+    color: "&6"
+    icon: IRON_PICKAXE
+    description:
+      - "Petit, robuste, né de la roche."
+    bonus:
+      mining-speed: [0.10, 0.50]
+      armor: [1, 4]
+    effects:
+      - {type: NIGHT_VISION, amplifier: 0, when: underground, from-tier: 1}
+    malus:
+      scale: -0.2
+      speed: -0.05
+
+  orc:
+    name: "Orc"
+    color: "&2"
+    icon: IRON_AXE
+    description:
+      - "Une montagne de muscles."
+    bonus:
+      max-health: [2, 8]
+      attack-damage: [0.5, 3]
+      knockback-resistance: [0.1, 0.4]
+    malus:
+      scale: 0.15
+      bow-damage: -0.30
+
+  ondin:
+    name: "Ondin"
+    color: "&3"
+    icon: HEART_OF_THE_SEA
+    description:
+      - "Enfant des océans."
+    bonus:
+      oxygen: [1, 5]
+      submerged-mining: [1, 4]
+      trident-damage: [0.10, 0.40]
+    effects:
+      - {type: DOLPHINS_GRACE, amplifier: 0, when: water, from-tier: 1}
+      - {type: CONDUIT_POWER, amplifier: 0, when: water, from-tier: 3}
+    malus:
+      effects:
+        - {type: WEAKNESS, amplifier: 0, when: nether}
+
+  infernal:
+    name: "Infernal"
+    color: "&c"
+    icon: BLAZE_POWDER
+    description:
+      - "Né dans les flammes du Nether."
+    bonus:
+      melee-ignite: [0.10, 0.40]
+    effects:
+      - {type: FIRE_RESISTANCE, amplifier: 0, when: always, from-tier: 0}
+      - {type: STRENGTH, amplifier: 0, when: nether, from-tier: 2}
+    malus:
+      hurt: {when: water-or-rain, damage: 1, every: 4}
+
+  vampire:
+    name: "Vampire"
+    color: "&4"
+    icon: FERMENTED_SPIDER_EYE
+    description:
+      - "Seigneur de la nuit."
+    bonus:
+      night-damage: [1, 4]
+      night-speed: [0.05, 0.15]
+      night-lifesteal: [0.05, 0.20]
+    effects:
+      - {type: NIGHT_VISION, amplifier: 0, when: night, from-tier: 0}
+    malus:
+      effects:
+        - {type: WEAKNESS, amplifier: 0, when: day-sun}
+
+  arcanien:
+    name: "Arcanien"
+    color: "&d"
+    icon: AMETHYST_SHARD
+    description:
+      - "Lié à la magie des autels."
+    bonus:
+      ritual-speed: [0.05, 0.30]
+      rune-chance: [0.02, 0.15]
+      ability-cooldown: [0.05, 0.30]
+      luck: [1, 3]
+    malus:
+      max-health: -4
+
+  sylphe:
+    name: "Sylphe"
+    color: "&b"
+    icon: FEATHER
+    description:
+      - "Minuscule esprit du vent."
+    bonus:
+      double-jump: [4, 2]
+      gravity: [-0.10, -0.30]
+      fall-damage: [-0.50, -1.0]
+    malus:
+      scale: -0.4
+      max-health: -8

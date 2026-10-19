@@ -1,0 +1,92 @@
+name: WindyClans
+version: '${project.version}'
+main: fr.windydev.clans.WindyClans
+api-version: '1.21'
+author: Windy Dev
+description: Clans, capitales, territoires, guerres, profils et races.
+softdepend: [BlueMap, LuckPerms, Geyser-Spigot, floodgate]
+libraries:
+  - net.dv8tion:JDA:6.7.0
+
+commands:
+  clan:
+    description: Commande principale des clans
+    aliases: [c, clans, f]
+    usage: /clan aide
+  cc:
+    description: Chat de clan
+    usage: /cc <message>
+  ca:
+    description: Chat d'alliance
+    usage: /ca <message>
+  profil:
+    description: Ton profil (niveau, race, rang)
+    aliases: [profile, niveau, lvl]
+    usage: /profil [joueur]
+  races:
+    description: Les races et leurs bonus
+    aliases: [race]
+    usage: /races
+  competences:
+    description: Ton arbre de compétences
+    aliases: [skills, competence, arbre]
+    usage: /competences
+  eveil:
+    description: Évolution de ta race et rituel d'Éveil
+    aliases: [evolution, awaken]
+    usage: /eveil
+  lier:
+    description: Lier son compte Minecraft à Discord avec un code
+    usage: /lier <code>
+  sethome:
+    description: Placer son home (un seul par joueur)
+  home:
+    description: Se téléporter à son home
+  delhome:
+    description: Supprimer son home
+  spawn:
+    description: Se téléporter au spawn
+  tpa:
+    description: Demander à se téléporter à un joueur
+    usage: /tpa <joueur> | /tpa accept | /tpa refuse
+  tpaccept:
+    description: Accepter une demande de téléportation
+    aliases: [tpyes]
+  tpdeny:
+    description: Refuser une demande de téléportation
+    aliases: [tpno]
+  donjon:
+    description: Donjons (menu, rejoindre un groupe, quitter)
+    aliases: [donjons, dungeon]
+    usage: /donjon [rejoindre|quitter|boutique]
+  service:
+    description: Staff - prendre ou terminer son service
+    aliases: [duty, staff]
+    usage: /service [motif] | liste | journal | ajouter | retirer
+  roue:
+    description: Roue de la fortune - récompense du jour
+    aliases: [recompense, daily, fortune]
+    usage: /roue
+  faille:
+    description: Faille arcanique - rejoindre l'évènement
+    aliases: [rift, rituel]
+    usage: /faille [quitter]
+  ecrans:
+    description: Activer ou retirer l'habillage des écrans du jeu (coffres, fours, boutons)
+    aliases: [habillage, interface]
+    usage: /ecrans
+  grimoire:
+    description: Magie - choisir ses sorts
+    aliases: [magie, sorts]
+    usage: /grimoire
+  clanadmin:
+    description: Administration des clans
+    aliases: [cadmin]
+    permission: windyclans.admin
+    usage: /clanadmin aide
+
+permissions:
+  windyclans.use:
+    default: true
+  windyclans.admin:
+    default: op

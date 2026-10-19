@@ -1,0 +1,27 @@
+# ==========================================================================================
+#  WindyClans - Prise de service du staff (avec LuckPerms)
+# ------------------------------------------------------------------------------------------
+#  Un membre du staff n'a ses pouvoirs que pendant son service :
+#     /service [motif]   -> prend son service : il reçoit son groupe LuckPerms
+#     /service           -> termine son service : le groupe lui est retiré
+#  Le service s'arrête tout seul à la déconnexion, à l'arrêt du serveur et après "max-minutes".
+#
+#  Donner le droit de prendre un service :   /service ajouter <joueur> <groupe>
+#  Le retirer :                              /service retirer <joueur> <groupe>
+#  (cela pose la permission windyclans.service.<groupe> sur le joueur)
+#
+#  Suivi : chaque commande tapée en service est notée dans service-journal.log, montrée en
+#  direct aux joueurs qui ont windyclans.service.watch, et résumée sur Discord (staff-logs).
+#     /service liste                       -> qui est en service
+#     /service journal [joueur] [lignes]   -> dernières lignes du journal
+#
+#  Important : un joueur opérateur (/op) garde tous les droits en permanence. Le staff ne
+#  doit donc PAS être opérateur, sinon ce système ne sert à rien.
+# ==========================================================================================
+enabled: true
+# groupes LuckPerms de service, du plus élevé au moins élevé
+groups: [admin, moderateur]
+# obliger à donner un motif à la prise de service
+require-reason: false
+# fin automatique du service après ce nombre de minutes (0 = jamais)
+max-minutes: 120

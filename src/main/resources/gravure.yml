@@ -1,0 +1,96 @@
+# ==========================================================================================
+#  WindyClans - Gravure runique (v1.2) : l'enchantement des objets magiques
+# ------------------------------------------------------------------------------------------
+#  À l'autel : l'objet magique sur la table, un GLYPHE RUNIQUE sur un pilier et le RÉACTIF
+#  du glyphe voulu sur un autre pilier. Le grimoire de l'autel propose les gravures possibles.
+#
+#  - Glyphe runique I  : chaudron      -> grave le niveau I   (autel tier I)
+#  - Glyphe runique II : boss de clan  -> grave le niveau II  (autel tier II)
+#  - Glyphe runique III: donjons       -> grave le niveau III (autel tier III)
+#  Graver le même glyphe une 2e fois le fait monter d'un niveau, sans prendre d'emplacement.
+#  Emplacements : 1 pour un objet de tier I, 2 au tier II, 3 au tier III.
+#  Parchemin d'effacement (chaudron) : retire un glyphe (il est perdu).
+#  Réparation : un objet magique usé posé sur l'autel peut être remis à neuf avec du fluide.
+#
+#  Un objet a SOIT des enchantements vanilla, SOIT des glyphes, jamais les deux.
+# ==========================================================================================
+config-version: 1
+
+settings:
+  # fluide magique (mB) par niveau gravé, d'un tier au moins égal au niveau
+  fluid-cost: {1: 500, 2: 1200, 3: 800}
+  # durée de la gravure (secondes) par niveau
+  duration: {1: 30, 2: 60, 3: 90}
+  # réparation des objets magiques à l'autel : mB de fluide (tier I ou plus) par point d'usure (min 100 mB)
+  repair-fluid-per-point: 2
+  # objets sans tier : nombre d'emplacements
+  slots:
+    marteau_runique: 1
+    marteau_titan: 2
+
+# targets : ids d'objets acceptés (expression régulière sur l'id de items.yml)
+# reagent : offrande qui choisit le glyphe (MATÉRIAU:quantité ou windy:<id>:quantité)
+glyphs:
+  tranchant:
+    name: "Tranchant runique"
+    color: "&c"
+    max: 3
+    targets: "(epee|hache_guerre)_.*"
+    reagent: "QUARTZ_BLOCK:8"
+    effect: "+1 dégât par niveau"
+  soif:
+    name: "Soif"
+    color: "&4"
+    max: 3
+    targets: "(epee|hache_guerre)_.*"
+    reagent: "GLISTERING_MELON_SLICE:4"
+    effect: "3 % de vol de vie par niveau"
+  echo:
+    name: "Écho"
+    color: "&b"
+    max: 3
+    targets: "(epee|hache_guerre|arc|trident)_.*"
+    reagent: "ENDER_PEARL:4"
+    effect: "-10 % de recharge de la capacité par niveau"
+  aimant:
+    name: "Aimant"
+    color: "&7"
+    max: 1
+    targets: "marteau_.*|hache_[0-9]"
+    reagent: "REDSTONE_BLOCK:2"
+    effect: "le butin va dans l'inventaire"
+  fonte:
+    name: "Fonte"
+    color: "&6"
+    max: 2
+    targets: "marteau_.*"
+    reagent: "MAGMA_BLOCK:8"
+    effect: "1 chance sur 3 par niveau de fondre le minerai"
+  oeil:
+    name: "Œil du chasseur"
+    color: "&a"
+    max: 3
+    targets: "(arc|trident)_.*"
+    reagent: "ENDER_EYE:2"
+    effect: "arcs : +3 blocs de guidage, tridents : harpon +15 % par niveau"
+  solidite:
+    name: "Solidité"
+    color: "&f"
+    max: 3
+    targets: "(epee|hache_guerre|arc|trident|marteau|hache|acier|argent|arcanite|baton)_.*|tome_arcanes"
+    reagent: "OBSIDIAN:8"
+    effect: "-25 % d'usure par niveau"
+  bastion:
+    name: "Bastion"
+    color: "&9"
+    max: 2
+    targets: "(acier|argent|arcanite)_.*"
+    reagent: "IRON_BLOCK:4"
+    effect: "+1 d'armure sur la pièce par niveau"
+  canal:
+    name: "Canal"
+    color: "&d"
+    max: 3
+    targets: "baton_.*|tome_arcanes"
+    reagent: "LAPIS_BLOCK:4"
+    effect: "+10 de mana max par niveau"

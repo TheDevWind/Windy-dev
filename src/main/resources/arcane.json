@@ -1,0 +1,210 @@
+{
+ "tile": 80,
+ "origin_x": -112,
+ "layouts": {
+  "main": {
+   "rows": 6,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": true
+  },
+  "home": {
+   "rows": 4,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": true
+  },
+  "members": {
+   "rows": 6,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": true
+  },
+  "map": {
+   "rows": 6,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": true
+  },
+  "bank": {
+   "rows": 6,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": true
+  },
+  "profile": {
+   "rows": 6,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": true
+  },
+  "races": {
+   "rows": 6,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": true
+  },
+  "skills": {
+   "rows": 6,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": true
+  },
+  "evolution": {
+   "rows": 6,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": true
+  },
+  "list": {
+   "rows": 6,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": false
+  },
+  "list_top": {
+   "rows": 6,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": false
+  },
+  "action": {
+   "rows": 3,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": false
+  },
+  "row": {
+   "rows": 3,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": false
+  },
+  "settings": {
+   "rows": 5,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": false
+  },
+  "trio": {
+   "rows": 3,
+   "tiles": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "painted": false
+  }
+ },
+ "overlays": {
+  "gold_row": {
+   "x": 7,
+   "rows": {
+    "1": [
+     ""
+    ],
+    "2": [
+     ""
+    ],
+    "3": [
+     ""
+    ],
+    "4": [
+     ""
+    ],
+    "5": [
+     ""
+    ]
+   }
+  }
+ },
+ "xpbar": {
+  "chars": "",
+  "x": 27,
+  "width": 121
+ },
+ "big_top": 25,
+ "map_tiles": {
+  "self": 7950,
+  "self_here": 7951,
+  "self_cap": 7952,
+  "capzone": 7953,
+  "capzone_here": 7954,
+  "capzone_cap": 7955,
+  "ally": 7956,
+  "ally_here": 7957,
+  "ally_cap": 7958,
+  "other": 7959,
+  "other_here": 7960,
+  "other_cap": 7961,
+  "enemy": 7962,
+  "enemy_here": 7963,
+  "enemy_cap": 7964,
+  "war": 7965,
+  "war_here": 7966,
+  "war_cap": 7967,
+  "spawn": 7968,
+  "spawn_here": 7969,
+  "wild": 7970,
+  "wild_here": 7971,
+  "none": 7972,
+  "none_here": 7973
+ }
+}

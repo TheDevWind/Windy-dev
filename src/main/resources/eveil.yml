@@ -1,0 +1,119 @@
+# ==========================================================================================
+#  WindyClans - Rituel d'Éveil (passage au rang de race suivant)
+# ------------------------------------------------------------------------------------------
+#  Sanctuaire d'Éveil (le cœur est un bloc de magnétite / LODESTONE) :
+#   rang II  : 4 piliers de 2 briques de tuf sculptées à 3 blocs du cœur (N, S, E, O)
+#   rang III : + 4 piliers de 2 briques de tuf sculptées en diagonale (2, 2) surmontés d'un bloc d'or
+#   rang IV  : + un bloc de diamant au sommet des 4 piliers N, S, E, O
+#   rang V   : + un bloc de netherite sous le cœur et 4 obsidiennes pleureuses collées au cœur
+#  On jette les offrandes sur le cœur. Quand tout y est (niveau, âmes, offrandes), l'Éveil commence.
+#  Phases : vagues de monstres (60 % du temps), puis Sommeil d'Éveil (le joueur est immobilisé).
+#
+#  SANCTUAIRE INFUSÉ (MAJ 1.9.0)
+#   Le cœur doit être une MAGNÉTITE INFUSÉE (infuseur magique, clic droit avec une magnétite),
+#   sinon le sanctuaire n'est pas reconnu. Son tier limite le rang : I -> rang III max,
+#   II -> rang IV, III -> rang V. Le cœur doit être relié à un tank magique (baguette de liaison).
+#   Chaque Éveil consomme du fluide ("fluid" mB, de tier "fluid-tier" ou plus) au lancement.
+# ==========================================================================================
+config-version: 1
+
+settings:
+  stay-radius: 10          # le joueur doit rester à cette distance du cœur
+  pvp-radius: 30           # PvP forcé autour d'un Éveil en cours (même en capitale)
+  fail-cooldown-hours: 24
+  fail-loss: 0.5           # part des offrandes et des âmes perdue en cas d'échec
+  wave-every: 30           # secondes entre deux vagues
+  broadcast-precision: 50  # position annoncée arrondie à X blocs
+  infused:
+    require-infused-core: true
+    require-link: true
+  # récompense du clan qui interrompt un Éveil (multipliée par le rang visé - 1)
+  interrupt-reward:
+    coins: 250
+    clan-xp: 200
+
+ranks:
+  2:
+    fluid: 2000
+    fluid-tier: 1
+    duration: 300
+    souls: 200
+    boss-wins: 0
+    offerings: ["DIAMOND:8", "GOLD_BLOCK:2", "windy:rune_terre:1"]
+    wave-size: 3
+    mobs: [ZOMBIE, SKELETON, SPIDER]
+  3:
+    fluid: 4000
+    fluid-tier: 1
+    duration: 600
+    souls: 1000
+    boss-wins: 0
+    offerings: ["DIAMOND_BLOCK:2", "windy:rune_terre:1", "windy:rune_feu:1"]
+    wave-size: 4
+    mobs: [ZOMBIE, SKELETON, SPIDER, WITCH, HUSK]
+  4:
+    fluid: 1500
+    fluid-tier: 2
+    duration: 1200
+    souls: 5000
+    boss-wins: 1
+    offerings: ["NETHERITE_INGOT:2", "DIAMOND_BLOCK:4", "windy:rune_feu:1", "windy:rune_glace:1"]
+    wave-size: 5
+    mobs: [ZOMBIE, SKELETON, WITCH, VINDICATOR, STRAY, BLAZE]
+  5:
+    fluid: 800
+    fluid-tier: 3
+    duration: 1800
+    souls: 20000
+    boss-wins: 3
+    offerings: ["NETHERITE_BLOCK:1", "NETHER_STAR:1", "windy:rune_glace:1", "windy:rune_foudre:1", "windy:rune_vide:1"]
+    wave-size: 6
+    mobs: [WITHER_SKELETON, VINDICATOR, EVOKER, BLAZE, PIGLIN_BRUTE]
+
+# offrandes propres à chaque race, en plus des offrandes communes
+race-offerings:
+  humain:
+    2: ["EMERALD:16"]
+    3: ["EMERALD_BLOCK:8"]
+    4: ["EMERALD_BLOCK:16", "TOTEM_OF_UNDYING:1"]
+    5: ["TOTEM_OF_UNDYING:2", "ENCHANTED_GOLDEN_APPLE:1"]
+  elfe:
+    2: ["GLOW_BERRIES:32"]
+    3: ["SPORE_BLOSSOM:2", "GLOW_BERRIES:64"]
+    4: ["TORCHFLOWER:8"]
+    5: ["PITCHER_PLANT:4", "TORCHFLOWER:16"]
+  nain:
+    2: ["RAW_IRON_BLOCK:8"]
+    3: ["RAW_GOLD_BLOCK:8"]
+    4: ["ANCIENT_DEBRIS:8"]
+    5: ["NETHERITE_BLOCK:1", "ANCIENT_DEBRIS:16"]
+  orc:
+    2: ["COOKED_BEEF:64"]
+    3: ["GOLDEN_APPLE:8"]
+    4: ["GOLDEN_APPLE:32"]
+    5: ["ENCHANTED_GOLDEN_APPLE:1", "GOLDEN_APPLE:32"]
+  ondin:
+    2: ["PRISMARINE_CRYSTALS:32"]
+    3: ["NAUTILUS_SHELL:8"]
+    4: ["HEART_OF_THE_SEA:2"]
+    5: ["CONDUIT:2"]
+  infernal:
+    2: ["BLAZE_ROD:16"]
+    3: ["MAGMA_CREAM:32", "GHAST_TEAR:4"]
+    4: ["GHAST_TEAR:16", "WITHER_SKELETON_SKULL:1"]
+    5: ["WITHER_SKELETON_SKULL:3"]
+  vampire:
+    2: ["FERMENTED_SPIDER_EYE:16"]
+    3: ["REDSTONE_BLOCK:16", "FERMENTED_SPIDER_EYE:32"]
+    4: ["PHANTOM_MEMBRANE:32", "WITHER_ROSE:8"]
+    5: ["WITHER_ROSE:16", "DRAGON_BREATH:4"]
+  arcanien:
+    2: ["AMETHYST_SHARD:64"]
+    3: ["ECHO_SHARD:4"]
+    4: ["ECHO_SHARD:16", "EXPERIENCE_BOTTLE:32"]
+    5: ["RECOVERY_COMPASS:1", "ECHO_SHARD:16"]
+  sylphe:
+    2: ["FEATHER:64"]
+    3: ["PHANTOM_MEMBRANE:16"]
+    4: ["BREEZE_ROD:16"]
+    5: ["ELYTRA:1", "BREEZE_ROD:32"]

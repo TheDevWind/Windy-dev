@@ -1,0 +1,318 @@
+# ==========================================================================================
+#  WindyClans - Arbres de compétences et évolutions de race
+# ------------------------------------------------------------------------------------------
+#  Chaque race a 3 branches (offensive, def, sig) de 5 passifs. Le passif n°k se débloque au rang k.
+#  Un passif : {name, icon, stat, per-level, max (5), cost (1 point par niveau), when (condition)}
+#  Conditions possibles : night, water, water-or-rain, nether, underground, forest, altitude,
+#                         low-health, axe
+#  Branches : offensive, def (défense), sig (signature). Les 4 compétences spéciales (extra, unique, unique-plus, ultimate) sont codées dans le plugin ;
+#  ici on règle leurs textes, coûts et recharges.
+# ==========================================================================================
+config-version: 1
+
+settings:
+  points-per-level: 1
+  points-per-awakening: 3
+  costs: {extra: 5, unique: 10, unique-plus: 10, ultimate: 20}
+  # objet qui rend tous les points (id windy: de items.yml)
+  reset-item: "windy:parchemin_oubli"
+
+ranks:
+  humain:   ["Humain", "Élu", "Héros", "Saint", "Demi-Dieu"]
+  elfe:     ["Elfe", "Haut-Elfe", "Elfe Ancestral", "Roi Sylvestre", "Esprit Primordial"]
+  nain:     ["Nain", "Nain des Profondeurs", "Nain Runique", "Seigneur de la Forge", "Titan de Pierre"]
+  orc:      ["Orc", "Haut-Orc", "Seigneur Orc", "Roi Orc", "Orc Désastre"]
+  ondin:    ["Ondin", "Triton", "Ondin des Abysses", "Seigneur des Marées", "Léviathan"]
+  infernal: ["Infernal", "Démon", "Archidémon", "Seigneur Démon", "Dieu Démon"]
+  vampire:  ["Vampire", "Vampire Noble", "Comte des Ombres", "Seigneur de la Nuit", "Progéniteur"]
+  arcanien: ["Arcanien", "Adepte", "Archimage", "Grand Sage", "Seigneur de la Sagesse"]
+  sylphe:   ["Sylphe", "Sylphe des Vents", "Esprit des Nuées", "Seigneur des Tempêtes", "Dragon Tempête"]
+
+trees:
+  # ---------------------------------------------------------------------------------------
+  infernal:
+    offensive:
+      name: "Offensive"
+      nodes:
+        - {name: "Force", icon: IRON_SWORD, stat: attack-damage, per-level: 0.3}
+        - {name: "Coups de feu", icon: FLINT_AND_STEEL, stat: melee-ignite, per-level: 0.04}
+        - {name: "Brasier", icon: FIRE_CHARGE, stat: burning-damage, per-level: 0.05}
+        - {name: "Vitesse d'attaque", icon: GOLDEN_SWORD, stat: attack-speed, per-level: 0.03}
+        - {name: "Déflagration", icon: TNT, stat: detonate, per-level: 0.04}
+    def:
+      name: "Défense"
+      nodes:
+        - {name: "Armure", icon: IRON_CHESTPLATE, stat: armor, per-level: 0.6}
+        - {name: "Peau de lave", icon: MAGMA_BLOCK, stat: fire-reduction, per-level: 0.08}
+        - {name: "Régénération du Nether", icon: CRIMSON_FUNGUS, stat: regen, per-level: 0.3, when: nether}
+        - {name: "Cœurs", icon: RED_DYE, stat: max-health, per-level: 1}
+        - {name: "Carapace", icon: BUCKET, stat: malus-resist, per-level: 0.2}
+    sig:
+      name: "Âmes"
+      icon: SOUL_LANTERN
+      nodes:
+        - {name: "Moissonneur", icon: SOUL_TORCH, stat: soul-gain, per-level: 0.1}
+        - {name: "Festin", icon: COOKED_PORKCHOP, stat: heal-on-kill, per-level: 0.8}
+        - {name: "Pacte", icon: REDSTONE, stat: lifesteal, per-level: 0.02}
+        - {name: "Terreur", icon: WITHER_SKELETON_SKULL, stat: fear-aura, per-level: 0.06}
+        - {name: "Souverain", icon: GOLDEN_HELMET, stat: pvp-bonus, per-level: 0.1}
+    extra: {name: "Corps de flamme", icon: LAVA_BUCKET, description: ["Immunité à la lave.", "Les attaquants au corps à corps prennent feu."]}
+    unique: {name: "Enfer", icon: BLAZE_POWDER, cooldown: 60, description: ["Onde de flammes autour de toi :", "6 dégâts et feu, rayon 5."]}
+    unique-plus: {name: "Enfer déchaîné", icon: BLAZE_ROD, description: ["Rayon 8, le sol brûle 5 s."]}
+    ultimate: {name: "Moisson des âmes", icon: NETHER_STAR, cooldown: 1800, description: ["20 s : chaque kill te soigne", "entièrement et rapporte ×3 âmes."]}
+
+  # ---------------------------------------------------------------------------------------
+  orc:
+    offensive:
+      name: "Offensive"
+      nodes:
+        - {name: "Force", icon: IRON_AXE, stat: attack-damage, per-level: 0.3}
+        - {name: "Vitesse d'attaque", icon: GOLDEN_AXE, stat: attack-speed, per-level: 0.03}
+        - {name: "Coup de massue", icon: MACE, stat: knockback-on-hit, per-level: 0.1}
+        - {name: "Brise-bouclier", icon: SHIELD, stat: shield-break, per-level: 0.05}
+        - {name: "Rage", icon: REDSTONE_BLOCK, stat: rage, per-level: 0.04}
+    def:
+      name: "Défense"
+      nodes:
+        - {name: "Cœurs", icon: RED_DYE, stat: max-health, per-level: 1}
+        - {name: "Anti-recul", icon: ANVIL, stat: knockback-resistance, per-level: 0.05}
+        - {name: "Armure", icon: IRON_CHESTPLATE, stat: armor, per-level: 0.6}
+        - {name: "Sang chaud", icon: GLISTERING_MELON_SLICE, stat: regen, per-level: 0.4, when: low-health}
+        - {name: "Robustesse", icon: NETHERITE_CHESTPLATE, stat: armor-toughness, per-level: 0.4}
+    sig:
+      name: "Faim"
+      icon: COOKED_BEEF
+      nodes:
+        - {name: "Glouton", icon: COOKED_BEEF, stat: food-bonus, per-level: 0.1}
+        - {name: "Absorption", icon: GOLDEN_APPLE, stat: absorption-on-kill, per-level: 0.8}
+        - {name: "Estomac de fer", icon: ROTTEN_FLESH, stat: hunger-resist, per-level: 0.15}
+        - {name: "Vol de vie", icon: REDSTONE, stat: lifesteal, per-level: 0.02}
+        - {name: "Dévoreur", icon: RABBIT_STEW, stat: kill-food, per-level: 0.6}
+    extra: {name: "Peau d'acier", icon: IRON_BLOCK, description: ["-15 % de dégâts reçus", "sous 30 % de vie."]}
+    unique: {name: "Frénésie", icon: BLAZE_POWDER, cooldown: 90, description: ["15 s : Force II, Vitesse I", "et +10 % de vol de vie."]}
+    unique-plus: {name: "Frénésie sauvage", icon: NETHERITE_AXE, description: ["Dure 25 s et immunité au recul."]}
+    ultimate: {name: "Famine", icon: NETHER_STAR, cooldown: 1800, description: ["10 s : draine la vie des ennemis", "dans 8 blocs et vole leur force."]}
+
+  # ---------------------------------------------------------------------------------------
+  arcanien:
+    offensive:
+      name: "Offensive"
+      nodes:
+        - {name: "Recharge des armes", icon: CLOCK, stat: ability-cooldown, per-level: 0.04}
+        - {name: "Puissance runique", icon: AMETHYST_SHARD, stat: rune-damage, per-level: 0.05}
+        - {name: "Surcharge", icon: LIGHTNING_ROD, stat: cd-reset, per-level: 0.03}
+        - {name: "Projectiles arcaniques", icon: SPECTRAL_ARROW, stat: armor-pierce, per-level: 0.05}
+        - {name: "Chance", icon: RABBIT_FOOT, stat: luck, per-level: 0.4}
+    def:
+      name: "Défense"
+      nodes:
+        - {name: "Bouclier arcanique", icon: SHIELD, stat: arcane-shield, per-level: 0.8}
+        - {name: "Résistance magique", icon: POTION, stat: magic-reduction, per-level: 0.08}
+        - {name: "Cœurs", icon: RED_DYE, stat: max-health, per-level: 1}
+        - {name: "Repli", icon: ENDER_PEARL, stat: escape-blink, per-level: 0.06}
+        - {name: "Armure", icon: IRON_CHESTPLATE, stat: armor, per-level: 0.6}
+    sig:
+      name: "Savoir"
+      icon: ENCHANTED_BOOK
+      nodes:
+        - {name: "Rituels rapides", icon: BREWING_STAND, stat: ritual-speed, per-level: 0.03}
+        - {name: "Chance de rune", icon: AMETHYST_CLUSTER, stat: rune-chance, per-level: 0.02}
+        - {name: "Érudit", icon: EXPERIENCE_BOTTLE, stat: xp-gain, per-level: 0.03}
+        - {name: "Économie", icon: BUNDLE, stat: ingredient-save, per-level: 0.03}
+        - {name: "Âmes gagnées", icon: SOUL_LANTERN, stat: soul-gain, per-level: 0.08}
+    extra: {name: "Analyse", icon: SPYGLASS, description: ["En visant un joueur, tu vois sa vie,", "sa race et son rang."]}
+    unique: {name: "Transposition", icon: ENDER_EYE, cooldown: 30, description: ["Téléportation de 12 blocs", "dans la direction visée."]}
+    unique-plus: {name: "Transposition double", icon: ENDER_PEARL, description: ["20 blocs et 2 charges."]}
+    ultimate: {name: "Esprit de la Sagesse", icon: NETHER_STAR, cooldown: 1800, description: ["20 s : aucune recharge sur les armes", "runiques et 30 % d'esquive."]}
+
+  # ---------------------------------------------------------------------------------------
+  vampire:
+    offensive:
+      name: "Offensive"
+      nodes:
+        - {name: "Force nocturne", icon: IRON_SWORD, stat: night-damage, per-level: 0.4}
+        - {name: "Vol de vie nocturne", icon: REDSTONE, stat: night-lifesteal, per-level: 0.02}
+        - {name: "Morsure", icon: WITHER_ROSE, stat: wither-on-hit, per-level: 0.04}
+        - {name: "Vitesse d'attaque nocturne", icon: GOLDEN_SWORD, stat: attack-speed, per-level: 0.04, when: night}
+        - {name: "Exécution", icon: NETHERITE_SWORD, stat: execute, per-level: 0.05}
+    def:
+      name: "Défense"
+      nodes:
+        - {name: "Vitesse nocturne", icon: FEATHER, stat: night-speed, per-level: 0.02}
+        - {name: "Régénération nocturne", icon: GLISTERING_MELON_SLICE, stat: regen, per-level: 0.3, when: night}
+        - {name: "Résistance au soleil", icon: LEATHER_HELMET, stat: malus-resist, per-level: 0.2}
+        - {name: "Cœurs", icon: RED_DYE, stat: max-health, per-level: 1}
+        - {name: "Esquive nocturne", icon: PHANTOM_MEMBRANE, stat: dodge, per-level: 0.02, when: night}
+    sig:
+      name: "Sang"
+      icon: REDSTONE_BLOCK
+      nodes:
+        - {name: "Soif", icon: REDSTONE, stat: lifesteal, per-level: 0.02}
+        - {name: "Réserve de sang", icon: GOLDEN_APPLE, stat: blood-reserve, per-level: 0.1}
+        - {name: "Traque", icon: SPYGLASS, stat: track, per-level: 4}
+        - {name: "Âmes nocturnes", icon: SOUL_LANTERN, stat: soul-gain, per-level: 0.12, when: night}
+        - {name: "Aura de peur", icon: WITHER_SKELETON_SKULL, stat: fear-aura, per-level: 0.06, when: night}
+    extra: {name: "Sang noble", icon: GOLDEN_HELMET, description: ["Le soleil ne t'affaiblit plus."]}
+    unique: {name: "Forme de brume", icon: GRAY_DYE, cooldown: 60, description: ["5 s : invisible, intouchable", "et rapide."]}
+    unique-plus: {name: "Brume sanglante", icon: RED_DYE, description: ["Dure 8 s et soigne 4 cœurs."]}
+    ultimate: {name: "Nuit éternelle", icon: NETHER_STAR, cooldown: 1800, description: ["30 s : tous tes bonus nocturnes", "actifs de jour, vol de vie doublé."]}
+
+  # ---------------------------------------------------------------------------------------
+  sylphe:
+    offensive:
+      name: "Offensive"
+      nodes:
+        - {name: "Frappe plongeante", icon: FEATHER, stat: dive-damage, per-level: 0.06}
+        - {name: "Arc", icon: BOW, stat: bow-damage, per-level: 0.04}
+        - {name: "Vitesse", icon: SUGAR, stat: speed, per-level: 0.02}
+        - {name: "Vent tranchant", icon: ARROW, stat: arrow-speed, per-level: 0.06}
+        - {name: "Critique aérien", icon: WIND_CHARGE, stat: air-crit, per-level: 0.04}
+    def:
+      name: "Défense"
+      nodes:
+        - {name: "Esquive", icon: PHANTOM_MEMBRANE, stat: dodge, per-level: 0.02}
+        - {name: "Amorti", icon: HAY_BLOCK, stat: safe-fall, per-level: 0.6}
+        - {name: "Cœurs", icon: RED_DYE, stat: max-health, per-level: 1}
+        - {name: "Plume", icon: WHITE_WOOL, stat: glide, per-level: 0.1}
+        - {name: "Régénération d'altitude", icon: ELYTRA, stat: regen, per-level: 0.3, when: altitude}
+    sig:
+      name: "Vent"
+      icon: WIND_CHARGE
+      nodes:
+        - {name: "Double saut", icon: RABBIT_FOOT, stat: double-jump-cd, per-level: -0.3}
+        - {name: "Gravité", icon: FEATHER, stat: gravity, per-level: -0.02}
+        - {name: "Saut", icon: SLIME_BALL, stat: jump, per-level: 0.02}
+        - {name: "Élan", icon: SUGAR, stat: momentum, per-level: 0.04}
+        - {name: "Courant ascendant", icon: BREEZE_ROD, stat: updraft, per-level: 0.08}
+    extra: {name: "Triple saut", icon: RABBIT_FOOT, description: ["Un second saut en l'air."]}
+    unique: {name: "Rafale", icon: WIND_CHARGE, cooldown: 45, description: ["Repousse les ennemis dans 6 blocs", "et les soulève 1 s."]}
+    unique-plus: {name: "Ouragan", icon: BREEZE_ROD, description: ["10 blocs et 4 dégâts."]}
+    ultimate: {name: "Tempête", icon: NETHER_STAR, cooldown: 1800, description: ["20 s de vol libre, la foudre", "frappe les ennemis proches."]}
+
+  # ---------------------------------------------------------------------------------------
+  elfe:
+    offensive:
+      name: "Offensive"
+      nodes:
+        - {name: "Arc", icon: BOW, stat: bow-damage, per-level: 0.04}
+        - {name: "Tir perçant", icon: SPECTRAL_ARROW, stat: arrow-pierce, per-level: 0.05}
+        - {name: "Précision", icon: TARGET, stat: bow-crit, per-level: 0.04}
+        - {name: "Récupération", icon: ARROW, stat: arrow-save, per-level: 0.08}
+        - {name: "Marque du chasseur", icon: GLOW_INK_SAC, stat: hunter-mark, per-level: 0.08}
+    def:
+      name: "Défense"
+      nodes:
+        - {name: "Vitesse", icon: SUGAR, stat: speed, per-level: 0.02}
+        - {name: "Esquive", icon: PHANTOM_MEMBRANE, stat: dodge, per-level: 0.02}
+        - {name: "Régénération sylvestre", icon: OAK_SAPLING, stat: regen, per-level: 0.3, when: forest}
+        - {name: "Cœurs", icon: RED_DYE, stat: max-health, per-level: 1}
+        - {name: "Pas feutrés", icon: LEATHER_BOOTS, stat: sneak-speed, per-level: 0.06}
+    sig:
+      name: "Nature"
+      icon: OAK_LEAVES
+      nodes:
+        - {name: "Récolte", icon: WHEAT, stat: crop-bonus, per-level: 0.08}
+        - {name: "Bûcheron", icon: IRON_AXE, stat: mining-speed, per-level: 0.08, when: axe}
+        - {name: "Dompteur", icon: BONE, stat: tame-strength, per-level: 0.08}
+        - {name: "Herboriste", icon: BREWING_STAND, stat: potion-duration, per-level: 0.08}
+        - {name: "Camouflage", icon: AZALEA_LEAVES, stat: camouflage, per-level: 1}
+    extra: {name: "Pas léger", icon: LEATHER_BOOTS, description: ["Aucun dégât de chute.", "Les capteurs sculk ne t'entendent pas."]}
+    unique: {name: "Pluie de flèches", icon: ARROW, cooldown: 40, description: ["Ta prochaine flèche", "se divise en 8."]}
+    unique-plus: {name: "Pluie ardente", icon: FIRE_CHARGE, description: ["12 flèches enflammées."]}
+    ultimate: {name: "Colère de la forêt", icon: NETHER_STAR, cooldown: 1800, description: ["Des racines immobilisent les ennemis", "dans 10 blocs pendant 5 s."]}
+
+  # ---------------------------------------------------------------------------------------
+  nain:
+    offensive:
+      name: "Offensive"
+      nodes:
+        - {name: "Maître de la hache", icon: IRON_AXE, stat: damage, per-level: 0.05, when: axe}
+        - {name: "Coup de marteau", icon: MACE, stat: stun-on-hit, per-level: 0.04}
+        - {name: "Brise-armure", icon: CHAINMAIL_CHESTPLATE, stat: armor-break, per-level: 0.06}
+        - {name: "Force", icon: IRON_SWORD, stat: attack-damage, per-level: 0.3}
+        - {name: "Vitesse d'attaque", icon: GOLDEN_AXE, stat: attack-speed, per-level: 0.03}
+    def:
+      name: "Défense"
+      nodes:
+        - {name: "Armure", icon: IRON_CHESTPLATE, stat: armor, per-level: 0.6}
+        - {name: "Robustesse", icon: NETHERITE_CHESTPLATE, stat: armor-toughness, per-level: 0.4}
+        - {name: "Anti-recul", icon: ANVIL, stat: knockback-resistance, per-level: 0.05}
+        - {name: "Cœurs", icon: RED_DYE, stat: max-health, per-level: 1}
+        - {name: "Roc", icon: OBSIDIAN, stat: explosion-reduction, per-level: 0.08}
+    sig:
+      name: "Forge"
+      icon: ANVIL
+      nodes:
+        - {name: "Minage", icon: IRON_PICKAXE, stat: mining-speed, per-level: 0.06}
+        - {name: "Filon", icon: RAW_GOLD, stat: ore-double, per-level: 0.04}
+        - {name: "Solidité", icon: DIAMOND_PICKAXE, stat: tool-save, per-level: 0.08}
+        - {name: "Forgeron", icon: ANVIL, stat: anvil-discount, per-level: 0.08}
+        - {name: "Prospecteur", icon: EXPERIENCE_BOTTLE, stat: mining-xp, per-level: 0.1}
+    extra: {name: "Sens du filon", icon: GOLD_ORE, description: ["Accroupi, les minerais rares", "dans 8 blocs brillent 5 s."]}
+    unique: {name: "Peau de pierre", icon: STONE, cooldown: 60, description: ["8 s : Résistance III", "et immunité au recul."]}
+    unique-plus: {name: "Peau de diamant", icon: DIAMOND_BLOCK, description: ["Dure 12 s et renvoie", "20 % des dégâts."]}
+    ultimate: {name: "Titan", icon: NETHER_STAR, cooldown: 1800, description: ["20 s : taille ×1,5, +10 cœurs,", "tes coups frappent en zone."]}
+
+  # ---------------------------------------------------------------------------------------
+  ondin:
+    offensive:
+      name: "Offensive"
+      nodes:
+        - {name: "Trident", icon: TRIDENT, stat: trident-damage, per-level: 0.05}
+        - {name: "Force des flots", icon: PRISMARINE_SHARD, stat: damage, per-level: 0.05, when: water}
+        - {name: "Marée", icon: KELP, stat: knockback-on-hit, per-level: 0.1}
+        - {name: "Retour rapide", icon: HEART_OF_THE_SEA, stat: trident-return, per-level: 0.1}
+        - {name: "Harpon", icon: LEAD, stat: harpoon, per-level: 0.06}
+    def:
+      name: "Défense"
+      nodes:
+        - {name: "Souffle", icon: BUBBLE_CORAL, stat: oxygen, per-level: 1}
+        - {name: "Régénération des eaux", icon: WATER_BUCKET, stat: regen, per-level: 0.3, when: water-or-rain}
+        - {name: "Écailles", icon: TURTLE_HELMET, stat: armor, per-level: 0.8, when: water}
+        - {name: "Cœurs", icon: RED_DYE, stat: max-health, per-level: 1}
+        - {name: "Adaptation", icon: NETHERRACK, stat: malus-resist, per-level: 0.2}
+    sig:
+      name: "Océan"
+      icon: HEART_OF_THE_SEA
+      nodes:
+        - {name: "Minage aquatique", icon: PRISMARINE, stat: submerged-mining, per-level: 0.4}
+        - {name: "Pêche", icon: FISHING_ROD, stat: fishing-loot, per-level: 0.06}
+        - {name: "Nage", icon: COD, stat: water-speed, per-level: 0.06}
+        - {name: "Pêcheur érudit", icon: EXPERIENCE_BOTTLE, stat: fishing-xp, per-level: 0.1}
+        - {name: "Vision abyssale", icon: SEA_LANTERN, stat: abyss-vision, per-level: 1, max: 1, cost: 5}
+    extra: {name: "Branchies", icon: BUBBLE_CORAL_FAN, description: ["Respiration infinie sous l'eau."]}
+    unique: {name: "Geyser", icon: WATER_BUCKET, cooldown: 45, description: ["Projette en l'air les ennemis", "dans 5 blocs (5 dégâts)."]}
+    unique-plus: {name: "Geyser et orage", icon: TRIDENT, description: ["La pluie tombe sur toi 30 s."]}
+    ultimate: {name: "Raz-de-marée", icon: NETHER_STAR, cooldown: 1800, description: ["30 s : tes bonus « dans l'eau »", "marchent sur terre, ennemis ralentis."]}
+
+  # ---------------------------------------------------------------------------------------
+  humain:
+    offensive:
+      name: "Offensive"
+      nodes:
+        - {name: "Force", icon: IRON_SWORD, stat: attack-damage, per-level: 0.3}
+        - {name: "Vitesse d'attaque", icon: GOLDEN_SWORD, stat: attack-speed, per-level: 0.03}
+        - {name: "Polyvalence", icon: CROSSBOW, stat: ranged-damage, per-level: 0.04}
+        - {name: "Critique", icon: DIAMOND_SWORD, stat: crit, per-level: 0.03}
+        - {name: "Résolution", icon: TOTEM_OF_UNDYING, stat: rage, per-level: 0.04}
+    def:
+      name: "Défense"
+      nodes:
+        - {name: "Cœurs", icon: RED_DYE, stat: max-health, per-level: 1}
+        - {name: "Armure", icon: IRON_CHESTPLATE, stat: armor, per-level: 0.6}
+        - {name: "Régénération", icon: GLISTERING_MELON_SLICE, stat: regen, per-level: 0.2}
+        - {name: "Anti-recul", icon: ANVIL, stat: knockback-resistance, per-level: 0.05}
+        - {name: "Endurance", icon: BREAD, stat: endurance, per-level: 0.1}
+    sig:
+      name: "Destin"
+      icon: EMERALD
+      nodes:
+        - {name: "Érudit", icon: EXPERIENCE_BOTTLE, stat: xp-gain, per-level: 0.03}
+        - {name: "Fortune", icon: GOLD_INGOT, stat: coin-gain, per-level: 0.05}
+        - {name: "Chance", icon: RABBIT_FOOT, stat: luck, per-level: 0.4}
+        - {name: "Commerce", icon: EMERALD, stat: trade-discount, per-level: 0.06}
+        - {name: "Âmes gagnées", icon: SOUL_LANTERN, stat: soul-gain, per-level: 0.08}
+    extra: {name: "Charisme", icon: EMERALD, description: ["Héros du village II permanent,", "+10 % de coins gagnés."]}
+    unique: {name: "Cri de ralliement", icon: GOAT_HORN, cooldown: 120, description: ["Ton clan et tes alliés dans 15 blocs :", "Force I + Résistance I pendant 15 s."]}
+    unique-plus: {name: "Cri héroïque", icon: BELL, description: ["25 blocs + Régénération."]}
+    ultimate: {name: "Élu des dieux", icon: NETHER_STAR, cooldown: 1800, description: ["À ta mort, tu ressuscites avec", "50 % de vie et 5 s d'invulnérabilité.", "(passif, une fois toutes les 30 min)"]}

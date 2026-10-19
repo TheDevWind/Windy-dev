@@ -1,0 +1,38 @@
+# ==========================================================================================
+#  WindyClans - Boutique d'Éclats (v1.2)
+# ------------------------------------------------------------------------------------------
+#  Les Éclats de donjon servent de monnaie : rien n'est jamais perdu.
+#  Menu : Boss et donjons > Donjons > Boutique d'Éclats (ou /donjon boutique).
+#
+#  item  : objet reçu (windy:<id> ou MATÉRIAU), amount : quantité
+#  price : Éclats demandés (eclat_1, eclat_2, eclat_3)
+#  Revente : un grimoire dont tu connais déjà le sort se revend contre des Éclats III.
+# ==========================================================================================
+config-version: 1
+
+resell-grimoire:
+  eclat_3: 4
+
+offers:
+  # ---------------------------------------------------------------- Éclats I
+  glyphe_1: {item: "windy:glyphe_1", amount: 1, price: {eclat_1: 4}}
+  parchemin: {item: "windy:parchemin_effacement", amount: 1, price: {eclat_1: 6}}
+  sceau_1: {item: "windy:sceau_donjon_1", amount: 1, price: {eclat_1: 5}}
+  rune_terre: {item: "windy:rune_terre", amount: 1, price: {eclat_1: 3}}
+  rune_feu: {item: "windy:rune_feu", amount: 1, price: {eclat_1: 5}}
+  eclat_2: {item: "windy:eclat_2", amount: 1, price: {eclat_1: 8}}
+  # ---------------------------------------------------------------- Éclats II
+  glyphe_2: {item: "windy:glyphe_2", amount: 1, price: {eclat_2: 4}}
+  sceau_2: {item: "windy:sceau_donjon_2", amount: 1, price: {eclat_2: 5}}
+  rune_glace: {item: "windy:rune_glace", amount: 1, price: {eclat_2: 3}}
+  rune_foudre: {item: "windy:rune_foudre", amount: 1, price: {eclat_2: 4}}
+  eclat_3: {item: "windy:eclat_3", amount: 1, price: {eclat_2: 8}}
+  # ---------------------------------------------------------------- Éclats III
+  glyphe_3: {item: "windy:glyphe_3", amount: 1, price: {eclat_3: 4}}
+  sceau_3: {item: "windy:sceau_donjon_3", amount: 1, price: {eclat_3: 4}}
+  rune_vide: {item: "windy:rune_vide", amount: 1, price: {eclat_3: 4}}
+  grimoire_trait: {item: "windy:grimoire_trait", amount: 1, price: {eclat_3: 10}}
+  grimoire_nova: {item: "windy:grimoire_nova", amount: 1, price: {eclat_3: 10}}
+  grimoire_chaine: {item: "windy:grimoire_chaine", amount: 1, price: {eclat_3: 16}}
+  grimoire_ombre: {item: "windy:grimoire_ombre", amount: 1, price: {eclat_3: 16}}
+  grimoire_egide: {item: "windy:grimoire_egide", amount: 1, price: {eclat_3: 16}}

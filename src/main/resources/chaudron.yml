@@ -1,0 +1,141 @@
+# ==========================================================================================
+#  WindyClans - rituel du chaudron (sacs magiques)
+# ==========================================================================================
+#  Chaudron runique :
+#   tier I  : chaudron rempli d'eau, posé sur un feu de camp allumé,
+#             entouré de 4 blocs d'améthyste collés (nord, sud, est, ouest).
+#   tier II : même chose sur un feu de camp des âmes allumé,
+#             + 4 obsidiennes pleureuses aux 4 coins.
+#  Quand tout est en place, le chaudron s'éveille (nouvelle apparence).
+#
+#  1. Jette les ingrédients dans le chaudron (touche Q au-dessus).
+#  2. Quand tout y est, la potion bout : reste à côté jusqu'à la fin.
+#  Clic droit sur le chaudron (main vide) : relancer la vérification.
+#  Accroupi + clic droit (main vide) : récupérer les ingrédients.
+#
+#  ingrédients : "MATERIAU:quantité" ou "windy:objet:quantité"
+#  base : objet à améliorer (le contenu du sac est gardé)
+#  player-level : niveau personnel minimum   clan-level : niveau de clan minimum
+# ==========================================================================================
+config-version: 6
+
+settings:
+  # distance max entre le joueur et le chaudron pendant la cuisson
+  stay-radius: 6
+
+recipes:
+  sac_1:
+    name: "&dSacoche runique"
+    result: sac_1
+    tier: 1
+    player-level: 10
+    clan-level: 2
+    night-only: false
+    duration: 60
+    ingredients:
+      - "DIAMOND:4"
+      - "GOLD_INGOT:8"
+      - "ENDER_PEARL:4"
+      - "LEATHER:16"
+      - "windy:rune_terre:1"
+  sac_2:
+    name: "&5Sac du Vide"
+    result: sac_2
+    tier: 2
+    player-level: 30
+    clan-level: 5
+    night-only: true
+    duration: 180
+    base: "windy:sac_1"
+    ingredients:
+      - "SHULKER_SHELL:2"
+      - "NETHERITE_INGOT:1"
+      - "DIAMOND_BLOCK:2"
+      - "windy:rune_glace:1"
+
+  parchemin_oubli:
+    name: "&dParchemin d'oubli"
+    result: parchemin_oubli
+    tier: 1
+    player-level: 20
+    clan-level: 0
+    night-only: false
+    duration: 45
+    ingredients:
+      - "BOOK:1"
+      - "EXPERIENCE_BOTTLE:16"
+      - "LAPIS_BLOCK:4"
+      - "GHAST_TEAR:2"
+      - "windy:rune_terre:1"
+
+  # ---------------------------------------------------------------- élixirs magiques : machines et réseau
+  extracteur:
+    name: "&dAssemblage de l'Extracteur"
+    result: extracteur
+    tier: 1
+    player-level: 10
+    duration: 60
+    ingredients: ["NOTE_BLOCK:1", "IRON_BLOCK:2", "AMETHYST_SHARD:16", "windy:rune_terre:1"]
+  infuseur:
+    name: "&dAssemblage de l'Infuseur"
+    result: infuseur
+    tier: 1
+    player-level: 15
+    duration: 60
+    ingredients: ["NOTE_BLOCK:1", "AMETHYST_BLOCK:4", "GOLD_BLOCK:2", "windy:rune_feu:1"]
+  verre_magique:
+    name: "&dCoulée de Verre magique"
+    result: verre_magique
+    result-amount: 4
+    tier: 1
+    player-level: 10
+    duration: 30
+    ingredients: ["TINTED_GLASS:4", "AMETHYST_BLOCK:1", "windy:baie_1:8"]
+  baguette_liaison:
+    name: "&dTaille de la Baguette de liaison"
+    result: baguette_liaison
+    tier: 1
+    player-level: 10
+    duration: 45
+    ingredients: ["BLAZE_ROD:1", "AMETHYST_SHARD:8", "GOLD_INGOT:4", "windy:rune_terre:1"]
+
+  # ---------------------------------------------------------------- donjons (v1.2)
+  sceau_donjon_1:
+    name: "&7Sceau de la Crypte oubliée"
+    result: sceau_donjon_1
+    tier: 1
+    player-level: 10
+    duration: 45
+    ingredients: ["BONE_BLOCK:4", "ROTTEN_FLESH:32", "GOLD_INGOT:4", "windy:baie_1:8"]
+
+  # ---------------------------------------------------------------- magie (v1.2)
+  baton_1:
+    name: "&dBâton d'apprenti"
+    result: baton_1
+    tier: 1
+    player-level: 5
+    duration: 40
+    ingredients: ["BLAZE_ROD:2", "AMETHYST_SHARD:16", "LAPIS_BLOCK:2", "windy:baie_1:4"]
+
+  # ---------------------------------------------------------------- gravure runique (v1.2)
+  glyphe_1:
+    name: "&aGlyphe runique I"
+    result: glyphe_1
+    tier: 1
+    player-level: 10
+    duration: 40
+    ingredients: ["AMETHYST_SHARD:8", "LAPIS_LAZULI:16", "GOLD_INGOT:2", "windy:baie_1:4"]
+  parchemin_effacement:
+    name: "&7Parchemin d'effacement"
+    result: parchemin_effacement
+    tier: 1
+    player-level: 15
+    duration: 30
+    ingredients: ["PAPER:4", "INK_SAC:4", "AMETHYST_SHARD:8", "windy:baie_2:2"]
+  tome_arcanes:
+    name: "&dTome des arcanes"
+    result: tome_arcanes
+    tier: 1
+    player-level: 15
+    duration: 45
+    ingredients: ["BOOK:1", "AMETHYST_SHARD:16", "LAPIS_BLOCK:2", "windy:baie_2:4"]

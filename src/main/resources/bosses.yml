@@ -1,0 +1,170 @@
+# ==========================================================
+#  Boss de clan : un boss par niveau de clan.
+#  Après une victoire, le boss se reforme au bout de "win-cooldown" secondes (1 h).
+#  Menu du clan > Boss. Le combat a lieu dans une arène (monde "windy_arenes").
+#
+#  MAJ équilibrage (29/09) : PV x2 à x3, dégâts +1/+2, runes plus rares
+#  (25 % -> 15 %), XP de clan -25 %, cooldown 30 min -> 1 h.
+#  MAJ donjons (1.10.0) : le boss 5 lâche le Sceau des Mines englouties,
+#  le boss 8 celui de la Citadelle de givre.
+#  MAJ gravure (1.12.0) : les boss 3 à 10 lâchent un Glyphe runique II.
+#
+#  type        : type de mob Minecraft
+#  health      : points de vie (20 = 10 coeurs)
+#  damage      : dégâts par coup
+#  speed       : vitesse (0.23 = zombie normal)
+#  scale       : taille (1 = normale, 2 = double)
+#  effects     : effets permanents  EFFET:niveau (0 = niveau I)
+#  equipment   : hand, helmet, chestplate, leggings, boots
+#  abilities   : summon (mob, count), lightning, fireball, leap, shockwave, teleport, slow, heal
+#                cooldown en secondes
+#  rewards     : rune       = rune lâchée (une seule)
+#                rune-chance = chance en % d'avoir la rune
+#                clan-xp    = XP de clan (toujours donnée)
+#                items      = (optionnel) objets toujours lâchés : windy:<id>:n ou MATÉRIAU:n
+# ==========================================================
+config-version: 3
+
+settings:
+  # grade minimum pour lancer un combat
+  rank: OFFICIER
+  # secondes pour rejoindre le combat après le lancement
+  lobby-seconds: 20
+  # durée max du combat (secondes)
+  time-limit: 600
+  # attente avant de retenter après une défaite (secondes)
+  retry-cooldown: 300
+  # attente avant de refaire un boss déjà vaincu (secondes) : 3600 = 1 h
+  win-cooldown: 3600
+  # PV du boss x (1 + group-scaling x (joueurs - 1)) : 0.5 = +50 % par joueur en plus
+  group-scaling: 0.5
+
+bosses:
+  1:
+    name: "&aGardien de pierre"
+    type: ZOMBIE
+    health: 150
+    damage: 6
+    speed: 0.25
+    scale: 1.3
+    effects: ["RESISTANCE:0"]
+    equipment: {hand: STONE_AXE, helmet: CHAINMAIL_HELMET}
+    rewards: {rune: rune_terre, rune-chance: 25, clan-xp: 75}
+  2:
+    name: "&aSentinelle des os"
+    type: SKELETON
+    health: 200
+    damage: 6
+    speed: 0.27
+    scale: 1.3
+    effects: ["SPEED:0", "RESISTANCE:0"]
+    equipment: {hand: BOW, helmet: IRON_HELMET}
+    abilities:
+      - {type: summon, mob: SKELETON, count: 2, cooldown: 30}
+    rewards: {rune: rune_terre, rune-chance: 24, clan-xp: 110}
+  3:
+    name: "&6Brute de braise"
+    type: HUSK
+    health: 280
+    damage: 8
+    speed: 0.28
+    scale: 1.5
+    effects: ["FIRE_RESISTANCE:0", "STRENGTH:0"]
+    equipment: {hand: GOLDEN_AXE, chestplate: GOLDEN_CHESTPLATE}
+    abilities:
+      - {type: fireball, cooldown: 8}
+      - {type: leap, cooldown: 10}
+    rewards: {rune: rune_feu, rune-chance: 22, clan-xp: 150, items: ["windy:glyphe_2:1"]}
+  4:
+    name: "&6Araignée des cendres"
+    type: SPIDER
+    health: 350
+    damage: 8
+    speed: 0.33
+    scale: 2.0
+    effects: ["SPEED:1", "FIRE_RESISTANCE:0"]
+    abilities:
+      - {type: leap, cooldown: 6}
+      - {type: summon, mob: CAVE_SPIDER, count: 3, cooldown: 25}
+    rewards: {rune: rune_feu, rune-chance: 21, clan-xp: 190, items: ["windy:glyphe_2:1"]}
+  5:
+    name: "&bChevalier du givre"
+    type: STRAY
+    health: 450
+    damage: 9
+    speed: 0.27
+    scale: 1.6
+    effects: ["RESISTANCE:1"]
+    equipment: {hand: IRON_SWORD, helmet: DIAMOND_HELMET, chestplate: IRON_CHESTPLATE}
+    abilities:
+      - {type: slow, cooldown: 12}
+      - {type: summon, mob: STRAY, count: 2, cooldown: 25}
+    rewards: {rune: rune_glace, rune-chance: 20, clan-xp: 225, items: ["windy:glyphe_2:1", "windy:sceau_donjon_2:1"]}
+  6:
+    name: "&bReine de l'hiver"
+    type: WITCH
+    health: 550
+    damage: 7
+    speed: 0.25
+    scale: 1.6
+    effects: ["RESISTANCE:1", "REGENERATION:0"]
+    abilities:
+      - {type: slow, cooldown: 10}
+      - {type: teleport, cooldown: 12}
+      - {type: summon, mob: STRAY, count: 3, cooldown: 20}
+    rewards: {rune: rune_glace, rune-chance: 19, clan-xp: 265, items: ["windy:glyphe_2:1"]}
+  7:
+    name: "&eColosse de foudre"
+    type: RAVAGER
+    health: 700
+    damage: 11
+    speed: 0.28
+    scale: 1.2
+    effects: ["RESISTANCE:1"]
+    abilities:
+      - {type: lightning, cooldown: 8}
+      - {type: shockwave, cooldown: 12}
+    rewards: {rune: rune_foudre, rune-chance: 18, clan-xp: 340, items: ["windy:glyphe_2:1"]}
+  8:
+    name: "&eArchimage de l'orage"
+    type: EVOKER
+    health: 700
+    damage: 9
+    speed: 0.3
+    scale: 1.5
+    effects: ["RESISTANCE:1"]
+    abilities:
+      - {type: lightning, cooldown: 6}
+      - {type: teleport, cooldown: 8}
+      - {type: heal, cooldown: 60}
+    rewards: {rune: rune_foudre, rune-chance: 17, clan-xp: 410, items: ["windy:glyphe_2:1", "windy:sceau_donjon_3:1"]}
+  9:
+    name: "&dChevalier du vide"
+    type: WITHER_SKELETON
+    health: 950
+    damage: 13
+    speed: 0.3
+    scale: 2.0
+    effects: ["RESISTANCE:1", "FIRE_RESISTANCE:0"]
+    equipment: {hand: NETHERITE_SWORD, helmet: NETHERITE_HELMET}
+    abilities:
+      - {type: teleport, cooldown: 7}
+      - {type: shockwave, cooldown: 10}
+      - {type: summon, mob: WITHER_SKELETON, count: 2, cooldown: 25}
+    rewards: {rune: rune_vide, rune-chance: 16, clan-xp: 525, items: ["windy:glyphe_2:1"]}
+  10:
+    name: "&5&lAvatar du Vide"
+    type: RAVAGER
+    health: 1500
+    damage: 15
+    speed: 0.3
+    scale: 1.6
+    effects: ["RESISTANCE:2", "FIRE_RESISTANCE:0"]
+    abilities:
+      - {type: lightning, cooldown: 5}
+      - {type: fireball, cooldown: 6}
+      - {type: shockwave, cooldown: 9}
+      - {type: teleport, cooldown: 10}
+      - {type: summon, mob: VEX, count: 4, cooldown: 20}
+      - {type: heal, cooldown: 90}
+    rewards: {rune: rune_vide, rune-chance: 15, clan-xp: 750, items: ["windy:glyphe_2:1"]}

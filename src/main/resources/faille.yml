@@ -1,0 +1,76 @@
+# ==========================================================================================
+#  WindyClans - Faille arcanique (évènement du serveur)
+# ------------------------------------------------------------------------------------------
+#  Environ une fois par jour, s'il y a assez de joueurs, un sanctuaire s'ouvre dans un monde
+#  à part (windy_faille). Annonce dans le chat et sur Discord, entrée avec /faille.
+#
+#  1. Les joueurs tuent les créatures : chaque mort charge le RITUEL.
+#  2. Des gardiens sortent en chemin (25 %, 50 %, 75 %).
+#  3. À 100 %, l'AVATAR apparaît. S'il meurt avant la fin du temps, le rituel est réussi.
+#
+#  Récompense : un Fragment d'éveil par rituel réussi (il faut avoir assez combattu).
+#  Avec assez de fragments (magie.yml > settings.innate.fragments), le joueur lance ses
+#  sorts sans catalyseur, pour toujours.
+#
+#  Admin : /clanadmin faille <ouvrir|fermer|info>
+# ==========================================================================================
+config-version: 1
+
+settings:
+  enabled: true
+  # délai entre deux failles, et écart au hasard en plus ou en moins
+  interval-hours: 24
+  jitter-hours: 2
+  # joueurs connectés nécessaires pour qu'elle s'ouvre (sinon elle attend)
+  min-players: 2
+  duration-minutes: 30
+  # fermeture anticipée si plus personne n'est dans le sanctuaire depuis ce délai
+  close-if-empty-minutes: 10
+  # dégâts à infliger pendant l'évènement pour recevoir le fragment et les récompenses
+  min-damage: 150
+
+ritual:
+  # créatures à tuer pour charger le rituel, et supplément par joueur au-delà du premier
+  kills: 60
+  kills-per-extra-player: 25
+
+monsters:
+  # niveau de départ (il monte de 3 pendant le rituel)
+  level: 4
+  hp-per-level: 0.35
+  damage-per-level: 0.2
+  hp-per-extra-player: 0.15
+  # créatures présentes en même temps
+  max-alive: 8
+  max-alive-per-extra-player: 4
+  # from : part du rituel à partir de laquelle la créature apparaît (0.5 = 50 %)
+  types:
+    - {type: ZOMBIE, name: "Rôdeur de la faille", from: 0.0}
+    - {type: SKELETON, name: "Archer du néant", from: 0.0}
+    - {type: SPIDER, name: "Tisseuse du vide", from: 0.15}
+    - {type: VINDICATOR, name: "Exécuteur", from: 0.35}
+    - {type: WITHER_SKELETON, name: "Garde calciné", from: 0.55}
+    - {type: BLAZE, name: "Braise de la faille", from: 0.75}
+
+# Gardiens : at = part du rituel, hp = points de vie (+50 % par joueur en plus), damage = multiplicateur
+guardians:
+  - {at: 0.25, type: RAVAGER, name: "Brise-sceau", hp: 160, damage: 1.2}
+  - {at: 0.5, type: EVOKER, name: "Tisseur de failles", hp: 140, damage: 1.3}
+  - {at: 0.75, type: WITHER_SKELETON, name: "Champion calciné", hp: 220, damage: 1.6}
+
+boss:
+  type: WITHER_SKELETON
+  name: "&5Avatar de la faille"
+  hp: 600
+  hp-per-extra-player: 250
+  damage: 1.8
+
+# Récompenses de chaque joueur qui a assez combattu, en plus du Fragment d'éveil.
+# items : "windy:<id>:<quantité>" ou "MATÉRIAU:<quantité>", avec "@0.25" à la fin pour 25 % de chance
+rewards:
+  xp: 1500
+  souls: 150
+  items:
+    - "windy:eclat_2:3"
+    - "windy:glyphe_2:1@0.35"
+    - "windy:eclat_3:1@0.25"

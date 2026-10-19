@@ -1,0 +1,210 @@
+# ==========================================================================================
+#  WindyClans - Donjons (v1.2)
+# ------------------------------------------------------------------------------------------
+#  Un donjon = une instance privée (monde "windy_donjons"), 1 à 5 joueurs, 3 étages.
+#  Chaque étage est généré au hasard : salle d'entrée, salles de combat, salle au trésor,
+#  puis la salle du gardien d'étage. Les portes s'ouvrent quand la salle est vidée.
+#  Le dernier étage se termine par le gardien du donjon et le butin de fin.
+#
+#  Lancement : menu Boss et donjons > Donjons (grade "rank" minimum), avec un Sceau de donjon
+#  dans l'inventaire (consommé au départ). Le clan et ses alliés ont "lobby-seconds" pour rejoindre.
+#
+#  Monstres à niveau :  PV = base x (1 + hp-per-level x (niveau - 1))
+#                       dégâts = base x (1 + damage-per-level x (niveau - 1))
+#                       PV x (1 + group-scaling x (joueurs - 1))
+#  Butin : "objet min-max chance%"  ex. "windy:eclat_1 2-4 100"  ou  "DIAMOND 1-3 40"
+# ==========================================================================================
+config-version: 2
+
+settings:
+  rank: MEMBRE
+  lobby-seconds: 30
+  max-players: 5
+  # instances en même temps sur le serveur
+  max-instances: 3
+  # durée max d'une partie (secondes) : 2400 = 40 min
+  time-limit: 2400
+  # vies partagées par le groupe
+  lives: 3
+  # un joueur ne reçoit le butin de fin qu'une fois toutes les X secondes (7200 = 2 h)
+  reward-cooldown: 7200
+  hp-per-level: 0.35
+  damage-per-level: 0.2
+  group-scaling: 0.6
+  # chance qu'un monstre soit une élite (0.125 = 1 sur 8)
+  elite-chance: 0.125
+  # XP personnelle par monstre tué = niveau du monstre x cette valeur
+  xp-per-mob-level: 5
+  # salles de combat par étage (+ entrée, trésor et gardien)
+  combat-rooms: 4
+  # monstres par salle = base + par joueur x joueurs (max "cap")
+  mobs-base: 4
+  mobs-per-player: 2
+  mobs-cap: 14
+  # mutation de la semaine : auto (change chaque lundi), none, ou frenesie|elites|colosses|regeneration|explosifs
+  mutation: auto
+  # chances du butin de fin multipliées pendant une mutation
+  mutation-loot-bonus: 1.5
+
+dungeons:
+  crypte:
+    name: "&7Crypte oubliée"
+    icon: SKELETON_SKULL
+    theme: crypte
+    seal: sceau_donjon_1
+    player-level: 10
+    clan-xp: 150
+    completion-xp: 400
+    # niveau des monstres à chaque étage
+    floors: [1, 2, 3]
+    mobs:
+      ZOMBIE: "Mort-vivant"
+      SKELETON: "Squelette maudit"
+      SPIDER: "Araignée des tombes"
+      HUSK: "Goule"
+    mini-boss:
+      name: "&7Gardien des ossuaires"
+      type: SKELETON
+      health: 120
+      damage: 6
+      scale: 1.4
+      equipment: {hand: BOW, helmet: CHAINMAIL_HELMET}
+      abilities:
+        - {type: summon, mob: SKELETON, count: 2, cooldown: 20}
+    guardian:
+      name: "&f&lSeigneur des os"
+      type: WITHER_SKELETON
+      health: 320
+      damage: 9
+      scale: 1.8
+      equipment: {hand: STONE_SWORD, helmet: IRON_HELMET}
+      abilities:
+        - {type: summon, mob: SKELETON, count: 3, cooldown: 18}
+        - {type: leap, cooldown: 9}
+        - {type: shockwave, cooldown: 14}
+    loot:
+      chest:
+        - "windy:eclat_1 1-3 100"
+        - "GOLD_INGOT 2-6 60"
+        - "IRON_INGOT 4-10 60"
+        - "windy:piece 2-5 50"
+        - "windy:glyphe_1 1-2 35"
+      final:
+        - "windy:eclat_1 3-5 100"
+        - "windy:glyphe_2 1-1 25"
+        - "windy:piece 5-10 100"
+        - "DIAMOND 1-2 40"
+        - "windy:rune_terre 1-1 25"
+        - "windy:grimoire_trait 1-1 3"
+        - "windy:grimoire_nova 1-1 2"
+
+  mines:
+    name: "&6Mines englouties"
+    icon: IRON_PICKAXE
+    theme: mines
+    seal: sceau_donjon_2
+    player-level: 25
+    clan-xp: 300
+    completion-xp: 900
+    floors: [3, 4, 5]
+    mobs:
+      ZOMBIE: "Mineur noyé"
+      DROWNED: "Noyé des galeries"
+      SKELETON: "Squelette des puits"
+      CAVE_SPIDER: "Araignée des failles"
+      SILVERFISH: "Ver de roche"
+    mini-boss:
+      name: "&6Contremaître maudit"
+      type: VINDICATOR
+      health: 240
+      damage: 9
+      scale: 1.4
+      equipment: {hand: IRON_AXE}
+      abilities:
+        - {type: leap, cooldown: 8}
+        - {type: summon, mob: ZOMBIE, count: 2, cooldown: 20}
+    guardian:
+      name: "&6&lGolem de rouille"
+      type: IRON_GOLEM
+      health: 650
+      damage: 12
+      scale: 1.4
+      abilities:
+        - {type: shockwave, cooldown: 10}
+        - {type: leap, cooldown: 12}
+        - {type: summon, mob: CAVE_SPIDER, count: 3, cooldown: 20}
+        - {type: heal, cooldown: 90}
+    loot:
+      chest:
+        - "windy:eclat_2 1-2 100"
+        - "windy:eclat_1 1-3 60"
+        - "DIAMOND 1-2 45"
+        - "windy:piece 4-8 50"
+        - "windy:glyphe_2 1-1 25"
+      final:
+        - "windy:glyphe_3 1-1 12"
+        - "windy:eclat_2 3-5 100"
+        - "windy:piece 10-20 100"
+        - "DIAMOND 2-4 60"
+        - "windy:rune_feu 1-1 25"
+        - "windy:rune_glace 1-1 15"
+        - "windy:grimoire_trait 1-1 5"
+        - "windy:grimoire_nova 1-1 4"
+        - "windy:grimoire_chaine 1-1 3"
+        - "windy:grimoire_ombre 1-1 3"
+
+  citadelle:
+    name: "&bCitadelle de givre"
+    icon: BLUE_ICE
+    theme: citadelle
+    seal: sceau_donjon_3
+    player-level: 40
+    clan-xp: 500
+    completion-xp: 2000
+    floors: [5, 6, 7]
+    mobs:
+      STRAY: "Archer du givre"
+      ZOMBIE: "Soldat gelé"
+      VINDICATOR: "Garde de la citadelle"
+      WITCH: "Sorcière des neiges"
+      SPIDER: "Araignée de glace"
+    mini-boss:
+      name: "&bCapitaine de la garde"
+      type: VINDICATOR
+      health: 380
+      damage: 12
+      scale: 1.5
+      equipment: {hand: DIAMOND_AXE}
+      abilities:
+        - {type: slow, cooldown: 10}
+        - {type: leap, cooldown: 8}
+    guardian:
+      name: "&b&lReine du givre ancienne"
+      type: EVOKER
+      health: 900
+      damage: 12
+      scale: 1.8
+      abilities:
+        - {type: slow, cooldown: 9}
+        - {type: summon, mob: STRAY, count: 3, cooldown: 16}
+        - {type: teleport, cooldown: 10}
+        - {type: lightning, cooldown: 7}
+        - {type: heal, cooldown: 80}
+    loot:
+      chest:
+        - "windy:eclat_3 1-2 100"
+        - "windy:eclat_2 1-3 60"
+        - "DIAMOND 2-3 50"
+        - "NETHERITE_SCRAP 1-1 15"
+        - "windy:glyphe_3 1-1 20"
+      final:
+        - "windy:glyphe_3 1-2 60"
+        - "windy:eclat_3 3-5 100"
+        - "windy:piece 20-35 100"
+        - "NETHERITE_SCRAP 1-2 40"
+        - "windy:rune_glace 1-1 30"
+        - "windy:rune_foudre 1-1 20"
+        - "windy:grimoire_chaine 1-1 5"
+        - "windy:grimoire_ombre 1-1 5"
+        - "windy:grimoire_egide 1-1 4"
+        - "windy:grimoire_meteore 1-1 2"

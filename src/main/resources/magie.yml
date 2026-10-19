@@ -1,0 +1,200 @@
+# ==========================================================================================
+#  WindyClans - Magie (v1.2)
+# ------------------------------------------------------------------------------------------
+#  Un CATALYSEUR (bâton ou tome des arcanes) en main :
+#     clic droit               -> lance le sort sélectionné
+#     clic droit MAINTENU      -> charge le sort (Trait, Nova, Chaîne, Météore) ; il part quand on relâche.
+#                                 Relâcher juste au tintement = charge parfaite (bonus, sans surcoût).
+#     accroupi + clic droit    -> passe au sort suivant
+#  (accroupi + F reste le pouvoir de race : pas de conflit)
+#
+#  Les sorts s'apprennent avec les GRIMOIRES (butin de donjon) : clic droit avec le grimoire
+#  en main. L'apprentissage est définitif. 3 emplacements se règlent dans Profil > Grimoire.
+#
+#  Mana : "base" au départ, regagné chaque seconde. Le bâton et la race Arcanien l'augmentent.
+#  HUD (au-dessus de la barre d'objets) : visible seulement avec un catalyseur en main.
+#
+#  ÉLÉMENTS : chaque sort pose son élément sur la cible (arcane, givre, foudre, feu, ombre).
+#  Un sort d'un AUTRE élément sur une cible marquée déclenche une RÉACTION (section reactions).
+#  ENCHAÎNEMENT : lancer un sort différent juste après avoir touché = plus de dégâts, moins de mana.
+# ==========================================================================================
+config-version: 1
+
+settings:
+  slots: 3
+  mana:
+    base: 100
+    regen-per-second: 2
+  # dégâts des sorts contre un joueur (0.5 = moitié)
+  pvp-multiplier: 0.5
+  # bonus de la race Arcanien
+  arcanien:
+    mana-bonus: 20
+    # + ce bonus par rang d'Éveil (rang 1 à 5)
+    mana-bonus-per-rank: 10
+    regen-bonus: 1
+    # la réduction de recharge des pouvoirs (stat "ability-cooldown") s'applique aussi aux sorts
+  # ---- charge (clic maintenu)
+  charge:
+    enabled: true
+    # barre de charge en haut de l'écran
+    bar: true
+    # léger ralentissement pendant la charge
+    slow: true
+    # ticks sans clic avant de considérer le bouton relâché (le clic maintenu arrive toutes les 4 ticks)
+    release-ticks: 6
+    # le sort part tout seul après ce délai à pleine charge
+    max-hold-ticks: 60
+    # charge parfaite : relâcher dans ce délai après le tintement
+    perfect-window-ticks: 10
+    # bonus de dégâts d'une charge parfaite (0.2 = +20 %), et pas de surcoût de mana
+    perfect-bonus: 0.2
+    # surcoût de mana à pleine charge (0.5 = +50 %)
+    mana-surcharge: 0.5
+  # ---- enchaînement : un sort DIFFÉRENT lancé peu après avoir touché
+  combo:
+    # niveau maximum (0 = désactivé)
+    max: 3
+    window-seconds: 2.5
+    damage-per-level: 0.1
+    mana-discount-per-level: 0.1
+  # ---- réactions élémentaires
+  reactions:
+    enabled: true
+    # durée d'un élément posé sur une cible
+    state-seconds: 6
+    # part du bonus de réaction gardée contre un boss (0.5 = moitié) ; un boss n'est jamais immobilisé
+    boss-factor: 0.5
+    # mana rendu par l'effet "refund"
+    refund-mana: 10
+  # ---- incantation innée : lancer ses sorts SANS catalyseur, avec n'importe quel objet en main
+  #      (F = lancer, accroupi + clic gauche dans le vide = sort suivant ; pas de charge)
+  innate:
+    # Fragments d'éveil nécessaires ; un fragment par rituel réussi dans la Faille arcanique (faille.yml)
+    fragments: 3
+  # ---- effets visuels
+  effects:
+    # projectiles, débris, cercles runiques (entités d'affichage, jamais sauvegardées)
+    displays: true
+    # chiffres de dégâts flottants
+    damage-numbers: true
+
+# Réactions : "<élément sur la cible>+<élément du sort qui touche>"
+#   multiplier : dégâts du coup sur la cible      radius / splash : zone autour d'elle et part des dégâts
+#   effect : none, stun (immobilise 2,5 s), weakness (Faiblesse 5 s), ignite (enflamme la zone),
+#            knock (projette en l'air), refund (rend du mana)
+reactions:
+  givre+foudre: {name: "&bSupraconduction", multiplier: 1.3, radius: 4, splash: 0.6, effect: none}
+  givre+feu: {name: "&6Brisure", multiplier: 2.0, radius: 0, splash: 0, effect: none}
+  givre+arcane: {name: "&dÉclats de glace", multiplier: 1.3, radius: 3, splash: 0.5, effect: none}
+  foudre+givre: {name: "&bStase", multiplier: 1.2, radius: 0, splash: 0, effect: stun}
+  foudre+feu: {name: "&6Surcharge", multiplier: 1.5, radius: 5, splash: 0.5, effect: knock}
+  foudre+arcane: {name: "&dArc voltaïque", multiplier: 1.3, radius: 5, splash: 0.5, effect: none}
+  feu+givre: {name: "&bChoc thermique", multiplier: 1.8, radius: 0, splash: 0, effect: weakness}
+  feu+foudre: {name: "&ePlasma", multiplier: 1.4, radius: 4, splash: 0.5, effect: ignite}
+  feu+arcane: {name: "&dDétonation", multiplier: 1.3, radius: 3, splash: 0.7, effect: none}
+  arcane+givre: {name: "&dAmplification", multiplier: 1.4, radius: 0, splash: 0, effect: refund}
+  arcane+foudre: {name: "&dAmplification", multiplier: 1.4, radius: 0, splash: 0, effect: refund}
+  arcane+feu: {name: "&dAmplification", multiplier: 1.4, radius: 0, splash: 0, effect: refund}
+  ombre+arcane: {name: "&5Embuscade", multiplier: 1.6, radius: 0, splash: 0, effect: none}
+  ombre+givre: {name: "&5Embuscade", multiplier: 1.6, radius: 0, splash: 0, effect: none}
+  ombre+foudre: {name: "&5Embuscade", multiplier: 1.6, radius: 0, splash: 0, effect: none}
+  ombre+feu: {name: "&5Embuscade", multiplier: 1.6, radius: 0, splash: 0, effect: none}
+
+# Catalyseurs : id d'objet (items.yml) -> bonus
+catalysts:
+  baton_1: {mana: 0, cooldown: 0.0, power: 0.0}
+  tome_arcanes: {mana: 15, cooldown: 0.05, power: 0.0}
+  baton_2: {mana: 25, cooldown: 0.10, power: 0.10}
+  baton_3: {mana: 50, cooldown: 0.20, power: 0.25}
+
+# Les 6 sorts. mana = coût, cooldown = secondes, damage = dégâts (x power du bâton)
+# element : élément posé.  charge-seconds : durée de la pleine charge (0 = sort instantané).
+# charge-damage / charge-radius : bonus à pleine charge (1.0 = +100 %).  charged : texte du menu.
+spells:
+  trait:
+    name: "&dTrait arcanique"
+    grimoire: grimoire_trait
+    mana: 15
+    cooldown: 3
+    damage: 6
+    range: 30
+    element: arcane
+    charge-seconds: 1.0
+    charge-damage: 1.0
+    # nombre de cibles transpercées à pleine charge
+    charge-pierce: 5
+    charged: "jusqu'à x2 dégâts, transperce à pleine charge"
+    description: ["&7Projectile arcanique en ligne droite.", "&7Touche la première cible."]
+  nova:
+    name: "&bNova de givre"
+    grimoire: grimoire_nova
+    mana: 35
+    cooldown: 15
+    damage: 4
+    radius: 5
+    slow-seconds: 3
+    element: givre
+    charge-seconds: 1.2
+    charge-damage: 0.5
+    charge-radius: 0.6
+    # immobilisation à pleine charge (moitié sur les joueurs, rien sur les boss)
+    charge-root-seconds: 1.5
+    charged: "zone plus large, immobilise à pleine charge"
+    description: ["&7Onde de givre autour de toi :", "&7dégâts et &fLenteur II&7."]
+  chaine:
+    name: "&eChaîne d'éclairs"
+    grimoire: grimoire_chaine
+    mana: 30
+    cooldown: 12
+    damage: 5
+    range: 20
+    targets: 4
+    bounce: 6
+    element: foudre
+    charge-seconds: 1.2
+    charge-damage: 0.5
+    # rebonds en plus à pleine charge
+    charge-targets: 3
+    charged: "plus de dégâts, 3 rebonds de plus"
+    description: ["&7Un éclair qui rebondit", "&7de cible en cible."]
+  ombre:
+    name: "&5Pas de l'ombre"
+    grimoire: grimoire_ombre
+    mana: 25
+    cooldown: 20
+    distance: 10
+    invisible-seconds: 2
+    element: ombre
+    # les ennemis à cette distance de l'arrivée reçoivent la Marque d'ombre
+    mark-radius: 4
+    description: ["&7Téléportation vers l'avant,", "&7invisible un court instant.", "&7Marque les ennemis à l'arrivée."]
+  egide:
+    name: "&6Égide"
+    grimoire: grimoire_egide
+    mana: 50
+    cooldown: 40
+    # absorption : niveau 3 = 6 cœurs
+    level: 3
+    seconds: 8
+    radius: 8
+    description: ["&7Bouclier de &f6 cœurs &7pour toi", "&7et tes alliés proches."]
+  meteore:
+    name: "&cMétéore"
+    grimoire: grimoire_meteore
+    mana: 70
+    cooldown: 60
+    damage: 12
+    range: 30
+    radius: 4
+    delay-ticks: 40
+    fire-seconds: 4
+    element: feu
+    charge-seconds: 1.5
+    charge-damage: 0.75
+    charge-radius: 0.5
+    # sol en feu à pleine charge : durée et dégâts par seconde
+    charge-burn-seconds: 4
+    charge-burn-damage: 2
+    charged: "plus gros, laisse le sol en feu à pleine charge"
+    description: ["&7Marque une zone : un météore", "&7s'y écrase 2 s plus tard."]

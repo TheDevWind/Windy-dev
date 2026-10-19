@@ -1,0 +1,290 @@
+# ==========================================================
+#  Rituels
+#
+#  AUTEL
+#   Tier I   : une table d'enchantement au centre + 4 blocs d'améthyste
+#              à 3 blocs du centre (nord, sud, est, ouest), à la même hauteur.
+#   Tier II  : + 4 obsidiennes pleureuses aux coins (3 blocs en diagonale de la table)
+#   Tier III : + un bloc de diamant sous la table
+#   Un autel complet prend une apparence spéciale (pack de ressources).
+#
+#  AUTEL INFUSÉ (MAJ 1.9.0)
+#   Les 4 blocs d'améthyste doivent être de l'AMÉTHYSTE INFUSÉE (infuseur magique),
+#   sinon l'autel n'est pas reconnu. Le plus faible tier d'améthyste infusée plafonne
+#   le tier de l'autel (ex. 3 améthystes III + 1 améthyste I = autel tier I).
+#   L'autel doit être relié à un tank magique avec la baguette de liaison
+#   (clic sur la table d'enchantement puis sur le tank). Chaque rituel consomme du
+#   fluide d'un tier au moins égal au tier du rituel, prélevé au lancement
+#   (perdu si le rituel échoue). Un rituel peut avoir son propre coût : "fluid: <mB>".
+#
+#  Chaque rituel demande un tier d'autel minimum ("tier").
+#  Plus le tier est haut, plus le rituel est long (tier-duration, ou "duration" pour un rituel précis).
+# ==========================================================
+config-version: 3
+
+settings:
+  altar:
+    center: ENCHANTING_TABLE
+    pedestal: AMETHYST_BLOCK
+    distance: 3
+    tier-2-corners: CRYING_OBSIDIAN
+    tier-3-base: DIAMOND_BLOCK
+  # durée des rituels par tier (secondes)
+  tier-duration:
+    1: 30
+    2: 90
+    3: 180
+  # grade minimum pour lancer un rituel (RECRUE, MEMBRE, OFFICIER, CHEF)
+  rank: MEMBRE
+  # le lanceur doit rester à moins de X blocs de l'autel
+  interrupt-distance: 8
+  # si le rituel est interrompu, les offrandes tombent au sol (sinon elles sont perdues)
+  drop-offerings-on-fail: true
+  # XP de clan gagnée à la réussite
+  clan-xp-reward: 50
+  # prévenir les autres clans (nom du clan + direction approximative)
+  announce: true
+  # autel infusé et fluide magique
+  infused:
+    require-infused-pedestals: true
+    require-link: true
+    # mB de fluide consommés par rituel, selon le tier du rituel (fluide de ce tier ou plus)
+    fluid-cost:
+      1: 2000
+      2: 1500
+      3: 600
+
+# focus      : objet posé sur la table (matériau Minecraft, ou "windy:<id>" pour un objet personnalisé)
+# offerings  : une offrande par bloc d'améthyste (ordre libre) : MATÉRIAU:quantité ou windy:<id>:quantité
+# result     : objet obtenu (id de items.yml)
+# tier       : tier d'autel minimum
+rituals:
+  # ---------------------------------------------------------------- outils
+  marteau_runique:
+    name: "&dForge du Marteau runique"
+    focus: DIAMOND_PICKAXE
+    offerings: [windy:rune_terre:1, windy:rune_terre:1, IRON_BLOCK:1, IRON_BLOCK:1]
+    result: marteau_runique
+    tier: 1
+    clan-level: 2
+  marteau_titan:
+    name: "&cÉveil du Marteau du Titan"
+    focus: windy:marteau_runique
+    offerings: [windy:rune_feu:1, windy:rune_feu:1, windy:rune_terre:1, NETHERITE_INGOT:1]
+    result: marteau_titan
+    tier: 2
+    clan-level: 4
+    night-only: true
+
+  # ---------------------------------------------------------------- tier I (runes de terre / feu)
+  epee_1:
+    name: "&dForge de la Lame de parade I"
+    focus: DIAMOND_SWORD
+    offerings: [windy:rune_terre:1, windy:rune_feu:1, IRON_BLOCK:2, GOLD_INGOT:8]
+    result: epee_1
+    tier: 1
+    clan-level: 2
+  arc_1:
+    name: "&dForge de l'Arc chercheur I"
+    focus: BOW
+    offerings: [windy:rune_terre:1, windy:rune_feu:1, STRING:16, FEATHER:16]
+    result: arc_1
+    tier: 1
+    clan-level: 2
+  trident_1:
+    name: "&dForge du Trident harpon I"
+    focus: TRIDENT
+    offerings: [windy:rune_terre:1, windy:rune_feu:1, PRISMARINE_SHARD:16, LEAD:2]
+    result: trident_1
+    tier: 1
+    clan-level: 2
+  hache_1:
+    name: "&dForge de la Hache du bûcheron I"
+    focus: DIAMOND_AXE
+    offerings: [windy:rune_terre:1, windy:rune_terre:1, IRON_BLOCK:2, OAK_LOG:32]
+    result: hache_1
+    tier: 1
+    clan-level: 2
+  hache_guerre_1:
+    name: "&dForge de la Hache de guerre I"
+    focus: DIAMOND_AXE
+    offerings: [windy:rune_feu:1, windy:rune_feu:1, IRON_BLOCK:2, GOLD_BLOCK:1]
+    result: hache_guerre_1
+    tier: 1
+    clan-level: 3
+
+  # ---------------------------------------------------------------- tier II (runes de glace / foudre)
+  epee_2:
+    name: "&5Éveil de la Lame de parade II"
+    focus: windy:epee_1
+    offerings: [windy:rune_glace:1, windy:rune_foudre:1, DIAMOND_BLOCK:1, EXPERIENCE_BOTTLE:16]
+    result: epee_2
+    tier: 2
+    clan-level: 5
+  arc_2:
+    name: "&5Éveil de l'Arc chercheur II"
+    focus: windy:arc_1
+    offerings: [windy:rune_glace:1, windy:rune_foudre:1, DIAMOND_BLOCK:1, EXPERIENCE_BOTTLE:16]
+    result: arc_2
+    tier: 2
+    clan-level: 5
+  trident_2:
+    name: "&5Éveil du Trident harpon II"
+    focus: windy:trident_1
+    offerings: [windy:rune_glace:1, windy:rune_foudre:1, DIAMOND_BLOCK:1, HEART_OF_THE_SEA:1]
+    result: trident_2
+    tier: 2
+    clan-level: 5
+  hache_2:
+    name: "&5Éveil de la Hache du bûcheron II"
+    focus: windy:hache_1
+    offerings: [windy:rune_glace:1, windy:rune_foudre:1, DIAMOND_BLOCK:1, EXPERIENCE_BOTTLE:16]
+    result: hache_2
+    tier: 2
+    clan-level: 5
+  hache_guerre_2:
+    name: "&5Éveil de la Hache de guerre II"
+    focus: windy:hache_guerre_1
+    offerings: [windy:rune_glace:1, windy:rune_foudre:1, DIAMOND_BLOCK:1, EXPERIENCE_BOTTLE:16]
+    result: hache_guerre_2
+    tier: 2
+    clan-level: 6
+
+  # ---------------------------------------------------------------- tier III (runes du vide)
+  epee_3:
+    name: "&6Ascension de la Lame de parade III"
+    focus: windy:epee_2
+    offerings: [windy:rune_vide:1, windy:rune_vide:1, NETHERITE_INGOT:1, DIAMOND_BLOCK:2]
+    result: epee_3
+    tier: 3
+    clan-level: 8
+  arc_3:
+    name: "&6Ascension de l'Arc chercheur III"
+    focus: windy:arc_2
+    offerings: [windy:rune_vide:1, windy:rune_vide:1, NETHERITE_INGOT:1, DIAMOND_BLOCK:2]
+    result: arc_3
+    tier: 3
+    clan-level: 8
+  trident_3:
+    name: "&6Ascension du Trident harpon III"
+    focus: windy:trident_2
+    offerings: [windy:rune_vide:1, windy:rune_vide:1, NETHERITE_INGOT:1, DIAMOND_BLOCK:2]
+    result: trident_3
+    tier: 3
+    clan-level: 8
+  hache_3:
+    name: "&6Ascension de la Hache du bûcheron III"
+    focus: windy:hache_2
+    offerings: [windy:rune_vide:1, windy:rune_vide:1, NETHERITE_INGOT:1, DIAMOND_BLOCK:2]
+    result: hache_3
+    tier: 3
+    clan-level: 8
+  hache_guerre_3:
+    name: "&6Ascension de la Hache de guerre III"
+    focus: windy:hache_guerre_2
+    offerings: [windy:rune_vide:1, windy:rune_vide:1, NETHERITE_INGOT:1, DIAMOND_BLOCK:2]
+    result: hache_guerre_3
+    tier: 3
+    clan-level: 9
+
+  # ---------------------------------------------------------------- magie (v1.2) : catalyseurs
+  baton_2:
+    name: "&5Éveil du Bâton arcanique"
+    focus: windy:baton_1
+    offerings: [windy:rune_glace:1, windy:rune_foudre:1, AMETHYST_BLOCK:16, LAPIS_BLOCK:8]
+    result: baton_2
+    tier: 2
+    clan-level: 4
+  baton_3:
+    name: "&dÉveil du Sceptre du Vide"
+    focus: windy:baton_2
+    offerings: [windy:rune_vide:1, windy:eclat_3:2, NETHER_STAR:1, CRYING_OBSIDIAN:16]
+    result: baton_3
+    tier: 3
+    clan-level: 7
+
+  # ---------------------------------------------------------------- armures (v1.2)
+  acier_casque:
+    name: "&7Forge : Casque d'Acier runique"
+    focus: IRON_HELMET
+    offerings: [windy:rune_terre:1, IRON_BLOCK:3, AMETHYST_SHARD:16, windy:baie_1:4]
+    result: acier_casque
+    tier: 1
+    clan-level: 3
+  acier_plastron:
+    name: "&7Forge : Plastron d'Acier runique"
+    focus: IRON_CHESTPLATE
+    offerings: [windy:rune_terre:1, IRON_BLOCK:3, AMETHYST_SHARD:16, windy:baie_1:4]
+    result: acier_plastron
+    tier: 1
+    clan-level: 3
+  acier_jambieres:
+    name: "&7Forge : Jambières d'Acier runique"
+    focus: IRON_LEGGINGS
+    offerings: [windy:rune_terre:1, IRON_BLOCK:3, AMETHYST_SHARD:16, windy:baie_1:4]
+    result: acier_jambieres
+    tier: 1
+    clan-level: 3
+  acier_bottes:
+    name: "&7Forge : Bottes d'Acier runique"
+    focus: IRON_BOOTS
+    offerings: [windy:rune_terre:1, IRON_BLOCK:3, AMETHYST_SHARD:16, windy:baie_1:4]
+    result: acier_bottes
+    tier: 1
+    clan-level: 3
+  argent_casque:
+    name: "&bForge : Casque d'Argent lunaire"
+    focus: DIAMOND_HELMET
+    offerings: [windy:rune_glace:1, DIAMOND_BLOCK:1, LAPIS_BLOCK:8, windy:baie_2:4]
+    result: argent_casque
+    tier: 2
+    clan-level: 5
+  argent_plastron:
+    name: "&bForge : Plastron d'Argent lunaire"
+    focus: DIAMOND_CHESTPLATE
+    offerings: [windy:rune_glace:1, DIAMOND_BLOCK:1, LAPIS_BLOCK:8, windy:baie_2:4]
+    result: argent_plastron
+    tier: 2
+    clan-level: 5
+  argent_jambieres:
+    name: "&bForge : Jambières d'Argent lunaire"
+    focus: DIAMOND_LEGGINGS
+    offerings: [windy:rune_foudre:1, DIAMOND_BLOCK:1, LAPIS_BLOCK:8, windy:baie_2:4]
+    result: argent_jambieres
+    tier: 2
+    clan-level: 5
+  argent_bottes:
+    name: "&bForge : Bottes d'Argent lunaire"
+    focus: DIAMOND_BOOTS
+    offerings: [windy:rune_foudre:1, DIAMOND_BLOCK:1, LAPIS_BLOCK:8, windy:baie_2:4]
+    result: argent_bottes
+    tier: 2
+    clan-level: 5
+  arcanite_casque:
+    name: "&5Forge : Casque d'Arcanite du Vide"
+    focus: NETHERITE_HELMET
+    offerings: [windy:rune_vide:1, windy:eclat_3:2, windy:eclat_2:4, CRYING_OBSIDIAN:8]
+    result: arcanite_casque
+    tier: 3
+    clan-level: 7
+  arcanite_plastron:
+    name: "&5Forge : Plastron d'Arcanite du Vide"
+    focus: NETHERITE_CHESTPLATE
+    offerings: [windy:rune_vide:1, windy:eclat_3:2, windy:eclat_2:4, CRYING_OBSIDIAN:8]
+    result: arcanite_plastron
+    tier: 3
+    clan-level: 7
+  arcanite_jambieres:
+    name: "&5Forge : Jambières d'Arcanite du Vide"
+    focus: NETHERITE_LEGGINGS
+    offerings: [windy:rune_vide:1, windy:eclat_3:2, windy:eclat_2:4, CRYING_OBSIDIAN:8]
+    result: arcanite_jambieres
+    tier: 3
+    clan-level: 7
+  arcanite_bottes:
+    name: "&5Forge : Bottes d'Arcanite du Vide"
+    focus: NETHERITE_BOOTS
+    offerings: [windy:rune_vide:1, windy:eclat_3:2, windy:eclat_2:4, CRYING_OBSIDIAN:8]
+    result: arcanite_bottes
+    tier: 3
+    clan-level: 7
