@@ -659,18 +659,74 @@ public class SkillEngine implements Listener {
             this.oreBreaks.add(b);
          }
 
-         if (b.getBlockData() instanceof Ageable ag
+         Material m = b.getType();
+         if (stalk(m)) {
+            // MAJ 1.22.0 : canne à sucre, cactus, bambou, varech : les blocs du dessus tombent sans BlockDropItemEvent,
+            // on double donc directement les tiges poussées naturellement (pas celles posées à la main)
+            int grown = 0;
+            Block cur = b;
+
+            while (cur.getType() == m && grown < 32) {
+               if (!this.pm.isPlaced(cur)) {
+                  grown++;
+               }
+
+               cur = cur.getRelative(org.bukkit.block.BlockFace.UP);
+            }
+
+            if (grown > 0 && this.chance(this.stat(p, "crop-bonus"))) {
+               Material drop = m == Material.KELP_PLANT ? Material.KELP : m;
+               b.getWorld().dropItemNaturally(b.getLocation().add(0.5, 0.5, 0.5), new ItemStack(drop, grown));
+               b.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, b.getLocation().add(0.5, 0.5, 0.5), 8, 0.3, 0.3, 0.3);
+            }
+         } else if ((m == Material.MELON || m == Material.PUMPKIN) && !this.pm.isPlaced(b)) {
+            if (this.chance(this.stat(p, "crop-bonus"))) {
+               this.oreBreaks.add(b);
+            }
+         } else if (b.getBlockData() instanceof org.bukkit.block.data.type.CaveVinesPlant cv) {
+            if (cv.isBerries() && this.chance(this.stat(p, "crop-bonus"))) {
+               this.oreBreaks.add(b);
+            }
+         } else if (b.getBlockData() instanceof Ageable ag
             && ag.getAge() >= ag.getMaximumAge()
-            && b.getType() != Material.SUGAR_CANE
-            && b.getType() != Material.CACTUS
-            && b.getType() != Material.KELP
             && this.chance(this.stat(p, "crop-bonus"))) {
             this.oreBreaks.add(b);
          }
       }
    }
 
+   /** Plantes en tige : leur « âge » ne dit pas si elles sont mûres. */
+   private static boolean stalk(Material m) {
+      return m == Material.SUGAR_CANE || m == Material.CACTUS || m == Material.BAMBOO || m == Material.KELP || m == Material.KELP_PLANT;
+   }
+
+   /**
+    * MAJ 1.22.0 : bonus de récolte (elfes) sur les cueillettes au clic droit : baies sucrées / arcaniques et baies lumineuses.
+    * Priorité HIGHEST : les baies sont déjà converties en baies arcaniques par les élixirs.
+    */
    @EventHandler(
+      priority = EventPriority.HIGHEST,
+      ignoreCancelled = true
+   )
+   public void onPick(org.bukkit.event.player.PlayerHarvestBlockEvent e) {
+      Player p = e.getPlayer();
+      if (survival(p) && !e.getItemsHarvested().isEmpty() && this.chance(this.stat(p, "crop-bonus"))) {
+         List<ItemStack> extra = new ArrayList<>();
+
+         for (ItemStack it : e.getItemsHarvested()) {
+            if (it != null && !it.getType().isAir()) {
+               extra.add(it.clone());
+            }
+         }
+
+         e.getItemsHarvested().addAll(extra);
+         Block b = e.getHarvestedBlock();
+         b.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, b.getLocation().add(0.5, 0.5, 0.5), 8, 0.3, 0.3, 0.3);
+      }
+   }
+
+   @EventHandler(
+      priority = EventPriority.HIGHEST,
       ignoreCancelled = true
    )
    public void onDrops(BlockDropItemEvent e) {

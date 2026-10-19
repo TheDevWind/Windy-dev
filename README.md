@@ -14,3 +14,14 @@ Les noms de variables locales viennent du décompilateur (pas du code d'origine)
 - DungeonBuilder : plan aléatoire des étages et construction des salles par thème
 - Room / DungeonInstance / DungeonDef : données
 - donjons.yml : réglages et contenu des 3 donjons
+
+1.22.0 — repart de la 1.20.3 en production + la 1.21.0 :
+- pvp/PvpManager : arène /pvp (1v1, 2v2, classé Elo, duel, duo), kits de pvp.yml ou créés en jeu
+  (/pvp admin kit creer <id>), stuff des joueurs sauvegardé dans pvp-sauvegardes.yml et rendu à la fin
+- feature/TeleportService : plusieurs homes (teleport.max-homes, 3), migration de homes.yml
+- profile/Awakening : zone du rituel 25 blocs (eveil.yml config-version 3)
+- profile/SkillEngine : bonus de récolte sur baies (clic droit), tiges, melons, citrouilles, baies lumineuses
+- feature/PackService : plugins/WindyClans/windyclans-pack-perso.zip remplace le pack intégré s'il existe ;
+  habillage des écrans du jeu désactivé par défaut
+- Compilation : API Paper 1.21.4 (noms d'attributs sans GENERIC_). Après `mvn package`, ajouter
+  windyclans-pack.zip et windyclans-jeu.zip à la racine du jar (ils ne sont pas dans les sources).

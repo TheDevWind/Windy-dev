@@ -39,11 +39,16 @@ commands:
     description: Lier son compte Minecraft à Discord avec un code
     usage: /lier <code>
   sethome:
-    description: Placer son home (un seul par joueur)
+    description: Placer un home (3 par joueur par défaut)
+    usage: /sethome [nom]
   home:
-    description: Se téléporter à son home
+    description: Se téléporter à un de ses homes
+    usage: /home [nom]
+  homes:
+    description: Liste de ses homes
   delhome:
-    description: Supprimer son home
+    description: Supprimer un home
+    usage: /delhome [nom]
   spawn:
     description: Se téléporter au spawn
   tpa:
@@ -55,6 +60,10 @@ commands:
   tpdeny:
     description: Refuser une demande de téléportation
     aliases: [tpno]
+  pvp:
+    description: Arène PvP (1v1, 2v2, classé) avec kit donné par le serveur
+    aliases: [arene, arène, duel]
+    usage: /pvp [1v1|2v2|classe|duo|duel|quitter|classement|stats]
   donjon:
     description: Donjons (menu, rejoindre un groupe, quitter)
     aliases: [donjons, dungeon]

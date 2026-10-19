@@ -65,7 +65,7 @@ public class Awakening implements Listener {
    private final Map<Item, UUID> thrown = new HashMap<>();
    private final Map<Integer, Awakening.RankDef> ranks = new HashMap<>();
    private final Map<String, Map<Integer, List<Awakening.Offering>>> raceOfferings = new HashMap<>();
-   private int stayRadius = 10;
+   private int stayRadius = 25;
    private int pvpRadius = 30;
    private int failHours = 24;
    private int waveEvery = 30;
@@ -135,8 +135,28 @@ public class Awakening implements Listener {
          }
       }
 
-      this.stayRadius = y.getInt("settings.stay-radius", 10);
-      this.pvpRadius = y.getInt("settings.pvp-radius", 30);
+      if (y.getInt("config-version", 1) < 3) {
+         // MAJ 1.22.0 : zone du rituel agrandie (les vagues apparaissent jusqu'à 10 blocs, on sortait de la zone en se battant)
+         if (y.getInt("settings.stay-radius", 10) == 10) {
+            y.set("settings.stay-radius", 25);
+         }
+
+         if (y.getInt("settings.pvp-radius", 30) == 30) {
+            y.set("settings.pvp-radius", 45);
+         }
+
+         y.set("config-version", 3);
+
+         try {
+            y.save(f);
+            this.plugin.getLogger().info("eveil.yml mis à jour : zone du rituel 25 blocs, PvP forcé à 45 blocs.");
+         } catch (Exception var17) {
+            this.plugin.getLogger().warning("eveil.yml : mise à jour impossible : " + var17.getMessage());
+         }
+      }
+
+      this.stayRadius = y.getInt("settings.stay-radius", 25);
+      this.pvpRadius = Math.max(this.stayRadius, y.getInt("settings.pvp-radius", 45));
       this.failHours = y.getInt("settings.fail-cooldown-hours", 24);
       this.failLoss = y.getDouble("settings.fail-loss", 0.5);
       this.waveEvery = Math.max(5, y.getInt("settings.wave-every", 30));

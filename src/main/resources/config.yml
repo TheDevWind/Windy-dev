@@ -27,8 +27,9 @@ resource-pack:
     public-address: ""
   # Deuxième pack, à part : l'habillage des écrans du jeu (coffres, fours, enclume, boutons, barre d'objets).
   # Il est envoyé en même temps que le premier (une seule invite). Chaque joueur peut le retirer avec /ecrans.
+  # MAJ 1.22.0 : désactivé par défaut (retour à l'ancien pack de textures)
   game-pack:
-    enabled: true
+    enabled: false
     # Laisser vide si l'hébergement intégré (self-host) est actif : l'adresse est trouvée toute seule.
     # Sinon : lien DIRECT vers windyclans-jeu.zip (créé dans plugins/WindyClans/ au démarrage).
     url: ""
@@ -191,6 +192,8 @@ teleport:
   tpa-cooldown-seconds: 10
   # Téléportation interdite pendant ce temps après un coup en PvP
   combat-block-seconds: 15
+  # Nombre de homes par joueur (/sethome <nom>, /home <nom>, /homes)
+  max-homes: 3
 
 bluemap:
   enabled: true

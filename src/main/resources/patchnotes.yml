@@ -4,6 +4,29 @@
 #  le bot la publie. Pour une note écrite à la main : commande /patchnote sur Discord (admin).
 # ==========================================================================================
 notes:
+  "1.22.0":
+    parties:
+      - titre: "Arène PvP : 1v1, 2v2 et classé"
+        texte: |-
+          **⚔ Nouvelle arène, hors des guerres de clans**
+          • **/pvp** ouvre le menu : 1v1, 2v2 et classé (1v1 avec points et rangs, de Bronze à Champion).
+          • Le kit est donné par le serveur : ton stuff est mis de côté et rendu à la fin, même si tu te déconnectes. Rien ne se perd, rien ne se gagne en objets.
+          • 2v2 seul (un coéquipier t'est trouvé) ou à deux avec **/pvp duo <joueur>**. Défi direct : **/pvp duel <joueur>**.
+          • **/pvp classement** et **/pvp stats** pour les résultats.
+      - titre: "Corrections"
+        texte: |-
+          **🛠 Vos signalements**
+          • Éveil : la zone du rituel passe de 10 à 25 blocs autour du cœur, on ne rate plus son Éveil en combattant les vagues.
+          • Homes : jusqu'à 3 homes par joueur. **/sethome <nom>**, **/home <nom>**, **/homes**, **/delhome <nom>**. Ton ancien home s'appelle « home ».
+          • Elfes : le bonus de récolte marche aussi sur les baies (sucrées, arcaniques, lumineuses), la canne à sucre, les cactus, le bambou, le varech, les melons et les citrouilles.
+          • Retour à l'ancien pack de textures.
+      - titre: "Aussi dans cette version"
+        texte: |-
+          **📜 Arrivé avec la 1.21.0**
+          • Règlement à accepter, quêtes du jour et de la semaine (**/quetes**), parcours des nouveaux, 2 h de protection PvP pour les nouveaux (**/protection**).
+          • Évènement de la semaine le samedi soir (**/evenement**), groupes de donjon ouverts et mode solo.
+          • Éveil : récompense d'interruption réduite et limite d'interruptions.
+          • Les clans inactifs depuis 30 jours libèrent leurs territoires.
   "1.21.0":
     parties:
       - titre: "Quêtes du jour et de la semaine"

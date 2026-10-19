@@ -15,11 +15,11 @@
 #   II -> rang IV, III -> rang V. Le cœur doit être relié à un tank magique (baguette de liaison).
 #   Chaque Éveil consomme du fluide ("fluid" mB, de tier "fluid-tier" ou plus) au lancement.
 # ==========================================================================================
-config-version: 2
+config-version: 3
 
 settings:
-  stay-radius: 10          # le joueur doit rester à cette distance du cœur
-  pvp-radius: 30           # PvP forcé autour d'un Éveil en cours (même en capitale)
+  stay-radius: 25          # le joueur doit rester à cette distance du cœur (MAJ 1.22.0 : 10 -> 25)
+  pvp-radius: 45           # PvP forcé autour d'un Éveil en cours (même en capitale)
   fail-cooldown-hours: 24
   fail-loss: 0.5           # part des offrandes et des âmes perdue en cas d'échec
   wave-every: 30           # secondes entre deux vagues
