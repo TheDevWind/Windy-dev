@@ -20,6 +20,9 @@ public final class Profile {
    int rank = 1;
    long souls;
    long awakenRetryAt;
+   /** Interruptions par d'autres joueurs pour l'Éveil visé (awakenInterruptRank), remises à zéro à la réussite. */
+   int awakenInterrupts;
+   int awakenInterruptRank;
    final Map<String, Integer> skills = new HashMap<>();
    final Map<String, Long> sources = new HashMap<>();
 
@@ -86,6 +89,11 @@ public final class Profile {
 
    public long awakenRetryAt() {
       return this.awakenRetryAt;
+   }
+
+   /** Interruptions comptées pour l'Éveil du rang donné (0 si le compteur porte sur un autre rang). */
+   public int interrupts(int rank) {
+      return this.awakenInterruptRank == rank ? this.awakenInterrupts : 0;
    }
 
    public int skill(String node) {

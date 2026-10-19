@@ -154,13 +154,13 @@ public class CustomItems {
          EquipmentSlotGroup group = d.material().getEquipmentSlot().getGroup();
          String slot = d.material().getEquipmentSlot().name().toLowerCase(Locale.ROOT);
          meta.setAttributeModifiers(null);
-         meta.addAttributeModifier(Attribute.GENERIC_ARMOR, new AttributeModifier(new NamespacedKey(this.plugin, "armor_" + slot), d.armor(), Operation.ADD_NUMBER, group));
+         meta.addAttributeModifier(Attribute.ARMOR, new AttributeModifier(new NamespacedKey(this.plugin, "armor_" + slot), d.armor(), Operation.ADD_NUMBER, group));
          if (d.toughness() > 0.0) {
-            meta.addAttributeModifier(Attribute.GENERIC_ARMOR_TOUGHNESS, new AttributeModifier(new NamespacedKey(this.plugin, "toughness_" + slot), d.toughness(), Operation.ADD_NUMBER, group));
+            meta.addAttributeModifier(Attribute.ARMOR_TOUGHNESS, new AttributeModifier(new NamespacedKey(this.plugin, "toughness_" + slot), d.toughness(), Operation.ADD_NUMBER, group));
          }
 
          if (d.knockback() > 0.0) {
-            meta.addAttributeModifier(Attribute.GENERIC_KNOCKBACK_RESISTANCE, new AttributeModifier(new NamespacedKey(this.plugin, "knockback_" + slot), d.knockback(), Operation.ADD_NUMBER, group));
+            meta.addAttributeModifier(Attribute.KNOCKBACK_RESISTANCE, new AttributeModifier(new NamespacedKey(this.plugin, "knockback_" + slot), d.knockback(), Operation.ADD_NUMBER, group));
          }
 
          if (d.look() != null) {
@@ -174,15 +174,15 @@ public class CustomItems {
 
          for (Entry<Attribute, AttributeModifier> en : defaults.entries()) {
             AttributeModifier mod = en.getValue();
-            double extra = en.getKey() == Attribute.GENERIC_ATTACK_DAMAGE
+            double extra = en.getKey() == Attribute.ATTACK_DAMAGE
                ? d.damageBonus()
-               : (en.getKey() == Attribute.GENERIC_ATTACK_SPEED ? d.speedBonus() : 0.0);
+               : (en.getKey() == Attribute.ATTACK_SPEED ? d.speedBonus() : 0.0);
             meta.addAttributeModifier(en.getKey(), new AttributeModifier(mod.getKey(), mod.getAmount() + extra, mod.getOperation(), mod.getSlotGroup()));
          }
 
-         if (!defaults.containsKey(Attribute.GENERIC_ATTACK_DAMAGE) && d.damageBonus() != 0.0) {
+         if (!defaults.containsKey(Attribute.ATTACK_DAMAGE) && d.damageBonus() != 0.0) {
             meta.addAttributeModifier(
-               Attribute.GENERIC_ATTACK_DAMAGE,
+               Attribute.ATTACK_DAMAGE,
                new AttributeModifier(new NamespacedKey(this.plugin, "bonus_damage"), d.damageBonus(), Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND)
             );
          }

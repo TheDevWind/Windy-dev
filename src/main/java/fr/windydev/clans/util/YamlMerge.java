@@ -58,4 +58,40 @@ public final class YamlMerge {
 
       return y;
    }
+
+   /**
+    * Ajoute au fichier du serveur les réglages (chemins complets) livrés avec une nouvelle version du plugin,
+    * avec leurs commentaires, sans toucher au reste. Rend vrai si le fichier a été modifié.
+    */
+   public static boolean addMissing(JavaPlugin plugin, File f, YamlConfiguration y, String resource, List<String> paths) {
+      try (InputStream in = plugin.getResource(resource)) {
+         if (in == null) {
+            return false;
+         }
+
+         YamlConfiguration def = YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8));
+         List<String> added = new ArrayList<>();
+         for (String path : paths) {
+            if (!y.contains(path, true) && def.contains(path, true)) {
+               y.set(path, def.get(path));
+               List<String> c = def.getComments(path);
+               if (!c.isEmpty()) {
+                  y.setComments(path, c);
+               }
+
+               added.add(path);
+            }
+         }
+
+         if (!added.isEmpty()) {
+            y.save(f);
+            plugin.getLogger().info(resource + " : réglages ajoutés : " + String.join(", ", added));
+            return true;
+         }
+      } catch (Exception e) {
+         plugin.getLogger().warning(resource + " : ajout des nouveaux réglages impossible : " + e.getMessage());
+      }
+
+      return false;
+   }
 }

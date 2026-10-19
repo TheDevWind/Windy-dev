@@ -80,7 +80,7 @@ public class RaceListener implements Listener {
       Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
          if (p.isOnline()) {
             this.pm.apply(p);
-            AttributeInstance hp = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+            AttributeInstance hp = p.getAttribute(Attribute.MAX_HEALTH);
             if (hp != null) {
                p.setHealth(hp.getValue());
             }

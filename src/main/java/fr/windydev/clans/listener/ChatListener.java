@@ -72,6 +72,7 @@ public class ChatListener implements Listener {
       ProfileManager pm = this.plugin.profiles();
       Profile pr = pm.of(p);
       RaceDef race = pm.race(pr);
-      return race == null ? "" : race.color() + pm.rankName(pr) + " ";
+      String title = this.plugin.quests() == null ? "" : this.plugin.quests().title(p.getUniqueId());
+      return title + (race == null ? "" : race.color() + pm.rankName(pr) + " ");
    }
 }

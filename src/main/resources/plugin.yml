@@ -79,6 +79,25 @@ commands:
     description: Magie - choisir ses sorts
     aliases: [magie, sorts]
     usage: /grimoire
+  reglement:
+    description: Le règlement du serveur (lecture et acceptation)
+    aliases: [règlement, rules, regles, règles]
+    usage: /reglement [accepter|numéro du titre]
+  quetes:
+    description: Quêtes du jour et de la semaine
+    aliases: [quete, quêtes, quests, quest]
+    usage: /quetes [top|parcours]
+  parcours:
+    description: Parcours des nouveaux joueurs
+    aliases: [guide, tuto]
+    usage: /parcours [masquer|afficher]
+  protection:
+    description: Protection des nouveaux joueurs (temps restant)
+    usage: /protection [joueur]
+  evenement:
+    description: Évènement de la semaine
+    aliases: [évènement, event, evenements]
+    usage: /evenement
   clanadmin:
     description: Administration des clans
     aliases: [cadmin]

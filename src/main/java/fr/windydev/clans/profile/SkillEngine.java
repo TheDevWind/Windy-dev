@@ -114,7 +114,7 @@ public class SkillEngine implements Listener {
    }
 
    private static double maxHp(LivingEntity e) {
-      AttributeInstance a = e.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+      AttributeInstance a = e.getAttribute(Attribute.MAX_HEALTH);
       return a == null ? 20.0 : a.getValue();
    }
 
@@ -209,7 +209,7 @@ public class SkillEngine implements Listener {
 
    private void glide(Player p) {
       double g = this.stat(p, "glide");
-      AttributeInstance inst = p.getAttribute(Attribute.GENERIC_GRAVITY);
+      AttributeInstance inst = p.getAttribute(Attribute.GRAVITY);
       if (inst != null) {
          NamespacedKey key = new NamespacedKey(this.plugin, "skill_glide");
          boolean want = g > 0.0 && p.isSneaking() && !p.isOnGround() && !p.isFlying() && p.getVelocity().getY() < 0.0 && !p.isInWater();

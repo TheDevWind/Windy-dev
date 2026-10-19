@@ -1,0 +1,75 @@
+# ==========================================================================================
+#  WindyClans - Évènement de la semaine (MAJ 1.21.0)
+# ------------------------------------------------------------------------------------------
+#  Chaque semaine, au jour et à l'heure choisis, un évènement se lance tout seul. Ils tournent
+#  dans l'ordre de "rotation" (une semaine chacun) :
+#   boss    : Boss mondial, un colosse apparaît (au spawn par défaut). Tout le monde tape,
+#             chacun reçoit la récompense s'il a fait assez de dégâts ; bonus pour le meilleur.
+#   tresor  : Chasse au trésor, des coffres sont cachés dans la nature. Des indices de plus en
+#             plus précis sont donnés dans le chat ; le premier qui ouvre un coffre le garde.
+#   faille  : Faille géante, la Faille arcanique s'ouvre en grand : plus longue, plus dure,
+#             récompenses doublées.
+#  Annonces en jeu et sur Discord (salon annonces) la veille, 1 h avant et 10 min avant.
+#  Joueurs : /evenement   Admin : /clanadmin evenement <lancer [type]|arreter|info|lieu>
+# ==========================================================================================
+config-version: 1
+
+settings:
+  enabled: true
+  timezone: "Europe/Paris"
+  # jour (lundi, mardi, mercredi, jeudi, vendredi, samedi, dimanche) et heure
+  day: samedi
+  time: "20:30"
+  rotation: [boss, tresor, faille]
+  # joueurs connectés nécessaires ; sinon l'évènement attend (jusqu'à "wait-minutes") puis est annulé
+  min-players: 2
+  wait-minutes: 90
+  # annonces avant le départ (minutes) ; 1440 = la veille, sur Discord seulement
+  announce: [1440, 60, 10]
+
+boss:
+  name: "&4&lColosse de la Tempête"
+  type: WITHER_SKELETON
+  scale: 2.6
+  health: 900
+  health-per-player: 350
+  # dégâts de base (+ épée en fer) : venez équipés, le colosse frappe fort
+  damage: 7
+  # durée max du combat ; après, le colosse se retire
+  minutes: 20
+  # lieu "monde,x,y,z" ; vide = point de spawn du monde principal (/clanadmin evenement lieu)
+  location: ""
+  # dégâts minimum pour être récompensé
+  min-damage: 80
+  minions: [ZOMBIE, SKELETON, HUSK]
+  reward:
+    coins: 40
+    xp: 2000
+    ames: 150
+    items: ["windy:eclat_1:3", "windy:eclat_2:1@0.5", "windy:rune_foudre:1@0.25"]
+  # en plus, pour le joueur qui a fait le plus de dégâts
+  best:
+    coins: 40
+    items: ["windy:eclat_2:2"]
+
+tresor:
+  chests: 5
+  # distance du spawn (blocs) entre laquelle les coffres sont cachés
+  min-distance: 250
+  max-distance: 1500
+  minutes: 45
+  # indices : minute après le départ -> précision (rayon en blocs)
+  clues:
+    0: 200
+    15: 100
+    30: 40
+  # butin de chaque coffre
+  loot: ["windy:piece:15-30", "DIAMOND:2-5", "windy:eclat_1:2-4", "GOLDEN_APPLE:2-4", "EXPERIENCE_BOTTLE:8-16", "windy:rune_feu:1@0.4", "windy:sceau_donjon_1:1@0.3", "ENCHANTED_GOLDEN_APPLE:1@0.08"]
+
+faille:
+  # multiplicateurs appliqués à la Faille arcanique pendant l'évènement
+  duration: 1.5
+  kills: 1.5
+  monster-health: 1.4
+  boss-health: 2.0
+  rewards: 2

@@ -45,6 +45,22 @@ settings:
   mutation: auto
   # chances du butin de fin multipliées pendant une mutation
   mutation-loot-bonus: 1.5
+  # groupe ouvert à tous (MAJ 1.21.0) : n'importe qui peut rejoindre, même sans clan ;
+  # attente avant le départ (le chef peut partir plus tôt : /donjon partir) et délai entre deux appels "chercher un groupe"
+  open-group:
+    lobby-seconds: 120
+    search-cooldown: 300
+  # partie lancée seul (MAJ 1.21.0) : PV et dégâts des monstres, PV des gardiens, vies en plus
+  solo:
+    health: 0.7
+    damage: 0.8
+    boss-health: 0.65
+    extra-lives: 1
+  # bonus de la première victoire du jour, en plus du butin de fin (MAJ 1.21.0)
+  first-win:
+    coins: 30
+    xp: 500
+    items: ["windy:eclat_1:2"]
 
 dungeons:
   crypte:

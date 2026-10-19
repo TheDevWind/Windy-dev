@@ -157,6 +157,10 @@ public class ScoreboardService {
       l.add("&7" + "‒".repeat(16));
       l.add("&fZone");
       l.add(" " + this.zoneLabel(p, pos));
+      long shield = this.plugin.shield() == null ? 0L : this.plugin.shield().remaining(p);
+      if (shield > 0L) {
+         l.add(" &a⛨ Protégé &f" + (shield >= 60L ? shield / 60L + "h" + String.format("%02d", shield % 60L) : shield + " min"));
+      }
       l.add(" ");
       l.add("&fClan");
       if (mine == null) {

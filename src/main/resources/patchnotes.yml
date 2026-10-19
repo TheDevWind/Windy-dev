@@ -4,6 +4,62 @@
 #  le bot la publie. Pour une note écrite à la main : commande /patchnote sur Discord (admin).
 # ==========================================================================================
 notes:
+  "1.21.0":
+    parties:
+      - titre: "Quêtes du jour et de la semaine"
+        texte: |-
+          **📜 Trois quêtes par jour, trois par semaine**
+          • Chaque jour : une quête facile, une moyenne et une difficile (chasse, mine, récolte, pêche, élevage, enchantement, âmes, rituels, donjons...). Elles changent à minuit.
+          • Chaque lundi : trois quêtes de la semaine, plus longues et mieux payées (donjons, Faille, boss de clan, évènement de la semaine...).
+          • La récompense tombe dès que la quête est finie : coins, XP, Éclats.
+          • Une quête du jour ne te plaît pas ? Tu peux la changer une fois par jour.
+
+          **🔥 Série et classement**
+          • Finis toutes tes quêtes du jour plusieurs jours de suite : bonus à 3 jours, puis à 7 jours.
+          • Chaque quête rapporte des points. Le premier du classement le dimanche soir devient **Champion de la semaine** : titre dans le chat et récompense.
+
+          Menu : **/quetes** (ou Profil › Quêtes).
+      - titre: "Parcours des nouveaux"
+        texte: |-
+          **🧭 Un guide pas à pas**
+          • Les nouveaux suivent 7 étapes récompensées : choisir sa race, rejoindre un clan, placer son home, finir une quête, atteindre le niveau 5, vaincre un boss de clan, terminer un donjon.
+          • Une barre en haut de l'écran indique l'étape suivante (**/parcours masquer** pour la cacher).
+          • Récompense finale : des coins et un Sceau de la Crypte oubliée.
+
+          **🛡 Protection des nouveaux**
+          • Pendant leurs 2 premières heures de jeu, les nouveaux ne peuvent ni attaquer ni être attaqués par un joueur. **/protection** montre le temps restant.
+      - titre: "Évènement de la semaine"
+        texte: |-
+          **🎉 Chaque samedi à 20h30, un évènement**
+          Ils tournent d'une semaine à l'autre :
+          • **Boss mondial** : le Colosse de la Tempête apparaît. Tout le monde tape, chacun est récompensé, bonus pour le meilleur combattant.
+          • **Chasse au trésor** : des coffres sont cachés dans la nature. Les indices deviennent de plus en plus précis ; le premier qui ouvre un coffre le garde.
+          • **Faille géante** : la Faille arcanique s'ouvre en grand, plus longue et plus dure, récompenses doublées.
+
+          Annonces ici la veille, 1 h avant et 10 min avant. En jeu : **/evenement**.
+      - titre: "Donjons revus"
+        texte: |-
+          **⚔️ Jouer avec tout le monde**
+          • **Groupe ouvert à tous** (bouton dans le menu des donjons) : tout le serveur et Discord sont prévenus, n'importe qui peut rejoindre, même sans clan. Le chef lance le départ avec **/donjon partir**.
+          • **Chercher un groupe** : un appel en jeu et sur Discord quand tu cherches des joueurs ou un sceau.
+
+          **🧍 Seul, c'est possible**
+          • Une partie lancée seul est adaptée : monstres affaiblis, gardiens moins résistants et une vie en plus.
+
+          **☀️ Bonus du jour**
+          • La première victoire de la journée donne un bonus en plus du butin.
+      - titre: "Règlement, Éveil et corrections"
+        texte: |-
+          **📖 Nouveau règlement**
+          • Le règlement est réécrit en 47 articles. Il est à accepter une fois en jeu (et après chaque modification importante) et reste lisible avec **/reglement**.
+          • Les territoires d'un clan dont aucun membre ne s'est connecté depuis 30 jours sont libérés, après un avertissement ici 7 jours avant.
+
+          **✦ Éveil**
+          • La récompense pour avoir interrompu un Éveil est divisée par 5 : 50 coins et 40 XP de clan pour un Éveil de rang II, jusqu'à 200 coins et 160 XP pour le rang V. Rien n'est donné si on interrompt un membre de son clan ou un allié.
+          • Les interruptions sont limitées : après 3 interruptions par d'autres joueurs (rang II), 5 (rang III) ou 15 (rang IV), les tentatives suivantes de cet Éveil se font sans PvP. Pas de limite pour le rang V.
+
+          **🔧 Corrections**
+          • Les boss et gardiens très résistants (boss de haut niveau, gardiens de donjon et Avatar de la Faille avec beaucoup de joueurs) plantaient au-delà de 1024 PV : ils apparaissent maintenant normalement.
   "1.20.2":
     titre: "Le spawn est protégé"
     texte: |-

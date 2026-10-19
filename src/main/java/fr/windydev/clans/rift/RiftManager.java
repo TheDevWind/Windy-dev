@@ -118,6 +118,14 @@ public class RiftManager implements Listener, CommandExecutor, TabCompleter {
    private final List<Guardian> guardians = new ArrayList<>();
    private final List<String> rewards = new ArrayList<>();
 
+   // Faille géante (évènement de la semaine, MAJ 1.21.0)
+   private boolean giant;
+   private double gDuration = 1.5;
+   private double gKills = 1.5;
+   private double gHp = 1.4;
+   private double gBossHp = 2.0;
+   private int gRewards = 2;
+
    // évènement en cours
    private boolean running;
    private boolean finishing;
@@ -411,6 +419,42 @@ public class RiftManager implements Listener, CommandExecutor, TabCompleter {
       return l;
    }
 
+   public boolean giant() {
+      return this.running && this.giant;
+   }
+
+   /** Ouvre la Faille géante de l'évènement de la semaine (multiplicateurs de evenements.yml). */
+   public boolean openGiant(double duration, double kills, double hp, double bossHp, int rewards) {
+      if (this.running) {
+         return false;
+      } else {
+         this.giant = true;
+         this.gDuration = Math.max(1.0, duration);
+         this.gKills = Math.max(0.5, kills);
+         this.gHp = Math.max(0.5, hp);
+         this.gBossHp = Math.max(0.5, bossHp);
+         this.gRewards = Math.max(1, rewards);
+         boolean ok = this.open(null);
+         if (!ok) {
+            this.giant = false;
+         }
+
+         return ok;
+      }
+   }
+
+   private double killsMult() {
+      return this.giant ? this.gKills : 1.0;
+   }
+
+   private double hpMult() {
+      return this.giant ? this.gHp : 1.0;
+   }
+
+   private String riftName() {
+      return this.giant ? "Faille géante" : "Faille arcanique";
+   }
+
    public boolean open(CommandSender by) {
       if (this.running) {
          return false;
@@ -421,28 +465,35 @@ public class RiftManager implements Listener, CommandExecutor, TabCompleter {
       this.running = true;
       this.finishing = false;
       this.startedAt = System.currentTimeMillis();
-      this.endsAt = this.startedAt + this.durationMin * 60_000L;
+      this.endsAt = this.startedAt + Math.round(this.durationMin * (this.giant ? this.gDuration : 1.0) * 60_000L);
       this.emptySince = this.startedAt;
       this.kills = 0;
       this.peak = 1;
-      this.needed = this.killsBase;
+      this.needed = (int)Math.round(this.killsBase * this.killsMult());
       this.nextGuardian = 0;
       this.boss = null;
       this.warned = 0;
       this.damage.clear();
       this.alive.clear();
-      this.bar = BossBar.bossBar(Text.c("&5Faille arcanique"), 0.0F, BossBar.Color.PURPLE, BossBar.Overlay.NOTCHED_10);
+      this.bar = BossBar.bossBar(Text.c("&5" + this.riftName()), 0.0F, BossBar.Color.PURPLE, BossBar.Overlay.NOTCHED_10);
+      long minutes = Math.round((this.endsAt - this.startedAt) / 60_000.0);
       Component click = Text.c("&d&l[REJOINDRE]").clickEvent(ClickEvent.runCommand("/faille")).hoverEvent(HoverEvent.showText(Text.c("&7Clique pour entrer dans la faille")));
-      Component msg = Text.c("&5✦ &dUne &5&lFaille arcanique &ds'ouvre ! &7Chargez le rituel en tuant ses créatures, puis abattez l'Avatar. &8(" + this.durationMin + " min) ")
-         .append(click);
+      Component msg = this.giant
+         ? Text.c("&5✦ &d&lFAILLE GÉANTE ! &7L'évènement de la semaine commence : la faille s'ouvre en grand, ses créatures sont plus fortes et les &drécompenses x" + this.gRewards + "&7. &8(" + minutes + " min) ").append(click)
+         : Text.c("&5✦ &dUne &5&lFaille arcanique &ds'ouvre ! &7Chargez le rituel en tuant ses créatures, puis abattez l'Avatar. &8(" + minutes + " min) ").append(click);
       for (Player p : Bukkit.getOnlinePlayers()) {
          p.sendMessage(msg);
-         p.showTitle(Title.title(Text.c("&5✦ Faille arcanique"), Text.c("&d/faille &7pour entrer")));
+         p.showTitle(Title.title(Text.c("&5✦ " + this.riftName()), Text.c("&d/faille &7pour entrer")));
          p.playSound(p.getLocation(), Sound.BLOCK_END_PORTAL_SPAWN, 0.5F, 1.2F);
       }
 
-      this.plugin.bot().announce("rift", "🌀 **Une Faille arcanique s'ouvre !** Elle reste ouverte " + this.durationMin
-         + " min : `/faille` pour entrer. Trois rituels réussis éveillent la magie sans catalyseur.");
+      if (this.giant) {
+         this.plugin.bot().announce("event", "🌀 **Faille géante !** L'évènement de la semaine commence : la Faille arcanique s'ouvre en grand pendant " + minutes
+            + " min, récompenses x" + this.gRewards + ". `/faille` pour entrer.");
+      } else {
+         this.plugin.bot().announce("rift", "🌀 **Une Faille arcanique s'ouvre !** Elle reste ouverte " + minutes
+            + " min : `/faille` pour entrer. Trois rituels réussis éveillent la magie sans catalyseur.");
+      }
       this.plugin.getLogger().info("Faille arcanique ouverte" + (by == null ? "" : " par " + by.getName()) + ".");
       return true;
    }
@@ -467,7 +518,7 @@ public class RiftManager implements Listener, CommandExecutor, TabCompleter {
          this.emptySince = now;
          if (fight.size() > this.peak) {
             this.peak = fight.size();
-            this.needed = this.killsBase + this.killsPerPlayer * (this.peak - 1);
+            this.needed = (int)Math.round((this.killsBase + this.killsPerPlayer * (this.peak - 1)) * this.killsMult());
          }
       } else if (now - this.emptySince > this.emptyCloseMin * 60_000L) {
          this.end(false, "personne n'est resté dans la faille", true);
@@ -490,7 +541,7 @@ public class RiftManager implements Listener, CommandExecutor, TabCompleter {
 
          if (mark == 1 && this.boss == null) {
             Component click = Text.c("&d[REJOINDRE]").clickEvent(ClickEvent.runCommand("/faille"));
-            Bukkit.broadcast(Text.c("&5✦ &7La Faille arcanique est encore ouverte &815 min &7(rituel à &d" + this.percent() + " %&7). ").append(click));
+            Bukkit.broadcast(Text.c("&5✦ &7La " + this.riftName() + " est encore ouverte &815 min &7(rituel à &d" + this.percent() + " %&7). ").append(click));
          }
       }
 
@@ -509,7 +560,7 @@ public class RiftManager implements Listener, CommandExecutor, TabCompleter {
                b.teleport(this.center().add(0.0, 2.0, 0.0));
             }
 
-            this.bar.progress((float)Math.max(0.0, Math.min(1.0, b.getHealth() / this.bossMax)));
+            this.bar.progress((float)Math.max(0.0, Math.min(1.0, b.getHealth() / b.getAttribute(Attribute.MAX_HEALTH).getValue())));
             this.bar.name(Text.c(this.bossName + " &8• &f" + Text.formatTime(left)));
             this.bar.color(BossBar.Color.RED);
             if (now >= this.nextAbility && !fight.isEmpty()) {
@@ -520,7 +571,7 @@ public class RiftManager implements Listener, CommandExecutor, TabCompleter {
       } else {
          double pr = Math.min(1.0, (double)this.kills / this.needed);
          this.bar.progress((float)pr);
-         this.bar.name(Text.c("&5Faille arcanique &8• &dRituel " + this.percent() + " % &8• &f" + Text.formatTime(left)));
+         this.bar.name(Text.c("&5" + this.riftName() + " &8• &dRituel " + this.percent() + " % &8• &f" + Text.formatTime(left)));
          while (this.nextGuardian < this.guardians.size() && pr >= this.guardians.get(this.nextGuardian).at()) {
             this.spawnGuardian(this.guardians.get(this.nextGuardian++), Math.max(1, fight.size()));
          }
@@ -580,12 +631,11 @@ public class RiftManager implements Listener, CommandExecutor, TabCompleter {
       }
 
       if (hpMult) {
-         hp *= this.base(le, Attribute.GENERIC_MAX_HEALTH, 20.0);
+         hp *= this.base(le, Attribute.MAX_HEALTH, 20.0);
       }
 
-      this.attr(le, Attribute.GENERIC_MAX_HEALTH, hp);
-      le.setHealth(hp);
-      this.attr(le, Attribute.GENERIC_FOLLOW_RANGE, 48.0);
+      fr.windydev.clans.feature.BigHealth.apply(le, hp);
+      this.attr(le, Attribute.FOLLOW_RANGE, 48.0);
       le.getPersistentDataContainer().set(this.keyMob, PersistentDataType.BYTE, (byte)1);
       le.getPersistentDataContainer().set(this.keyDmg, PersistentDataType.DOUBLE, dmg);
       le.customName(Text.c(name));
@@ -637,12 +687,12 @@ public class RiftManager implements Listener, CommandExecutor, TabCompleter {
 
       MobSpec m = ok.get(this.rnd.nextInt(ok.size()));
       int lvl = this.level + (int)(progress * 3.0);
-      double hp = (1.0 + this.hpPerLevel * (lvl - 1)) * (1.0 + this.hpPerPlayer * (players - 1));
+      double hp = (1.0 + this.hpPerLevel * (lvl - 1)) * (1.0 + this.hpPerPlayer * (players - 1)) * this.hpMult();
       this.summon(this.randomSpot(), m.type(), hp, true, 1.0 + this.dmgPerLevel * (lvl - 1), "&8[&7Niv. " + lvl + "&8] &f" + m.name());
    }
 
    private void spawnGuardian(Guardian g, int players) {
-      LivingEntity le = this.summon(this.randomSpot(), g.type(), g.hp() * (1.0 + 0.5 * (players - 1)), false, g.dmg(), "&6★ &e" + g.name());
+      LivingEntity le = this.summon(this.randomSpot(), g.type(), g.hp() * (1.0 + 0.5 * (players - 1)) * this.hpMult(), false, g.dmg(), "&6★ &e" + g.name());
       if (le != null) {
          le.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, -1, 0, false, false));
          for (Player p : this.inside()) {
@@ -654,7 +704,7 @@ public class RiftManager implements Listener, CommandExecutor, TabCompleter {
 
    private void spawnBoss() {
       int players = Math.max(1, this.fighters().size());
-      this.bossMax = this.bossHp + this.bossHpPerPlayer * (Math.max(players, this.peak) - 1);
+      this.bossMax = (this.bossHp + this.bossHpPerPlayer * (Math.max(players, this.peak) - 1)) * (this.giant ? this.gBossHp : 1.0);
       Location c = this.center().add(4.0, 0.0, 0.0);
       LivingEntity le = this.summon(c, this.bossType, this.bossMax, false, this.bossDamage, this.bossName);
       if (le == null) {
@@ -664,8 +714,8 @@ public class RiftManager implements Listener, CommandExecutor, TabCompleter {
       boolean first = this.boss == null;
       this.boss = le.getUniqueId();
       le.getPersistentDataContainer().set(this.keyBoss, PersistentDataType.BYTE, (byte)1);
-      this.attr(le, Attribute.GENERIC_SCALE, 1.8);
-      this.attr(le, Attribute.GENERIC_KNOCKBACK_RESISTANCE, 0.8);
+      this.attr(le, Attribute.SCALE, 1.8);
+      this.attr(le, Attribute.KNOCKBACK_RESISTANCE, 0.8);
       le.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, -1, 0, false, false));
       le.setGlowing(true);
       this.nextAbility = System.currentTimeMillis() + 6000L;
@@ -771,25 +821,36 @@ public class RiftManager implements Listener, CommandExecutor, TabCompleter {
          }
 
          names.add(p.getName());
-         this.plugin.profiles().addXp(p, this.xp, "combat");
-         this.plugin.profiles().addSouls(p, this.souls, true);
-         for (String spec : this.rewards) {
-            ItemStack it = this.item(spec);
-            if (it != null) {
-               for (ItemStack rest : p.getInventory().addItem(it).values()) {
-                  p.getWorld().dropItemNaturally(p.getLocation(), rest);
+         int times = this.giant ? this.gRewards : 1;
+         this.plugin.profiles().addXp(p, this.xp * times, "combat");
+         this.plugin.profiles().addSouls(p, this.souls * times, true);
+         for (int t = 0; t < times; t++) {
+            for (String spec : this.rewards) {
+               ItemStack it = this.item(spec);
+               if (it != null) {
+                  for (ItemStack rest : p.getInventory().addItem(it).values()) {
+                     p.getWorld().dropItemNaturally(p.getLocation(), rest);
+                  }
                }
             }
          }
 
+         if (this.giant) {
+            p.sendMessage(Text.c("&5✦ &dFaille géante &7: récompenses x" + times + " !"));
+         }
+
          this.plugin.magic().grantFragment(p);
+         this.plugin.quests().progress(p, fr.windydev.clans.quest.QuestManager.Kind.RIFT, "", 1);
+         if (this.giant) {
+            this.plugin.weeklyEvent().participated(p);
+         }
          p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0F, 1.0F);
       }
 
       String who = names.isEmpty() ? "" : " &7Bravo à &f" + String.join("&7, &f", names) + "&7.";
-      Bukkit.broadcast(Text.c("&5✦ &dL'Avatar de la faille est tombé : le rituel est accompli !" + who));
+      Bukkit.broadcast(Text.c("&5✦ &dL'Avatar de la " + (this.giant ? "Faille géante" : "faille") + " est tombé : le rituel est accompli !" + who));
       if (!names.isEmpty()) {
-         this.plugin.bot().announce("rift", "✨ **Rituel accompli !** L'Avatar de la faille a été vaincu par " + String.join(", ", names) + ".");
+         this.plugin.bot().announce(this.giant ? "event" : "rift", "✨ **Rituel accompli !** L'Avatar de la " + (this.giant ? "Faille géante" : "faille") + " a été vaincu par " + String.join(", ", names) + ".");
       }
 
       this.end(true, null, true);
@@ -836,7 +897,12 @@ public class RiftManager implements Listener, CommandExecutor, TabCompleter {
       this.running = false;
       this.boss = null;
       if (!win) {
-         Bukkit.broadcast(Text.c("&5✦ &7La Faille arcanique s'est refermée : &c" + reason + "&7."));
+         Bukkit.broadcast(Text.c("&5✦ &7La " + this.riftName() + " s'est refermée : &c" + reason + "&7."));
+      }
+
+      if (this.giant) {
+         this.giant = false;
+         this.plugin.weeklyEvent().ended("faille");
       }
 
       List<Player> in = this.inside();

@@ -53,6 +53,11 @@ public class TeleportService implements Listener, CommandExecutor, TabCompleter 
       this.homes = YamlConfiguration.loadConfiguration(this.file);
    }
 
+   /** Le joueur a-t-il placé son home ? (parcours des nouveaux) */
+   public boolean hasHome(UUID id) {
+      return this.homes.contains(id + ".world");
+   }
+
    private int warmup() {
       return Math.max(0, this.plugin.getConfig().getInt("teleport.warmup-seconds", 3));
    }
