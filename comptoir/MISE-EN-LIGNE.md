@@ -5,7 +5,7 @@ Toute la sécurité est dans la base : règles RLS en lecture, fonctions SQL pou
 
 | Quoi | Où |
 |---|---|
-| Site Netlify | projet `comptoir-rp` → https://comptoir-rp.netlify.app |
+| Site | https://comptoir.windydev.fr (projet Netlify `comptoir-rp`, aussi joignable sur https://comptoir-rp.netlify.app) |
 | Base Supabase | projet « Comptoir » (`vevezyxavdfykvcbsiws`) |
 | Schéma | `supabase/migrations/` (3 migrations, déjà appliquées) |
 | Réglages publics du site | `web/config.js` (adresse Supabase et clé *publishable*, faite pour être publique) |
@@ -18,13 +18,21 @@ Toute la sécurité est dans la base : règles RLS en lecture, fonctions SQL pou
 2. Choisir GitHub, dépôt `TheDevWind/Windy-dev`, branche `claude/practical-knuth-t355tp` (ou `main` une fois fusionnée).
 3. **Base directory** : `comptoir`. Laisser *Build command* vide. Le reste (dossier `web`, redirections, en-têtes de sécurité) est lu dans `comptoir/netlify.toml`.
 
+**Le nom de domaine** `comptoir.windydev.fr` :
+
+1. Netlify → projet **comptoir-rp** → *Domain management* → *Add a domain* → `comptoir.windydev.fr`.
+2. Si `windydev.fr` est géré par Netlify DNS, l’enregistrement est créé tout seul. Sinon, chez le registraire du domaine :
+   enregistrement **CNAME** `comptoir` → `comptoir-rp.netlify.app`.
+3. Le certificat HTTPS (Let’s Encrypt) arrive tout seul quelques minutes après. Le code ne contient aucune adresse de site :
+   rien à changer dans le dépôt si le domaine change un jour.
+
 ## 2. Régler la connexion dans Supabase
 
 Tableau de bord Supabase → projet **Comptoir** → *Authentication*.
 
 1. **URL Configuration**
-   - *Site URL* : `https://comptoir-rp.netlify.app`
-   - *Redirect URLs* : ajouter `https://comptoir-rp.netlify.app/**`
+   - *Site URL* : `https://comptoir.windydev.fr`
+   - *Redirect URLs* : ajouter `https://comptoir.windydev.fr/**` et `https://comptoir-rp.netlify.app/**`
 2. **Sign In / Providers → Email**
    - décocher **Confirm email** (les identifiants sont des adresses internes du type `gino.romano.bella-napoli@comptes.windydev.fr` : aucun e-mail n’est jamais envoyé) ;
    - *Minimum password length* : `8` (le site demande déjà 8 caractères).
@@ -37,7 +45,7 @@ Tableau de bord Supabase → projet **Comptoir** → *Authentication*.
 ## 3. Ouvrir les accès éditeur et fisc
 
 Les rôles de plateforme se donnent par un lien à usage unique, valable 7 jours :
-`https://comptoir-rp.netlify.app/reclamer/<jeton>`.
+`https://comptoir.windydev.fr/reclamer/<jeton>`.
 La personne ouvre le lien, choisit un identifiant et un mot de passe (ou Discord), et le rôle est attribué.
 
 Pour créer un nouveau lien : Supabase → *SQL Editor* :
@@ -45,7 +53,7 @@ Pour créer un nouveau lien : Supabase → *SQL Editor* :
 ```sql
 insert into public.platform_claims (role, display_name)
 values ('fisc', 'Inspecteur Garnier')   -- ou ('editeur', 'Windy Dev')
-returning 'https://comptoir-rp.netlify.app/reclamer/' || token as lien;
+returning 'https://comptoir.windydev.fr/reclamer/' || token as lien;
 ```
 
 Le nom affiché (`display_name`) apparaît dans le journal des entreprises à chaque consultation ou contrôle du fisc.
