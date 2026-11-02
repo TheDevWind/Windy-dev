@@ -1,5 +1,5 @@
 // Le client Supabase (ou, pour les tests et la démo hors ligne, une imitation en mémoire).
-const cfg = window.COMPTOIR_CONFIG || {};
+const cfg = window.WINDY_DESK_CONFIG || {};
 export const sb = cfg.fake
   ? (await import('./fake.js')).createFake()
   : window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });

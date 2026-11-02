@@ -1,5 +1,5 @@
 // Page d'accueil : présentation du produit, démonstrations, configurateur qui produit un devis.
-import { $app, S, calm, h, ico, toast, themeSwitch, countUp, liveDot, pill, money, initials, gauge, nextAt, untilText, pad } from './ui.js';
+import { $app, S, calm, h, ico, toast, themeSwitch, countUp, liveDot, pill, money, initials, gauge, nextAt, untilText, pad, BRAND, butterfly, lockup, branch } from './ui.js';
 import { MODULES, PACKS, quoteTotal } from './catalog.js';
 import { exportModal, quoteDoc } from './doc.js';
 
@@ -16,7 +16,7 @@ export function landing() {
   const burger = h('button', { class: 'l-burger', type: 'button', 'aria-label': 'Menu', 'aria-expanded': 'false', onclick: () => { const open = menu.hidden; menu.hidden = !open; burger.setAttribute('aria-expanded', String(open)); document.body.classList.toggle('l-lock', open); } }, h('i', {}), h('i', {}));
   function closeMenu() { menu.hidden = true; burger.setAttribute('aria-expanded', 'false'); document.body.classList.remove('l-lock'); }
   const navbar = h('header', { class: 'l-nav' }, h('div', { class: 'l-wrap l-nav-in' },
-    h('a', { class: 'l-brand', href: '/', onclick: ev => { ev.preventDefault(); window.scrollTo({ top: 0, behavior: smooth }); } }, h('b', { class: 'mk' }, 'C'), h('span', {}, 'Comptoir')),
+    h('a', { class: 'l-brand', href: '/', onclick: ev => { ev.preventDefault(); window.scrollTo({ top: 0, behavior: smooth }); } }, butterfly('l-fly', 60), h('span', { class: 'l-wm' }, h('b', {}, 'Windy'), ' Desk')),
     h('nav', { class: 'l-links', 'aria-label': 'Sections' }, LINKS.map(([id, l]) => h('button', { type: 'button', onclick: () => jump(id) }, l))),
     h('div', { class: 'l-actions' }, themeSwitch(), h('a', { class: 'btn ghost l-login', href: '/connexion' }, 'Se connecter'), h('button', { class: 'btn primary', type: 'button', onclick: () => jump('configurateur') }, 'Composer mon offre'), burger)));
 
@@ -64,7 +64,7 @@ export function landing() {
     const b = h('button', { type: 'button', class: 'tilebtn' }, h('span', { class: 'tb-name' }, n), h('b', { class: 'tb-price' }, price + ' $'), h('span', { class: 'tb-left' }, 'Touche pour vendre'));
     b.addEventListener('click', () => {
       const need = uses[n];
-      if (Object.entries(need).some(([k, q]) => stockDemo[k] < q)) { toast('Rupture : plus assez de ' + Object.keys(need).find(k => stockDemo[k] < need[k]).toLowerCase() + '. Comptoir bloque la vente.', true); return; }
+      if (Object.entries(need).some(([k, q]) => stockDemo[k] < q)) { toast('Rupture : plus assez de ' + Object.keys(need).find(k => stockDemo[k] < need[k]).toLowerCase() + '. Windy Desk bloque la vente.', true); return; }
       Object.entries(need).forEach(([k, q]) => { stockDemo[k] -= q; meters[k].val.textContent = stockDemo[k]; meters[k].bar.style.width = Math.round(stockDemo[k] / 12 * 100) + '%'; meters[k].bar.parentNode.className = 'meter ' + (stockDemo[k] < 4 ? 'bad' : stockDemo[k] < 7 ? 'warn' : 'ok'); });
       countUp(demoTotal, dt + price, dt || 1); dt += price; setTimeout(() => { demoTotal.textContent = dt + ' $'; }, 700);
     });
@@ -103,9 +103,9 @@ export function landing() {
   paintCfg();
   const choosePack = k => { pick = PACKS[k].slice(); paintCfg(); jump('configurateur'); };
   const cfgGo = h('button', { class: 'btn primary wide' }, ico('telecharger', 18), 'Recevoir mon devis en PNG ou PDF');
-  cfgGo.addEventListener('click', () => { if (!pick.length) return toast('Choisis au moins un module.', true); exportModal(quoteDoc(quote()), 'devis-comptoir'); });
+  cfgGo.addEventListener('click', () => { if (!pick.length) return toast('Choisis au moins un module.', true); exportModal(quoteDoc(quote()), 'devis-windy-desk'); });
 
-  const FAQ = [['Faut-il installer quelque chose sur le serveur ?', 'Non. Comptoir est un site : chaque entreprise a son adresse, ses comptes et ses grades. Une liaison avec le jeu (ventes qui remontent toutes seules) pourra devenir un module.'],
+  const FAQ = [['Faut-il installer quelque chose sur le serveur ?', 'Non. Windy Desk est un site : chaque entreprise a son adresse, ses comptes et ses grades. Une liaison avec le jeu (ventes qui remontent toutes seules) pourra devenir un module.'],
     ['Comment se passe le paiement ?', 'En argent RP, à la semaine. Tu reçois un devis, tu paies à la signature, l’espace est ouvert le jour même. La licence se renouvelle quand tu veux.'],
     ['Chaque employé a-t-il son compte ?', 'Oui. Le patron envoie un lien d’activation, l’employé choisit son mot de passe ou se connecte avec Discord. Il ne voit que ce que son grade permet : un serveur voit la caisse, pas la comptabilité.'],
     ['Que voit exactement le fisc ?', 'Les déclarations, la comptabilité et les mouvements de stock, en lecture seule. Jamais les mots de passe ni les notes de la direction. Chaque consultation est notée dans le journal de l’entreprise.'],
@@ -113,9 +113,9 @@ export function landing() {
     ['Et pour une association ?', 'Le pack Association coûte 350 $ par semaine : stock, dons en argent ou en nature, distributions et événements. Elle déclare chaque semaine, sans impôt à payer.']];
 
   const page = h('div', { class: 'land' }, navbar, menu,
-    h('section', { class: 'l-hero' }, h('div', { class: 'l-wrap l-hero-in' },
+    h('section', { class: 'l-hero' }, branch('h-leaf one'), branch('h-leaf two'), h('div', { class: 'l-wrap l-hero-in' },
       h('div', { class: 'l-hero-copy' },
-        h('span', { class: 'l-eyebrow l-in', style: '--i:0' }, 'Gestion d’entreprise pour serveurs RP'),
+        h('span', { class: 'l-eyebrow l-in', style: '--i:0' }, BRAND + ' · gestion d’entreprise pour serveurs RP'),
         h('h1', {}, h('span', { class: 'l-line l-in', style: '--i:1' }, 'Ton entreprise RP'), ' ', h('span', { class: 'l-line l-in', style: '--i:2' }, 'tourne enfin'), ' ', h('span', { class: 'l-line l-in accent', style: '--i:3' }, 'comme une vraie.')),
         h('p', { class: 'l-lead l-in', style: '--i:4' }, 'Stock, recettes, caisse, employés, véhicules, événements et comptabilité dans un seul espace, avec un compte pour chaque employé. Tu ne paies que les modules dont tu as besoin.'),
         h('div', { class: 'l-ctas l-in', style: '--i:5' }, h('button', { class: 'btn primary big', type: 'button', onclick: () => jump('configurateur') }, 'Composer mon offre', ico('fleche', 18)), h('a', { class: 'btn big', href: '/connexion' }, 'Se connecter')),
@@ -123,11 +123,11 @@ export function landing() {
       h('div', { class: 'l-hero-visual l-in', style: '--i:3' }, mock))),
     h('div', { class: 'l-marquee', 'aria-hidden': 'true' }, h('div', { class: 'l-track' }, [0, 1].map(() => h('span', {}, ['Pizzeria', 'Ferme', 'Bar', 'Garage', 'Association', 'Taxi', 'Boulangerie', 'Concession', 'Pêcherie', 'Club', 'Épicerie', 'Brasserie'].map(t => h('span', { class: 'mq' }, t, h('i', {}))))))),
     h('section', { class: 'l-sec', id: 'fonctions' }, h('div', { class: 'l-wrap' },
-      h('div', { class: 'l-sec-head rv' }, h('span', { class: 'l-eyebrow' }, 'Fonctionnalités'), h('h2', {}, 'Tout ce que fait une entreprise, au même comptoir.')),
+      h('div', { class: 'l-sec-head rv' }, h('span', { class: 'l-eyebrow' }, 'Fonctionnalités'), h('h2', {}, 'Tout ce que fait une entreprise, au même endroit.')),
       feat('f-caisse', 'Caisse et stock', 'La caisse sort les ingrédients du stock.', 'Chaque produit de la carte connaît sa recette. Une Regina vendue, c’est une pâte, une sauce et une mozzarella en moins. Essaie : vends quelques pizzas.',
         ['Rupture détectée avant la vente', 'Tickets du jour et moyens de paiement', 'Alerte quand un article passe sous son seuil'],
         h('div', { class: 'd-card' }, h('div', { class: 'd-head' }, h('b', {}, 'Caisse'), h('span', {}, 'Encaissé ', demoTotal)), demoPos, h('span', { class: 'm-label' }, 'Stock en direct'), demoStock)),
-      feat('f-fab', 'Fabrication', 'Les recettes calculent le coût de revient.', 'La ferme transforme son blé en farine, la pizzeria sa farine en pâte. Comptoir vérifie les ingrédients, les retire du stock et ajoute le produit fini.',
+      feat('f-fab', 'Fabrication', 'Les recettes calculent le coût de revient.', 'La ferme transforme son blé en farine, la pizzeria sa farine en pâte. Windy Desk vérifie les ingrédients, les retire du stock et ajoute le produit fini.',
         ['Fournées possibles calculées en direct', 'Ordres de fabrication horodatés', 'Coût de revient à l’unité'],
         h('div', { class: 'd-card' }, h('div', { class: 'rc-head' }, h('div', { class: 'art' }, h('b', { class: 'd-title' }, 'Pâte à pizza'), h('small', {}, 'Donne 10 pâtons · 20 min')), pill('6 fournées possibles', 'ok')),
           h('ul', { class: 'ins' }, [['Farine', '2 kg', '22 kg'], ['Eau', '2 bouteilles', '60 bouteilles']].map(([n, q, s2]) => h('li', {}, h('span', {}, n), h('span', { class: 'need' }, q), h('span', { class: 'have' }, ico('coche', 16), 'en stock : ' + s2)))),
@@ -151,7 +151,7 @@ export function landing() {
         ['L’équipe se connecte', 'Chaque employé a son compte et ne voit que ce que son grade permet.']].map(([t, d], i) => h('li', { class: 'rv', style: '--i:' + i }, h('span', { class: 'l-num' }, String(i + 1).padStart(2, '0')), h('h3', {}, t), h('p', {}, d)))))),
     h('section', { class: 'l-sec l-dark', id: 'fisc' }, h('div', { class: 'l-wrap l-split' },
       h('div', { class: 'rv' }, h('span', { class: 'l-eyebrow' }, 'Pour l’administration du serveur'), h('h2', {}, 'Le fisc a son propre accès.'),
-        h('p', {}, 'Le contrôleur voit toutes les entreprises en lecture seule. Comptoir croise déclarations, comptabilité et stock, et lui montre où regarder.'),
+        h('p', {}, 'Le contrôleur voit toutes les entreprises en lecture seule. Windy Desk croise déclarations, comptabilité et stock, et lui montre où regarder.'),
         h('ul', { class: 'l-points' }, ['Chiffre d’affaires sous-déclaré repéré', 'Retraits d’espèces sans justificatif', 'Contrôles et redressements', 'Chaque consultation notée dans le journal de l’entreprise'].map(p => h('li', {}, ico('coche', 18), p))),
         h('a', { class: 'btn big l-inv', href: '/connexion/plateforme' }, 'Accès du fisc', ico('fleche', 18))),
       h('div', { class: 'l-fisc-visual rv' }, h('div', { class: 'd-card' }, h('div', { class: 'd-head' }, h('b', {}, 'Bar Le Vespucci'), pill('Risque élevé', 'bad')),
@@ -171,11 +171,11 @@ export function landing() {
     h('section', { class: 'l-sec l-alt', id: 'questions' }, h('div', { class: 'l-wrap l-narrow' },
       h('div', { class: 'l-sec-head rv' }, h('span', { class: 'l-eyebrow' }, 'Questions'), h('h2', {}, 'Ce qu’on nous demande le plus.')),
       h('div', { class: 'l-faq' }, FAQ.map(([q, a], i) => h('details', { class: 'rv', open: i === 0 }, h('summary', {}, h('span', {}, q), h('i', { class: 'l-plus', 'aria-hidden': 'true' })), h('p', {}, a)))))),
-    h('section', { class: 'l-cta' }, h('div', { class: 'l-wrap' }, h('h2', { class: 'rv' }, 'Ouvre ton comptoir.'), h('p', { class: 'rv' }, 'Compose ton offre, reçois ton devis, et ton entreprise a son espace le jour même.'),
+    h('section', { class: 'l-cta' }, h('div', { class: 'l-wrap' }, lockup('cta-lock rv'), h('h2', { class: 'rv' }, 'Ouvre ton espace.'), h('p', { class: 'rv' }, 'Compose ton offre, reçois ton devis, et ton entreprise a son espace le jour même.'),
       h('div', { class: 'l-ctas rv' }, h('button', { class: 'btn primary big', type: 'button', onclick: () => jump('configurateur') }, 'Composer mon offre', ico('fleche', 18)), h('a', { class: 'btn big', href: '/connexion' }, 'Se connecter')))),
-    h('footer', { class: 'l-foot' }, h('div', { class: 'l-wrap l-foot-in' }, h('a', { class: 'l-brand', href: '/' }, h('b', { class: 'mk sm' }, 'C'), h('span', {}, 'Comptoir')),
+    h('footer', { class: 'l-foot' }, h('div', { class: 'l-wrap l-foot-in' }, h('a', { class: 'l-brand', href: '/' }, butterfly('l-fly', 60), h('span', { class: 'l-wm' }, h('b', {}, 'Windy'), ' Desk')),
       h('nav', {}, LINKS.map(([id, l]) => h('button', { type: 'button', onclick: () => jump(id) }, l)), h('a', { href: '/connexion' }, 'Connexion')),
-      h('p', {}, 'Un logiciel Windy Dev. Les entreprises et les chiffres montrés en exemple sur cette page sont fictifs.'))));
+      h('p', {}, 'Un produit Windy Project, développé par Windy Dev. Les entreprises et les chiffres montrés en exemple sur cette page sont fictifs.'))));
 
   $app.replaceChildren(page);
   window.scrollTo(0, 0);

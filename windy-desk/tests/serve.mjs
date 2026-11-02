@@ -29,7 +29,7 @@ export function serve(port = 8080, overrides = {}, headers = {}) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT) || 8080;
-  const csp = (await readFile(new URL('../netlify.toml', import.meta.url), 'utf8')).match(/Content-Security-Policy = "([^"]+)"/)[1];
+  const csp = (await readFile(new URL('../../netlify.toml', import.meta.url), 'utf8')).match(/Content-Security-Policy = "([^"]+)"/)[1];
   await serve(port, {}, { 'content-security-policy': csp });
-  console.log('Comptoir sur http://localhost:' + port);
+  console.log('Windy Desk sur http://localhost:' + port);
 }

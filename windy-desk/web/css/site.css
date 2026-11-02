@@ -1,4 +1,4 @@
-/* ================================================================== Comptoir : page d'accueil, connexion, employés, véhicules, événements, devis */
+/* ================================================================== Windy Desk : page d'accueil, connexion, employés, véhicules, événements, devis */
 :root { --band: #111111; --band-fg: #f2f2f0; --band-muted: #a3a5ab; --band-line: #2c2d32; --paper-shadow: 0 1px 2px rgba(17, 17, 17, .06), 0 12px 32px rgba(17, 17, 17, .08); --glass: rgba(244, 244, 242, .86); --bad: #ad241d; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --band: #f2f2f0; --band-fg: #111111; --band-muted: #5e5e5b; --band-line: #dcdcd8; --paper-shadow: 0 12px 32px rgba(0, 0, 0, .5); --glass: rgba(14, 15, 17, .86); } }
 :root[data-theme="dark"] { --band: #f2f2f0; --band-fg: #111111; --band-muted: #5e5e5b; --band-line: #dcdcd8; --paper-shadow: 0 12px 32px rgba(0, 0, 0, .5); --glass: rgba(14, 15, 17, .86); }

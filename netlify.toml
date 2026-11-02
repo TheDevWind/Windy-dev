@@ -1,6 +1,9 @@
-# Site statique : le dossier web est publié tel quel, sans étape de construction.
+# Netlify : le site Windy Desk vit dans le dossier windy-desk/ de ce dépôt (le reste est le plugin WindyClans).
+# Ce fichier est à la racine pour que Netlify le trouve quel que soit le réglage « Base directory » du tableau de bord.
 [build]
+  base = "windy-desk"
   publish = "web"
+  command = ""
 
 # Toutes les adresses (/bella-napoli/compta, /fisc, …) sont servies par la même page ; le routeur JS fait le reste.
 [[redirects]]

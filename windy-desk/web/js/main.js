@@ -1,8 +1,8 @@
-// ================================================================== Comptoir · le site
+// ================================================================== Windy Desk · le site
 // Adresses : /  ·  /connexion  ·  /connexion/plateforme  ·  /reclamer/<lien>  ·  /<entreprise>[/compta|/equipe|/reglages]
 //            /<entreprise>/activer/<lien>  ·  /fisc[/bareme|/<entreprise>]  ·  /editeur[/modules|/devis|/devis/<id>]
 import { $app, $tip, S, calm, arriving, h, ico, modal, toast, run, table, themeSwitch, liveDot, pill, strip, fchips, dailyBars, money, money2, initials,
-  date, ago, clock, dayLabel, copyText, hideTip, slug } from './ui.js';
+  date, ago, clock, dayLabel, copyText, hideTip, slug, BRAND, butterfly, lockup, branch } from './ui.js';
 import { MODULES, moduleOf, PACKS, CAPS, CATEGORIES, DAYS, quoteTotal } from './catalog.js';
 import { renderDoc, exportModal, quoteDoc } from './doc.js';
 import { landing } from './landing.js';
@@ -35,7 +35,7 @@ async function spaces(force) {
 function fail(e) { toast(e.message || String(e), true); }
 function message(title, text, ...actions) {
   S.shown = null;
-  $app.replaceChildren(h('div', { class: 'gate' }, themeSwitch(), h('div', { class: 'gate-card' }, h('b', { class: 'mk big', style: 'margin:0 auto' }, 'C'), h('h1', {}, title), h('p', {}, text), ...actions)));
+  $app.replaceChildren(h('div', { class: 'gate' }, themeSwitch(), h('div', { class: 'gate-card' }, butterfly('gate-fly'), h('h1', {}, title), h('p', {}, text), ...actions)));
 }
 
 async function route() {
@@ -62,7 +62,7 @@ function navLink(n, current) {
   return h('a', { class: 'nav' + (n.page === current ? ' on' : ''), href: n.href, title: n.label, 'aria-current': n.page === current ? 'page' : null }, h('span', { class: 'ic' }, ico(n.icon)), h('span', { class: 'lbl' }, n.short || n.label));
 }
 function shell(nav, current, ...content) {
-  const side = h('nav', { class: 'side', 'aria-label': 'Menu' }, h('a', { class: 'brand', href: nav[0].href, title: 'Comptoir' }, h('b', { class: 'mk' }, 'C')),
+  const side = h('nav', { class: 'side', 'aria-label': 'Menu' }, h('a', { class: 'brand', href: nav[0].href, title: BRAND, 'aria-label': BRAND }, butterfly('side-fly', 70)),
     h('div', { class: 'navs' }, nav.map(n => navLink(n, current))), themeSwitch());
   const bar = h('nav', { class: 'tabbar', 'aria-label': 'Menu' }, nav.slice(0, 4).map(n => navLink(n, current)),
     nav.length > 4 ? h('button', { class: 'nav' + (nav.slice(4).some(n => n.page === current) ? ' on' : ''), type: 'button', onclick: () => {
@@ -120,7 +120,7 @@ const activationUrl = (code, token) => location.origin + '/' + code + '/activer/
 // ---------------------------------------------------------------- connexion
 function authFrame(side, ...form) {
   S.shown = null;
-  $app.replaceChildren(h('div', { class: 'auth' }, h('aside', { class: 'auth-side' }, side), h('main', { class: 'auth-main' },
+  $app.replaceChildren(h('div', { class: 'auth' }, h('aside', { class: 'auth-side' }, branch('a-leaf one'), branch('a-leaf two'), side), h('main', { class: 'auth-main' },
     h('div', { class: 'auth-top' }, h('a', { class: 'auth-back', href: '/' }, ico('fleche', 16), 'Retour au site'), themeSwitch()), h('div', { class: 'auth-form' }, ...form))));
   window.scrollTo(0, 0);
 }
@@ -141,7 +141,7 @@ function loginHome() {
   };
   const btn = h('button', { class: 'btn primary', onclick: () => next(btn) }, 'Continuer');
   code.addEventListener('keydown', ev => { if (ev.key === 'Enter') next(btn); });
-  authFrame([h('b', { class: 'mk big inv' }, 'C'), h('h2', {}, 'Chaque entreprise a son espace.'), h('p', {}, 'Son adresse, ses comptes, ses grades. Ton patron t’envoie un lien d’activation : tu choisis Discord ou un mot de passe.'),
+  authFrame([lockup('auth-lock'), h('h2', {}, 'Chaque entreprise a son espace.'), h('p', {}, 'Son adresse, ses comptes, ses grades. Ton patron t’envoie un lien d’activation : tu choisis Discord ou un mot de passe.'),
       h('ul', { class: 'auth-points' }, ['Un compte par employé', 'Des accès selon le grade', 'Une adresse propre à l’entreprise'].map(t => h('li', {}, ico('coche', 18), t)))],
     h('h1', {}, 'Se connecter'), h('p', { class: 'muted' }, 'Entre l’adresse de ton entreprise.'),
     h('div', { class: 'codefield' }, h('span', {}, '/'), code, btn),
@@ -185,7 +185,7 @@ async function orgLogin(code) {
     h('p', { class: 'note' }, 'Pas encore de compte ? Ton patron t’envoie un lien d’activation depuis la page Équipe.'));
 }
 function platformLogin() {
-  authFrame([h('b', { class: 'mk big inv' }, 'C'), h('h2', {}, 'Fisc et éditeur'), h('p', {}, 'L’espace du contrôleur du fisc (lecture seule sur toutes les entreprises) et celui de l’éditeur de Comptoir.')],
+  authFrame([lockup('auth-lock'), h('h2', {}, 'Fisc et éditeur'), h('p', {}, 'L’espace du contrôleur du fisc (lecture seule sur toutes les entreprises) et celui de l’éditeur de ' + BRAND + '.')],
     h('h1', {}, 'Connexion'), h('p', { class: 'muted' }, 'Ton accès a été ouvert par un lien à usage unique.'),
     passwordForm('plateforme', async () => { const sp = await spaces(true); go(sp.role === 'fisc' ? '/fisc' : sp.role === 'editeur' ? '/editeur' : '/connexion'); }),
     h('div', { class: 'auth-or' }, h('span', {}, 'ou')), discordButton('/connexion/plateforme'));
@@ -193,7 +193,7 @@ function platformLogin() {
 }
 async function claimPage(token) {
   if (!ME.session) {
-    return authFrame([h('b', { class: 'mk big inv' }, 'C'), h('h2', {}, 'Ouvrir ton accès'), h('p', {}, 'Ce lien donne un accès au fisc ou à l’éditeur. Il ne sert qu’une fois.')],
+    return authFrame([lockup('auth-lock'), h('h2', {}, 'Ouvrir ton accès'), h('p', {}, 'Ce lien donne un accès au fisc ou à l’éditeur. Il ne sert qu’une fois.')],
       h('h1', {}, 'Choisis ta connexion'), h('p', { class: 'muted' }, 'Crée un identifiant, ou utilise Discord.'),
       passwordForm('plateforme', () => route(), { create: true }), h('div', { class: 'auth-or' }, h('span', {}, 'ou')), discordButton('/reclamer/' + token, 'Continuer avec Discord'));
   }
@@ -279,7 +279,7 @@ async function dashboard(ctx) {
       h('div', { class: 'col aside' },
         h('section', { class: 'card' }, h('h2', {}, 'Modules de l’offre'), me.modules.length ? h('ul', { class: 'people' }, me.modules.map(id => h('li', {}, h('span', { class: 'ev-ic' }, ico(moduleOf(id).icon, 16)),
           h('span', {}, h('b', {}, moduleOf(id).name))))) : h('div', { class: 'calm' }, 'Aucun module : le socle seulement.'),
-          h('p', { class: 'note', style: 'margin-top:12px' }, me.modules.length ? 'Ces modules arrivent avec les prochaines versions de Comptoir et s’ajouteront au menu. Le socle (comptabilité, déclarations, équipe, grades, journal) est déjà en service.' : 'Le socle (comptabilité, déclarations, équipe, grades, journal) est en service.')),
+          h('p', { class: 'note', style: 'margin-top:12px' }, me.modules.length ? 'Ces modules arrivent avec les prochaines versions de ' + BRAND + ' et s’ajouteront au menu. Le socle (comptabilité, déclarations, équipe, grades, journal) est déjà en service.' : 'Le socle (comptabilité, déclarations, équipe, grades, journal) est en service.')),
         h('section', { class: 'card' }, h('h2', {}, 'Licence'), h('p', { class: 'muted', style: 'margin:0' }, new Date(me.licence_until).getTime() < Date.now() ? 'Expirée le ' + date(new Date(me.licence_until).getTime()) + '.' : 'Valable jusqu’au ' + date(new Date(me.licence_until).getTime()) + '.')))));
 }
 
@@ -434,7 +434,7 @@ async function reglages(ctx) {
     h('section', { class: 'card' }, h('h2', {}, 'Modules de l’offre'), h('div', { class: 'modgrid' }, MODULES.map(m => h('div', { class: 'modcard' + (me.modules.includes(m.id) ? ' on' : '') },
       h('div', { class: 'mc-top' }, h('span', { class: 'mc-ic' }, ico(m.icon, 20)), me.modules.includes(m.id) ? pill('Inclus', 'ok') : pill('Non inclus')), h('b', {}, m.name), h('p', {}, m.text),
       h('div', { class: 'mc-foot' }, h('span', { class: 'muted small' }, money(m.price) + ' / semaine'))))),
-      h('p', { class: 'note', style: 'margin-top:12px' }, 'Pour ajouter ou retirer un module, contacte l’éditeur de Comptoir.')),
+      h('p', { class: 'note', style: 'margin-top:12px' }, 'Pour ajouter ou retirer un module, contacte l’éditeur de ' + BRAND + '.')),
     h('section', { class: 'card' }, h('h2', {}, 'Journal'), table([['Quand', j => date(new Date(j.at).getTime()), 'num', j => j.at], ['Qui', j => j.by_fisc ? h('span', {}, pill('Fisc', 'info'), ' ' + j.who) : j.who], ['Quoi', j => j.what]], journal, null, 'Rien pour l’instant.')));
 }
 
@@ -442,8 +442,8 @@ async function reglages(ctx) {
 async function platformSpace(role, b, c) {
   if (!ME.session) return go('/connexion/plateforme', true);
   const sp = await spaces();
-  if (sp.role !== role) return message('Accès réservé', role === 'fisc' ? 'Cette page est réservée au contrôleur du fisc.' : 'Cette page est réservée à l’éditeur de Comptoir.', h('a', { class: 'btn', href: '/' }, 'Accueil'));
-  const who = { name: sp.display_name, role: role === 'fisc' ? 'Contrôleur du fisc' : 'Éditeur de Comptoir' };
+  if (sp.role !== role) return message('Accès réservé', role === 'fisc' ? 'Cette page est réservée au contrôleur du fisc.' : 'Cette page est réservée à l’éditeur de ' + BRAND + '.', h('a', { class: 'btn', href: '/' }, 'Accueil'));
+  const who = { name: sp.display_name, role: role === 'fisc' ? 'Contrôleur du fisc' : 'Éditeur de ' + BRAND };
   if (role === 'fisc') {
     const nav = [{ page: 'fisc', href: '/fisc', label: 'Vue d’ensemble', short: 'Accueil', icon: 'accueil' }, { page: 'bareme', href: '/fisc/bareme', label: 'Barème', icon: 'balance' }];
     return b === 'bareme' ? bareme(nav, who) : b ? fiscOrg(nav, who, b) : fiscHome(nav, who);
@@ -598,7 +598,7 @@ async function clients(nav, who) {
     const tok = await rpc('renew_invitation', { p_member: owner.id });
     refresh(); linkModal('Nouveau lien pour ' + owner.name, activationUrl(o.code, tok), owner.name);
   });
-  shell(nav, 'clients', head('Clients', 'Les entreprises qui utilisent Comptoir', who, h('button', { class: 'btn primary', onclick: () => newClientModal(null, refresh) }, ico('ajout', 18), 'Nouveau client')),
+  shell(nav, 'clients', head('Clients', 'Les entreprises qui utilisent ' + BRAND, who, h('button', { class: 'btn primary', onclick: () => newClientModal(null, refresh) }, ico('ajout', 18), 'Nouveau client')),
     h('section', { class: 'card' }, strip([['Clients', String(all.length)], ['Comptes actifs', String(all.reduce((a, o) => a + Number(o.accounts), 0))], ['Revenu par semaine', money(all.reduce((a, o) => a + Number(o.price), 0))],
       ['Licences à renouveler', String(soon.length), soon.length ? 'neg' : null]])),
     h('section', { class: 'card' }, table([['Entreprise', o => h('span', { class: 'art' }, h('b', {}, o.name), h('small', {}, o.kind + ' · ' + o.owner_name))], ['Adresse', o => h('code', {}, '/' + o.code)],

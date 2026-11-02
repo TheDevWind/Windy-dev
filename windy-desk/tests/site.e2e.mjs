@@ -14,8 +14,8 @@ const SHOTS = process.env.SHOTS ? new URL('./shots/', import.meta.url).pathname 
 if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
 const backend = await createBackend();
-const csp = readFileSync(new URL('../netlify.toml', import.meta.url), 'utf8').match(/Content-Security-Policy = "([^"]+)"/)[1];
-const server = await serve(PORT, { '/config.js': "window.COMPTOIR_CONFIG = { fake: true, passwordDomain: 'comptes.windydev.fr' };" }, { 'content-security-policy': csp });
+const csp = readFileSync(new URL('../../netlify.toml', import.meta.url), 'utf8').match(/Content-Security-Policy = "([^"]+)"/)[1];
+const server = await serve(PORT, { '/config.js': "window.WINDY_DESK_CONFIG = { fake: true, passwordDomain: 'comptes.windydev.fr' };" }, { 'content-security-policy': csp });
 const browser = await chromium.launch();
 const errors = [], pages = [];
 const steps = [];
@@ -26,8 +26,8 @@ async function open(o = {}) {
   const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1366, height: 860 }, colorScheme: o.dark ? 'dark' : 'light',
     isMobile: mobile, hasTouch: mobile, reducedMotion: 'reduce', acceptDownloads: true, timezoneId: 'Europe/Paris', locale: 'fr-FR' });
   await ctx.exposeFunction('__backend', backend.handle);
-  if (o.session) await ctx.addInitScript(s => { if (!sessionStorage.getItem('comptoir-test-session')) sessionStorage.setItem('comptoir-test-session', s); }, o.session);
-  if (o.discord) await ctx.addInitScript(n => sessionStorage.setItem('comptoir-test-discord', n), o.discord);
+  if (o.session) await ctx.addInitScript(s => { if (!sessionStorage.getItem('windydesk-test-session')) sessionStorage.setItem('windydesk-test-session', s); }, o.session);
+  if (o.discord) await ctx.addInitScript(n => sessionStorage.setItem('windydesk-test-discord', n), o.discord);
   const page = await ctx.newPage();
   const tag = o.label || 'page';
   page.setDefaultTimeout(8000);
@@ -44,7 +44,7 @@ const settle = async (page, sel) => {
 const toast = (page, re) => page.locator('.toasts .toast', { hasText: re }).first().waitFor({ timeout: 8000 });
 const noBadToast = async page => { const bad = await page.locator('.toasts .toast.bad').allInnerTexts(); assert.deepEqual(bad, [], 'message d’erreur affiché : ' + bad.join(' | ')); };
 const linkFromModal = async page => { const input = page.locator('.modal input[readonly]'); await input.waitFor(); const v = await input.inputValue(); await page.locator('.modal').getByRole('button', { name: 'Fermer' }).click(); return v; };
-const session = page => page.evaluate(() => sessionStorage.getItem('comptoir-test-session'));
+const session = page => page.evaluate(() => sessionStorage.getItem('windydesk-test-session'));
 const shot = (page, name, full) => SHOTS ? page.screenshot({ path: SHOTS + name + '.png', fullPage: !!full }) : null;
 const PW = 'motdepasse-solide';
 
@@ -217,7 +217,7 @@ try {
     await nina.goto(BASE + '/bella-napoli/compta'); await settle(nina, '.shell');
     assert.equal(new URL(nina.url()).pathname, '/bella-napoli');
     // la base refuse aussi, même en passant outre l'écran
-    const r = JSON.parse(await nina.evaluate(() => window.__backend(JSON.stringify({ op: 'from', q: { table: 'ledger', filters: [], order: null, limit: null }, uid: JSON.parse(sessionStorage.getItem('comptoir-test-session')).user.id }))));
+    const r = JSON.parse(await nina.evaluate(() => window.__backend(JSON.stringify({ op: 'from', q: { table: 'ledger', filters: [], order: null, limit: null }, uid: JSON.parse(sessionStorage.getItem('windydesk-test-session')).user.id }))));
     assert.deepEqual(r.data, []);
     S.nina = await session(nina);
   });

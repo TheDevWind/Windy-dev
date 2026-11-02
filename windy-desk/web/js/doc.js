@@ -1,4 +1,4 @@
-import { h, ico, modal, toast, run } from './ui.js';
+import { h, ico, modal, toast, run, FLY_PATH, BRAND } from './ui.js';
 import { moduleOf, quoteTotal } from './catalog.js';
 const DAY = 864e5;
 // ================================================================== documents : devis et factures, en PNG ou en PDF
@@ -7,12 +7,14 @@ const DAY = 864e5;
  * le PNG est ce canvas, le PDF l'enveloppe telle quelle (image JPEG dans une page A4). Pas de bibliothèque : le PDF est écrit ici.
  * Le papier est toujours blanc, quel que soit le thème de l'écran : c'est un document à envoyer ou à imprimer.
  */
-const PAPER = { W: 1240, H: 1754, M: 100, ink: '#111111', muted: '#5e5e5b', line: '#dcdcd8', accent: '#4a3ab0', ok: '#2d6a1c', bad: '#bf2a22' };
+// couleurs de Windy Project : violet du papillon, encre ardoise, lavande, crème et sauge
+const PAPER = { W: 1240, H: 1754, M: 100, ink: '#2b2d33', muted: '#5f5b66', line: '#e4ddd1', accent: '#6458b0', ok: '#4d6a2c', bad: '#ad241d' };
+const SERIF = '"Cormorant Garamond", Georgia, serif';
 const plainMoney = n => (n < 0 ? '-' : '') + Math.abs(Math.round(n)).toLocaleString('fr-FR').replace(/\s/g, ' ') + ' $';
 const longDate = ms => new Date(ms).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
 async function fontsReady() {
-  try { await Promise.all(['400', '600', '700'].map(w => document.fonts.load(w + ' 24px Inter'))); } catch (e) { /* police système en secours */ }
+  try { await Promise.all(['400', '600', '700'].map(w => document.fonts.load(w + ' 24px Inter')).concat(['500', '600'].map(w => document.fonts.load(w + ' 40px "Cormorant Garamond"')))); } catch (e) { /* police système en secours */ }
 }
 function wrapText(x, text, maxW) {
   const words = String(text).split(/\s+/), lines = [];
@@ -36,16 +38,24 @@ async function renderDoc(d) {
   x.fillStyle = '#ffffff'; x.fillRect(0, 0, W, H);
   x.textBaseline = 'alphabetic';
   // en-tête
-  x.fillStyle = PAPER.ink; x.fillRect(M, M, 72, 72);
-  font('700', 46); text(d.mark || 'C', M + 36, M + 53, 'center', '#ffffff');
-  font('700', 34); text(d.brand || 'Comptoir', M + 96, M + 34);
-  font('400', 19); text(d.brandSub || 'Gestion modulable des entreprises RP', M + 96, M + 64, 'left', PAPER.muted);
+  let bx;
+  if (d.mark) {   // document d'une entreprise : son initiale dans un rond violet
+    x.fillStyle = PAPER.accent; x.beginPath(); x.arc(M + 36, M + 36, 36, 0, 2 * Math.PI); x.fill();
+    x.font = '600 46px ' + SERIF; text(d.mark, M + 36, M + 52, 'center', '#ffffff');
+    bx = M + 96;
+  } else {        // document de l'éditeur : le papillon de Windy Project
+    const k = 132 / 3780;
+    x.save(); x.translate(M, M + 6); x.scale(k, k); x.fillStyle = PAPER.accent; x.fill(new Path2D(FLY_PATH), 'evenodd'); x.restore();
+    bx = M + 156;
+  }
+  x.font = '600 44px ' + SERIF; text(d.brand || BRAND, bx, M + 36);
+  font('400', 19); text(d.brandSub || 'Gestion des entreprises RP · Windy Project', bx, M + 66, 'left', PAPER.muted);
   font('700', 64); text(d.kind, W - M, M + 50, 'right');
   font('600', 21); text('N° ' + d.num, W - M, M + 88, 'right');
   font('400', 19); text('Émis le ' + longDate(d.date), W - M, M + 116, 'right', PAPER.muted);
   if (d.valid) text((d.kind === 'DEVIS' ? 'Valable jusqu’au ' : 'Échéance le ') + longDate(d.valid), W - M, M + 142, 'right', PAPER.muted);
   let y = M + 190;
-  rule(y, 4);
+  rule(y, 3, PAPER.accent);
   // parties
   y += 56;
   const col2 = W / 2 + 20;
@@ -107,9 +117,11 @@ async function renderDoc(d) {
   // pied de page
   rule(H - M + 20, 1, PAPER.line);
   font('400', 15);
-  text(d.footer || 'Montants en dollars du serveur (argent RP). Document généré par Comptoir le ' + longDate(Date.now()) + '.', M, H - M + 54, 'left', PAPER.muted);
+  text(d.footer || 'Montants en dollars du serveur (argent RP). Document généré par ' + BRAND + ' le ' + longDate(Date.now()) + '.', M, H - M + 54, 'left', PAPER.muted);
   text(d.num, W - M, H - M + 54, 'right', PAPER.muted);
-  x.fillStyle = PAPER.accent; x.fillRect(0, H - 14, W, 14);
+  const band = x.createLinearGradient(0, 0, W, 0);   // le dégradé de la bannière : lavande, crème, sauge
+  band.addColorStop(0, '#b79ad8'); band.addColorStop(0.5, '#f1e4e6'); band.addColorStop(1, '#a9bc86');
+  x.fillStyle = band; x.fillRect(0, H - 14, W, 14);
   return c;
 }
 
@@ -161,8 +173,8 @@ async function exportModal(d, fileBase) {
   return c;
 }
 
-// ---------------------------------------------------------------- documents de Comptoir
-const EDITOR = { title: 'Éditeur', lines: ['Windy Dev', 'Comptoir · licences', 'Paiement en argent RP', 'Contact : en ville ou sur Discord'] };
+// ---------------------------------------------------------------- documents de Windy Desk
+const EDITOR = { title: 'Éditeur', lines: ['Windy Dev', BRAND + ' · licences', 'Paiement en argent RP', 'Contact : en ville ou sur Discord'] };
 function quoteDoc(q) {
   const t = quoteTotal(q);
   return { kind: 'DEVIS', num: q.num, date: new Date(q.created_at || q.created || Date.now()).getTime(), valid: new Date(q.created_at || q.created || Date.now()).getTime() + 7 * DAY,
@@ -175,7 +187,7 @@ function quoteDoc(q) {
     sign: true, stamp: q.status === 'accepte' ? { text: 'ACCEPTÉ', color: PAPER.ok } : q.status === 'refuse' ? { text: 'REFUSÉ', color: PAPER.bad } : null };
 }
 function invoiceDoc(o, inv) {
-  return { kind: 'FACTURE', num: inv.num, date: inv.time, valid: inv.due, brand: o.name, mark: o.name[0].toUpperCase(), brandSub: o.type + ' · géré avec Comptoir',
+  return { kind: 'FACTURE', num: inv.num, date: inv.time, valid: inv.due, brand: o.name, mark: o.name[0].toUpperCase(), brandSub: o.type + ' · géré avec ' + BRAND,
     from: { title: 'Émetteur', lines: [o.name, o.owner, o.type] }, to: { title: 'Client', lines: [inv.client] },
     cols: ['Article', 'Quantité', 'Prix unitaire', 'Montant'], colW: [0.46, 0.16, 0.18, 0.2],
     rows: inv.lines.map(l => ({ name: l[0], sub: null, cells: [String(l[1]), plainMoney(l[2]).replace(' $', '') + ' $', plainMoney(l[1] * l[2])] })),

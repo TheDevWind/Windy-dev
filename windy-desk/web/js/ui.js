@@ -1,4 +1,4 @@
-// ================================================================== Comptoir · boîte à outils de l'interface
+// ================================================================== Windy Desk · boîte à outils de l'interface
 // Reprise du panneau Windy Watch : mêmes composants, mêmes animations, même respect de « moins d'animations ».
 export const $app = document.getElementById('app'), $tip = document.getElementById('tip'), $toasts = document.getElementById('toasts');
 export const S = { prev: {}, shown: null, filters: {}, timer: null };
@@ -22,7 +22,7 @@ function h(tag, attrs, ...kids) {
   return el;
 }
 
-const pref = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem('comptoir-' + k)); localStorage.setItem('comptoir-' + k, JSON.stringify(v)); } catch (e) { /* stockage indisponible */ } return v === undefined ? null : v; };
+const pref = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem('windydesk-' + k)); localStorage.setItem('windydesk-' + k, JSON.stringify(v)); } catch (e) { /* stockage indisponible */ } return v === undefined ? null : v; };
 
 const root = document.documentElement;
 
@@ -41,7 +41,7 @@ function setTheme(t, ev) {
     return;
   }
   root.dataset.theme = t;
-  try { localStorage.setItem('comptoir-theme', t); } catch (e) { /* stockage indisponible : le choix vaut pour cette visite */ }
+  try { localStorage.setItem('windydesk-theme', t); } catch (e) { /* stockage indisponible : le choix vaut pour cette visite */ }
   document.querySelectorAll('.switch:not(.mini)').forEach(b => b.setAttribute('aria-checked', String(t === 'dark')));
 }
 
@@ -362,7 +362,7 @@ export function fchips(list, current, onPick, label) {
 export function dailyBars(values, fmt, color) {
   const max = Math.max(1, ...values.map(v => v.v));
   return h('div', { class: 'bars-wrap' }, h('div', { class: 'bars' + (arriving() ? ' fresh' : ''), role: 'img', 'aria-label': 'Montants' }, values.map((d, i) => {
-    const col = h('div', { class: 'bar-col', style: '--d:' + (i * 22) + 'ms' }, h('div', { class: 'bar-stack', style: 'height:' + (d.v / max * 100) + '%' }, h('i', { style: 'flex:1;background:' + (d.today ? 'var(--accent)' : color || 'var(--text)') })));
+    const col = h('div', { class: 'bar-col', style: '--d:' + (i * 22) + 'ms' }, h('div', { class: 'bar-stack', style: 'height:' + (d.v / max * 100) + '%' }, h('i', { style: 'flex:1;background:' + (d.today ? 'var(--bar-today, var(--accent))' : color || 'var(--bar, var(--text))') })));
     col.addEventListener('pointerenter', ev => { $tip.replaceChildren(h('b', {}, fmt(d.v)), h('div', {}, d.label || dayLabel(d.t))); $tip.hidden = false; moveTip(ev); });
     col.addEventListener('pointermove', moveTip);
     col.addEventListener('pointerleave', hideTip);
@@ -382,3 +382,32 @@ export const nextAt = (dow, hour) => { const d = new Date(dayStart(Date.now()));
 export const slug = t => String(t || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40).replace(/-$/, '');
 
 export { h, pref, theme, setTheme, themeSwitch, s, countUp, tween, liveDot, toast, modal, run, pad, date, ago, span, compact, clock, clockS, dur, dayLabel, copyText, table, chart, spark, moveTip, hideTip, ICONS, ico };
+
+// ---------------------------------------------------------------- marque (direction artistique Windy Project)
+export const BRAND = 'Windy Desk';
+// le papillon de Windy Project, en un seul trait (vectorisé depuis le logo officiel)
+const FLY = 'M1818 1920C1704 1878 1739 1644 1886 1461C1914 1427 1922 1408 1922 1381C1922 1246 2018 1041 2190 810C2277 694 2451 527 2591 426C2846 241 3054 144 3320 85C3501 45 3664 66 3704 134C3750 213 3696 340 3501 610C3483 634 3453 676 3434 703C3393 759 3373 786 3348 815C3256 924 3258 920 3276 939C3320 987 3342 1032 3351 1094C3373 1237 3284 1449 3144 1589C2984 1749 2799 1819 2604 1793C2499 1778 2371 1726 2279 1659C2180 1588 2082 1479 2101 1460C2108 1453 2117 1457 2162 1493C2307 1609 2326 1622 2406 1663C2606 1763 2803 1756 2976 1641C3227 1475 3359 1166 3246 1009C3221 973 3218 974 3177 1014C2882 1312 2577 1437 2249 1394C2163 1383 2154 1380 2149 1364C2144 1346 2151 1345 2237 1345C2323 1345 2435 1340 2471 1334C2553 1321 2624 1302 2680 1279C2688 1275 2710 1266 2728 1259C2847 1211 2978 1119 3104 994C3156 942 3152 935 3061 928C2896 914 2699 963 2446 1083C2370 1119 2213 1215 2156 1262C2055 1343 2050 1349 2050 1376C2050 1398 2045 1405 1999 1442C1970 1466 1968 1484 1967 1644C1967 1788 1955 1849 1915 1891C1887 1921 1850 1932 1818 1920ZM1861 1848C1878 1831 1890 1799 1897 1748C1901 1723 1904 1567 1900 1563C1895 1555 1874 1587 1853 1635C1801 1752 1807 1899 1861 1848ZM1002 1791C594 1729 268 1186 494 944C514 923 515 924 485 887C436 827 363 733 333 692C275 612 228 546 216 528C192 489 181 473 160 442C63 303 33 199 71 134C100 84 202 56 315 66C413 75 451 82 566 111C767 163 1026 300 1245 470C1279 496 1283 500 1357 567C1565 755 1746 1011 1811 1209C1861 1360 1857 1414 1792 1413C1757 1413 1738 1400 1728 1368C1720 1344 1716 1338 1687 1314C1447 1115 1099 955 850 929C752 919 633 930 633 949C632 955 683 1009 721 1043C884 1188 1034 1271 1224 1318C1299 1337 1372 1344 1525 1346C1620 1348 1625 1348 1625 1361C1625 1373 1618 1376 1578 1385C1503 1401 1397 1407 1333 1399C1210 1384 1172 1375 1082 1344C917 1286 791 1203 623 1041C548 968 547 968 516 1031C431 1204 561 1485 797 1640C1040 1800 1327 1751 1596 1503C1622 1479 1653 1458 1662 1458C1700 1458 1614 1565 1514 1643C1357 1764 1173 1817 1002 1791ZM1769 1295C1768 1269 1728 1167 1692 1100C1601 932 1522 826 1374 675C1287 587 1167 489 1064 421C847 278 645 191 429 148C379 138 306 130 261 130C101 130 85 185 191 369C209 399 281 508 304 539C313 551 333 578 347 599C379 644 434 717 466 756C478 772 503 803 520 825C574 895 568 891 620 878C685 860 761 855 843 864C939 873 1099 913 1190 949C1243 971 1359 1023 1369 1030C1370 1031 1389 1041 1411 1053C1486 1092 1588 1159 1641 1203C1655 1214 1680 1234 1697 1247C1714 1260 1736 1280 1746 1290C1766 1313 1769 1313 1769 1295ZM2038 1282C2053 1267 2076 1247 2090 1237C2104 1227 2132 1206 2152 1191C2399 1000 2760 860 3002 860C3065 860 3143 871 3174 884C3199 894 3203 892 3288 784C3389 655 3436 591 3490 512C3512 479 3540 438 3551 421C3642 286 3671 196 3635 160C3599 124 3434 123 3294 159C3263 167 3146 201 3128 207C3091 220 2950 282 2918 299C2906 306 2874 323 2848 337C2821 351 2789 369 2778 377C2766 385 2737 404 2714 420C2467 585 2232 825 2126 1020C2118 1034 2105 1058 2096 1073C2039 1168 1986 1308 2008 1308C2009 1308 2023 1296 2038 1282Z';
+export const FLY_PATH = FLY;
+/** Le papillon. « bold » épaissit le trait pour les petites tailles (barre latérale, favicon). */
+export function butterfly(cls, bold) {
+  return s('svg', { class: 'fly' + (cls ? ' ' + cls : ''), viewBox: '0 0 3780 1980', 'aria-hidden': 'true', focusable: 'false' },
+    s('path', { d: FLY, fill: 'currentColor', 'fill-rule': 'evenodd', stroke: bold ? 'currentColor' : null, 'stroke-width': bold || null, 'stroke-linejoin': 'round' }));
+}
+/** Logo complet, comme celui de Windy Project : le papillon, « Windy », puis le nom du produit. */
+export function lockup(cls) {
+  return h('span', { class: 'lockup' + (cls ? ' ' + cls : ''), role: 'img', 'aria-label': BRAND }, butterfly(), h('b', {}, 'Windy'), h('small', {}, 'Desk'));
+}
+/** Une branche de feuilles, comme sur la bannière Windy Project. Pur décor : ignorée par les lecteurs d'écran. */
+export function branch(cls) {
+  const P0 = [16, 240], P1 = [72, 118], P2 = [238, 26];
+  const at = t => [0, 1].map(i => (1 - t) ** 2 * P0[i] + 2 * (1 - t) * t * P1[i] + t * t * P2[i]);
+  const dir = t => { const v = [0, 1].map(i => 2 * (1 - t) * (P1[i] - P0[i]) + 2 * t * (P2[i] - P1[i])); return Math.atan2(v[1], v[0]) * 180 / Math.PI; };
+  const LEAF = 'M0 0C10-9 30-11 48 0C30 11 10 9 0 0Z';
+  const leaves = [0.1, 0.22, 0.34, 0.46, 0.58, 0.7, 0.82, 0.92].map((t, i) => {
+    const [x, y] = at(t), side = i % 2 ? 1 : -1, sc = 1.3 - t * 0.55;
+    return s('path', { class: 'leaf', d: LEAF, transform: 'translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') rotate(' + (dir(t) + side * 46).toFixed(1) + ') scale(' + sc.toFixed(2) + ')' });
+  });
+  leaves.push(s('path', { class: 'leaf', d: LEAF, transform: 'translate(' + P2.join(' ') + ') rotate(' + dir(1).toFixed(1) + ') scale(.75)' }));
+  return s('svg', { class: 'branch' + (cls ? ' ' + cls : ''), viewBox: '0 0 256 256', 'aria-hidden': 'true', focusable: 'false' },
+    s('path', { class: 'stem', d: 'M' + P0.join(' ') + 'Q' + P1.join(' ') + ' ' + P2.join(' '), fill: 'none', stroke: 'currentColor', 'stroke-width': 2.2, 'stroke-linecap': 'round' }), leaves);
+}

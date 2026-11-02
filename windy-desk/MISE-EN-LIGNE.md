@@ -1,28 +1,28 @@
-# Comptoir · mise en ligne
+# Windy Desk · mise en ligne
 
+Windy Desk est un produit **Windy Project** (direction artistique : le papillon, Cormorant Garamond, lavande, crème et sauge).
 Le site est statique (dossier `web/`, publié par Netlify) et parle directement à Supabase.
 Toute la sécurité est dans la base : règles RLS en lecture, fonctions SQL pour chaque écriture.
 
 | Quoi | Où |
 |---|---|
-| Site | https://comptoir.windydev.fr (projet Netlify `comptoir-rp`, aussi joignable sur https://comptoir-rp.netlify.app) |
-| Base Supabase | projet « Comptoir » (`vevezyxavdfykvcbsiws`) |
-| Schéma | `supabase/migrations/` (3 migrations, déjà appliquées) |
+| Site | https://desk.windydev.fr (projet Netlify `windy-desk`, aussi joignable sur https://windy-desk.netlify.app) |
+| Base Supabase | projet « Comptoir » (`vevezyxavdfykvcbsiws`, l’ancien nom du produit ; le nom du projet Supabase n’apparaît nulle part sur le site) |
+| Schéma | `supabase/migrations/` (4 migrations, déjà appliquées) |
 | Réglages publics du site | `web/config.js` (adresse Supabase et clé *publishable*, faite pour être publique) |
+| Réglages Netlify | `netlify.toml` **à la racine du dépôt** (dossier `windy-desk`, redirections, en-têtes de sécurité) |
 
 ## 1. Publier le site sur Netlify
 
-**Solution conseillée : relier le dépôt GitHub** (chaque `git push` republie le site).
+Le projet Netlify **windy-desk** est relié au dépôt GitHub `TheDevWind/Windy-dev`, branche `claude/practical-knuth-t355tp` :
+chaque `git push` republie le site. Rien à régler dans le tableau de bord : le `netlify.toml` de la racine indique le dossier
+(`windy-desk`), le dossier publié (`web`), les redirections et les en-têtes. Laisser *Base directory* et *Build command* vides.
 
-1. Netlify → projet **comptoir-rp** → *Project configuration* → *Build & deploy* → *Link repository*.
-2. Choisir GitHub, dépôt `TheDevWind/Windy-dev`, branche `claude/practical-knuth-t355tp` (ou `main` une fois fusionnée).
-3. **Base directory** : `comptoir`. Laisser *Build command* vide. Le reste (dossier `web`, redirections, en-têtes de sécurité) est lu dans `comptoir/netlify.toml`.
+**Le nom de domaine** `desk.windydev.fr` :
 
-**Le nom de domaine** `comptoir.windydev.fr` :
-
-1. Netlify → projet **comptoir-rp** → *Domain management* → *Add a domain* → `comptoir.windydev.fr`.
+1. Netlify → projet **windy-desk** → *Domain management* → *Add a domain* → `desk.windydev.fr`.
 2. Si `windydev.fr` est géré par Netlify DNS, l’enregistrement est créé tout seul. Sinon, chez le registraire du domaine :
-   enregistrement **CNAME** `comptoir` → `comptoir-rp.netlify.app`.
+   enregistrement **CNAME** `desk` → `windy-desk.netlify.app`.
 3. Le certificat HTTPS (Let’s Encrypt) arrive tout seul quelques minutes après. Le code ne contient aucune adresse de site :
    rien à changer dans le dépôt si le domaine change un jour.
 
@@ -31,13 +31,13 @@ Toute la sécurité est dans la base : règles RLS en lecture, fonctions SQL pou
 Tableau de bord Supabase → projet **Comptoir** → *Authentication*.
 
 1. **URL Configuration**
-   - *Site URL* : `https://comptoir.windydev.fr`
-   - *Redirect URLs* : ajouter `https://comptoir.windydev.fr/**` et `https://comptoir-rp.netlify.app/**`
+   - *Site URL* : `https://desk.windydev.fr`
+   - *Redirect URLs* : ajouter `https://desk.windydev.fr/**` et `https://windy-desk.netlify.app/**`
 2. **Sign In / Providers → Email**
    - décocher **Confirm email** (les identifiants sont des adresses internes du type `gino.romano.bella-napoli@comptes.windydev.fr` : aucun e-mail n’est jamais envoyé) ;
    - *Minimum password length* : `8` (le site demande déjà 8 caractères).
 3. **Sign In / Providers → Discord**
-   1. Sur https://discord.com/developers/applications : *New Application* (nom : Comptoir) → *OAuth2*.
+   1. Sur https://discord.com/developers/applications : *New Application* (nom : Windy Desk) → *OAuth2*.
    2. Dans *Redirects*, ajouter : `https://vevezyxavdfykvcbsiws.supabase.co/auth/v1/callback`
    3. Copier le *Client ID*, puis *Reset Secret* pour obtenir le *Client Secret*.
    4. Les coller dans Supabase (Discord → *Enable*). Le secret ne se colle **que** là, jamais dans le code ni dans une discussion.
@@ -45,7 +45,7 @@ Tableau de bord Supabase → projet **Comptoir** → *Authentication*.
 ## 3. Ouvrir les accès éditeur et fisc
 
 Les rôles de plateforme se donnent par un lien à usage unique, valable 7 jours :
-`https://comptoir.windydev.fr/reclamer/<jeton>`.
+`https://desk.windydev.fr/reclamer/<jeton>`.
 La personne ouvre le lien, choisit un identifiant et un mot de passe (ou Discord), et le rôle est attribué.
 
 Pour créer un nouveau lien : Supabase → *SQL Editor* :
@@ -53,7 +53,7 @@ Pour créer un nouveau lien : Supabase → *SQL Editor* :
 ```sql
 insert into public.platform_claims (role, display_name)
 values ('fisc', 'Inspecteur Garnier')   -- ou ('editeur', 'Windy Dev')
-returning 'https://comptoir.windydev.fr/reclamer/' || token as lien;
+returning 'https://desk.windydev.fr/reclamer/' || token as lien;
 ```
 
 Le nom affiché (`display_name`) apparaît dans le journal des entreprises à chaque consultation ou contrôle du fisc.

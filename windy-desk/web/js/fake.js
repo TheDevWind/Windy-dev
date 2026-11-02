@@ -1,7 +1,7 @@
 // Imitation du client Supabase, pour le banc d'essai seulement (tests/site.e2e.mjs).
 // Chaque appel part vers window.__backend, que le banc d'essai fournit : il l'exécute dans la vraie base
 // (PGlite, mêmes migrations, mêmes règles de sécurité). Jamais chargé en production (config.js n'a pas « fake »).
-const KEY = 'comptoir-test-session';
+const KEY = 'windydesk-test-session';
 
 export function createFake() {
   const subs = new Set();
@@ -49,7 +49,7 @@ export function createFake() {
       signInWithPassword: ({ email, password }) => signed('signIn', { email, password }),
       // Discord imité : l'identité est celle que le banc d'essai a posée dans sessionStorage
       async signInWithOAuth({ options }) {
-        const r = await signed('discord', { name: sessionStorage.getItem('comptoir-test-discord') || 'joueur' });
+        const r = await signed('discord', { name: sessionStorage.getItem('windydesk-test-discord') || 'joueur' });
         if (!r.error) location.assign(options.redirectTo);
         return r;
       },

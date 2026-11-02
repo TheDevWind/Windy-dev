@@ -1,0 +1,164 @@
+/* ================================================================== Windy Desk : direction artistique Windy Project
+   Le papillon violet en un seul trait, la serif Cormorant Garamond du logo, le dégradé lavande → crème → sauge
+   et les branches de feuilles de la bannière. Chargée en dernier : elle remplace les couleurs, les polices et les
+   arrondis, sans toucher à la structure des composants. Tous les contrastes de texte sont au moins à 4,5:1. */
+@font-face { font-family: "Cormorant Garamond"; src: url(/fonts/cormorant-500.woff2) format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Cormorant Garamond"; src: url(/fonts/cormorant-600.woff2) format("woff2"); font-weight: 600; font-display: swap; }
+
+:root {
+  color-scheme: light;
+  --serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --r: 10px; --r-sm: 6px;
+  --wash: #fbf6f0;
+  --side: #fffcf8; --card: #fffdf9; --tile: #f4ede4; --stripe: #faf5ef; --track: #ebe3d8;
+  --badge: #2b2d33; --badge-text: #fffdf9; --toast: #2b2d33; --toast-text: #fffdf9;
+  --text: #2b2d33; --muted: #5f5b66; --chip: #efe7dd; --line: #e8dfd3; --field: #9b9389;
+  --accent: #6458b0; --accent-ink: #ffffff; --accent-soft: rgba(100, 88, 176, .10); --link: #574a9f;
+  --logo: #6458b0; --glow: none;
+  --ok: #435d25; --ok-fill: #7f9a55; --warn: #8a5100; --bad: #ad241d; --info: #574a9f;
+  --slot: #fdf9f4; --slot-line: #e2d9cc;
+  --shadow: 0 1px 2px rgba(60, 50, 90, .04), 0 8px 24px rgba(60, 50, 90, .05);
+  --pop: 0 14px 36px rgba(60, 50, 90, .16);
+  --scrim: rgba(43, 38, 60, .45);
+  --c1: #6458b0; --c2: #7f9a55; --c3: #4f8a8b; --c4: #c27a3a; --c5: #c2577f; --c0: #a39e96;
+  --c6: #9a7fd1; --c7: #b89a4a; --c8: #5f7fa0;
+  --grad: linear-gradient(110deg, #e3d6f3 0%, #f1e4ee 26%, #fbf3ea 52%, #f2f1df 76%, #e4ead0 100%);
+  --grad-soft: linear-gradient(110deg, rgba(227, 214, 243, .7), rgba(251, 243, 234, .6) 50%, rgba(228, 234, 208, .7));
+  --leaf-l: #8a7cb8; --leaf-r: #8fa36a; --leaf-o: .5;
+  --strong-muted: #4e4a57;
+  --band: #2e2a3d; --band-fg: #f6f1ea; --band-muted: #c4bccf; --band-line: #463f58;
+  --glass: rgba(251, 246, 240, .86);
+  --paper-shadow: 0 1px 2px rgba(60, 50, 90, .06), 0 16px 40px rgba(60, 50, 90, .12);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --wash: #15131b;
+    --side: #1c1924; --card: #1c1924; --tile: #25212f; --stripe: #201c29; --track: #2f2a3a;
+    --badge: #f3eef7; --badge-text: #15131b; --toast: #f3eef7; --toast-text: #15131b;
+    --text: #f3eef7; --muted: #b4abc2; --chip: #2c2737; --line: #2f2a3a; --field: #77708a;
+    --accent: #b6a6f5; --accent-ink: #15131b; --accent-soft: rgba(182, 166, 245, .14); --link: #c4b7fa;
+    --logo: #c4b7fa;
+    --ok: #a9c98a; --ok-fill: #87a868; --warn: #f0b45a; --bad: #ff8a80; --info: #c4b7fa;
+    --slot: #18161f; --slot-line: #2f2a3a;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    --pop: 0 14px 36px rgba(0, 0, 0, .55);
+    --scrim: rgba(8, 6, 14, .66);
+    --c1: #b6a6f5; --c2: #9cbc78; --c3: #6fb3b4; --c4: #e3a066; --c5: #e98bb0; --c0: #77708a;
+    --c6: #c9a8ff; --c7: #dcc070; --c8: #8fb0d0;
+    --grad: linear-gradient(110deg, #2c2342 0%, #221d2e 32%, #1b1822 55%, #1f2419 80%, #26301c 100%);
+    --grad-soft: linear-gradient(110deg, rgba(44, 35, 66, .8), rgba(27, 24, 34, .6) 50%, rgba(38, 48, 28, .8));
+    --leaf-l: #8f80c4; --leaf-r: #7f9a5e; --leaf-o: .32;
+    --strong-muted: #c9c1d6;
+    --band: #ece4f6; --band-fg: #1c1924; --band-muted: #5a5268; --band-line: #cfc4e0;
+    --glass: rgba(21, 19, 27, .86);
+    --paper-shadow: 0 16px 40px rgba(0, 0, 0, .55);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --wash: #15131b;
+  --side: #1c1924; --card: #1c1924; --tile: #25212f; --stripe: #201c29; --track: #2f2a3a;
+  --badge: #f3eef7; --badge-text: #15131b; --toast: #f3eef7; --toast-text: #15131b;
+  --text: #f3eef7; --muted: #b4abc2; --chip: #2c2737; --line: #2f2a3a; --field: #77708a;
+  --accent: #b6a6f5; --accent-ink: #15131b; --accent-soft: rgba(182, 166, 245, .14); --link: #c4b7fa;
+  --logo: #c4b7fa;
+  --ok: #a9c98a; --ok-fill: #87a868; --warn: #f0b45a; --bad: #ff8a80; --info: #c4b7fa;
+  --slot: #18161f; --slot-line: #2f2a3a;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  --pop: 0 14px 36px rgba(0, 0, 0, .55);
+  --scrim: rgba(8, 6, 14, .66);
+  --c1: #b6a6f5; --c2: #9cbc78; --c3: #6fb3b4; --c4: #e3a066; --c5: #e98bb0; --c0: #77708a;
+  --c6: #c9a8ff; --c7: #dcc070; --c8: #8fb0d0;
+  --grad: linear-gradient(110deg, #2c2342 0%, #221d2e 32%, #1b1822 55%, #1f2419 80%, #26301c 100%);
+  --grad-soft: linear-gradient(110deg, rgba(44, 35, 66, .8), rgba(27, 24, 34, .6) 50%, rgba(38, 48, 28, .8));
+  --leaf-l: #8f80c4; --leaf-r: #7f9a5e; --leaf-o: .32;
+  --strong-muted: #c9c1d6;
+  --band: #ece4f6; --band-fg: #1c1924; --band-muted: #5a5268; --band-line: #cfc4e0;
+  --glass: rgba(21, 19, 27, .86);
+  --paper-shadow: 0 16px 40px rgba(0, 0, 0, .55);
+}
+
+/* ---------------------------------------------------------------- titres : la serif du logo */
+h1, .gate-card h1, .auth-form h1 { font-family: var(--serif); font-weight: 600; letter-spacing: -.005em; }
+/* chiffres alignés (« 2026 », numéros de devis) : les chiffres elzéviriens de la serif descendent sous la ligne */
+h1, h2, .lockup, .l-wm, .mk { font-feature-settings: "lnum" 1; }
+h1 { font-size: 38px; line-height: 1.05; }
+.card > h2 { font-family: var(--serif); font-size: 22px; font-weight: 600; letter-spacing: 0; }
+.card > h2 span, .card > h2 .pill { font-family: var(--font); }
+.modal > h2 { font-family: var(--serif); font-size: 26px; font-weight: 600; letter-spacing: 0; }
+.card { box-shadow: var(--shadow); }
+/* barres : violet du papillon, la journée en cours en sauge ; avatars ronds comme l'autocollant */
+:root { --bar: var(--accent); --bar-today: var(--ok-fill); }
+.bars { border-bottom-color: var(--line); }
+.bar-stack i { border-radius: 4px 4px 0 0; }
+.ava { border-radius: 50%; }
+.btn { border-radius: 999px; }
+.btn.small { border-radius: 999px; }
+.l-eyebrow { color: var(--link); letter-spacing: .22em; font-weight: 600; }
+
+/* ---------------------------------------------------------------- le papillon et le logo complet */
+.fly { display: block; width: 100%; height: auto; color: var(--logo); overflow: visible; }
+.side .brand { padding: 8px 0 12px; }
+.side-fly { width: 46px; }
+.gate-fly { width: 104px; margin: 0 auto 4px; }
+.lockup { display: inline-grid; justify-items: center; color: var(--text); line-height: 1; }
+.lockup .fly { width: 112px; margin-bottom: 10px; }
+.lockup b { font: 500 46px/0.95 var(--serif); letter-spacing: -.005em; }
+.lockup small { font: 500 25px/1.1 var(--serif); color: var(--strong-muted); }
+.l-fly { width: 40px; }
+.l-brand { gap: 10px; }
+.l-wm { font: 500 26px/1 var(--serif); letter-spacing: 0; color: var(--text); }
+.l-wm b { font-weight: 600; }
+/* initiale d'une entreprise : un rond comme l'autocollant Windy Project */
+.mk, .mk.inv { border-radius: 50%; background: var(--grad); color: var(--link); border: 1px solid var(--line); font-family: var(--serif); font-weight: 600; }
+.mk.big { font-size: 38px; }
+
+/* ---------------------------------------------------------------- branches de feuilles */
+.branch { position: absolute; z-index: -1; pointer-events: none; height: auto; opacity: var(--leaf-o); }
+.branch .leaf { fill: currentColor; }
+
+/* ---------------------------------------------------------------- page d'accueil */
+.land { background: var(--wash); }
+.l-hero { position: relative; isolation: isolate; overflow: hidden; background: var(--grad); }
+.h-leaf { width: clamp(200px, 24vw, 340px); }
+/* la branche de gauche reste dans la marge, sans passer sous le titre */
+.h-leaf.one { top: -36px; width: 300px; left: max(-230px, calc((100vw - 1200px) / 2 - 290px)); color: var(--leaf-l); transform: scaleY(-1); }
+.h-leaf.two { right: -36px; bottom: -40px; color: var(--leaf-r); transform: scaleX(-1); }
+.l-hero h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(46px, 5.2vw, 78px); line-height: .98; letter-spacing: -.01em; }
+.l-hero .l-lead, .l-hero .l-trust { color: var(--strong-muted); }
+.l-sec h2, .l-cta h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -.005em; line-height: 1; }
+.land h3, .auth h3 { font-family: var(--serif); font-size: 26px; font-weight: 600; letter-spacing: 0; }
+.l-menu nav button { font-family: var(--serif); font-weight: 600; letter-spacing: 0; }
+.l-cta { position: relative; isolation: isolate; overflow: hidden; background: var(--grad-soft); }
+.cta-lock { margin-bottom: 8px; }
+.l-foot .l-wm { font-size: 22px; }
+.mock { border-radius: var(--r); }
+
+/* ---------------------------------------------------------------- connexion : le côté de la bannière */
+.auth-side { position: relative; isolation: isolate; overflow: hidden; background: var(--grad); color: var(--text); }
+.auth-side h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -.005em; line-height: 1; }
+.auth-side p { color: var(--strong-muted); }
+.auth-side .auth-url { background: rgba(255, 255, 255, .55); color: var(--text); }
+.auth-side .auth-points li { color: var(--text); }
+.auth-side .auth-points .ico { color: var(--link); }
+.auth-lock { justify-self: start; }
+.a-leaf { width: clamp(180px, 20vw, 300px); }
+.a-leaf.one { left: -36px; bottom: -36px; color: var(--leaf-r); }
+.a-leaf.two { right: -40px; top: -30px; color: var(--leaf-l); transform: scale(-1, -1); }
+:root[data-theme="dark"] .auth-side .auth-url { background: rgba(0, 0, 0, .3); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .auth-side .auth-url { background: rgba(0, 0, 0, .3); } }
+
+@media (max-width: 860px) {
+  h1 { font-size: 32px; }
+  .h-leaf { width: 180px; }
+  .h-leaf.one { width: 150px; left: auto; right: -40px; top: -44px; transform: scale(-1, -1); }
+  .h-leaf.two { right: -60px; bottom: -60px; }
+  .a-leaf { width: 150px; }
+  .a-leaf.one { display: none; }
+  .lockup .fly { width: 84px; }
+  .lockup b { font-size: 36px; }
+  .lockup small { font-size: 21px; }
+  .auth-lock { justify-self: center; }
+  .l-wm { font-size: 23px; }
+}
