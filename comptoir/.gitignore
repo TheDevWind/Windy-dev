@@ -1,3 +1,4 @@
 node_modules/
-web/config.js
 .netlify/
+tests/echec-*.png
+tests/shots/

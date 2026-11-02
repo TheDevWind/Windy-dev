@@ -130,3 +130,11 @@ test('équipe : grades, désactivation, nouveau lien', async () => {
   assert.deepEqual((await one('serveuse', 'select public.my_spaces() r')).r.orgs[0].caps, ['vehicules']);
   await fails('patron', 'select public.set_member($1, $2, true)', [(await one('patron', "select id from public.members where login='gino.romano'")).id, top], /propre compte/);
 });
+
+test('les montants des libellés sont écrits à la française', async () => {
+  const f = async x => (await db.query('select public.fmt_money($1) r', [x])).rows[0].r;
+  assert.equal(await f(1500), '1 500 $');
+  assert.equal(await f(1234567.5), '1 234 567,50 $');
+  assert.equal(await f(0.4), '0,40 $');
+  await fails('patron', 'select public.fmt_money(1)', [], /permission denied/);
+});

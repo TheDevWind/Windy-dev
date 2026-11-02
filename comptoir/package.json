@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "build": "node scripts/write-config.mjs"
+    "test:site": "node tests/site.e2e.mjs",
+    "serve": "node tests/serve.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.2.17"
