@@ -27,7 +27,8 @@ function wrapText(x, text, maxW) {
  * d : { kind: 'DEVIS' | 'FACTURE', num, date, valid, status, from: { title, lines[] }, to: { title, lines[] },
  *       cols: [titre, …], rows: [{ name, sub, cells: […] }], totals: [[libellé, valeur, gras]], notes: [], sign: bool }
  */
-async function renderDoc(d) {
+// level : 0 = descriptions complètes ; 1 = une ligne par description ; 2 = sans description ; 3 = lignes resserrées
+async function renderDoc(d, level = 0) {
   await fontsReady();
   const { W, H, M } = PAPER, c = document.createElement('canvas');
   c.width = W; c.height = H;
@@ -75,11 +76,13 @@ async function renderDoc(d) {
   rule(y, 1, PAPER.line);
   d.rows.forEach(r => {
     font('600', 22);
-    const subLines = r.sub ? (font('400', 17), wrapText(x, r.sub, widths[0] * tw - 24)) : [];
-    const rowH = 30 + subLines.length * 24 + 26;
-    font('600', 22); text(r.name, cx[0], y + 40);
+    let subLines = r.sub && level < 2 ? (font('400', 17), wrapText(x, r.sub, widths[0] * tw - 24)) : [];
+    if (level === 1 && subLines.length > 1) subLines = [subLines[0].replace(/[\s,.;:]*$/, '') + '…'];
+    const tight = level >= 3, base = tight ? 32 : 40;   // ligne resserrée : texte plus haut, filet sous les jambages
+    const rowH = tight ? 46 : 30 + subLines.length * 24 + 26;
+    font('600', 22); text(r.name, cx[0], y + base);
     font('400', 17); subLines.forEach((l, i) => text(l, cx[0], y + 68 + i * 24, 'left', PAPER.muted));
-    font('400', 21); r.cells.forEach((cv, i) => { if (i === r.cells.length - 1) font('600', 21); text(cv, cx[i + 2], y + 40, 'right'); });
+    font('400', 21); r.cells.forEach((cv, i) => { if (i === r.cells.length - 1) font('600', 21); text(cv, cx[i + 2], y + base, 'right'); });
     y += rowH;
     rule(y, 1, PAPER.line);
   });
@@ -104,14 +107,16 @@ async function renderDoc(d) {
     font('400', 18);
     d.notes.forEach(n => wrapText(x, '— ' + n, W - 2 * M).forEach(l => { text(l, M, y, 'left', '#333333'); y += 28; }));
   }
+  // trop long pour la page : on recommence en plus compact plutôt que de chevaucher le pied de page
+  if ((d.sign ? Math.max(y + 40, H - M - 250) + (level >= 2 ? 104 : 170) : y) > H - M + 4 && level < 3) return renderDoc(d, level + 1);
   // signatures
   if (d.sign) {
-    const sy = Math.max(y + 40, H - M - 250), bw = (W - 2 * M - 40) / 2;
+    const sy = Math.max(y + 40, H - M - 250), bw = (W - 2 * M - 40) / 2, bh = Math.max(104, Math.min(170, H - M + 4 - sy));
     [[d.to.lines[0], M], [d.from.lines[0], M + bw + 40]].forEach(([who, px]) => {
-      x.strokeStyle = PAPER.line; x.lineWidth = 2; x.strokeRect(px, sy, bw, 170);
+      x.strokeStyle = PAPER.line; x.lineWidth = 2; x.strokeRect(px, sy, bw, bh);
       font('600', 15); x.save(); x.letterSpacing = '1.5px'; text('BON POUR ACCORD', px + 20, sy + 36, 'left', PAPER.muted); x.restore();
       font('600', 20); text(who, px + 20, sy + 70);
-      font('400', 16); text('Date et signature', px + 20, sy + 150, 'left', PAPER.muted);
+      font('400', 16); text('Date et signature', px + 20, sy + bh - 20, 'left', PAPER.muted);
     });
   }
   // pied de page
