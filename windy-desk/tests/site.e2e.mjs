@@ -104,8 +104,10 @@ try {
     await ed.getByRole('link', { name: 'Modules' }).first().click(); await settle(ed, 'table.matrix');
     await ed.getByLabel('Bella Napoli : Véhicules').check();
     await toast(ed, 'Véhicules activé pour Bella Napoli');
+    // pour le banc d'essai, la pizzeria a les dix modules
+    for (const m of ['Récolte', 'Factures', 'Dons et distributions']) { await ed.getByLabel('Bella Napoli : ' + m).check(); await toast(ed, m + ' activé pour Bella Napoli'); }
     const [o] = await backend.sql("select modules from public.orgs where code = 'bella-napoli'");
-    assert.ok(o.modules.includes('vehicules'));
+    assert.equal(o.modules.length, 10);
   });
   await step('l’éditeur rédige un devis, l’enregistre, l’exporte en PNG et en PDF', async () => {
     await ed.goto(BASE + '/editeur/devis/nouveau'); await settle(ed, '.qedit');
@@ -204,6 +206,136 @@ try {
     await gino.locator('table', { hasText: 'Nouveau compte : Nina Costa' }).waitFor();
   });
 
+  // ------------------------------------------------------------ les modules, avec le patron
+  const fillModal = async (page, values) => { const m = page.locator('.modal'); for (const [label, v] of values) await m.getByLabel(label, { exact: true }).fill(String(v)); return m; };
+  const newItem = async (page, button, values, done = 'Article créé') => {
+    await page.getByRole('button', { name: button }).click();
+    const m = await fillModal(page, values);
+    await m.getByRole('button', { name: 'Créer l’article' }).click();
+    await toast(page, done);
+  };
+  await step('stock : articles, entrée payée en dépense', async () => {
+    await gino.goto(BASE + '/bella-napoli/stock'); await settle(gino, 'h1:text("Stock")');
+    await newItem(gino, 'Nouvel article', [['Nom', 'Farine'], ['Unité', 'kg'], ['Coût unitaire ($)', 2]]);
+    await gino.locator('table b', { hasText: /^Farine$/ }).first().waitFor();
+    await newItem(gino, 'Nouvel article', [['Nom', 'Mozzarella'], ['Unité', 'boule'], ['Seuil d’alerte', 4]]);
+    await gino.locator('table b', { hasText: /^Mozzarella$/ }).first().waitFor();
+    await newItem(gino, 'Nouvel article', [['Nom', 'Pâte à pizza'], ['Unité', 'pâte']]);
+    await gino.locator('table b', { hasText: /^Pâte à pizza$/ }).first().waitFor();
+    for (const [name, n, paid] of [['Farine', 10, 30], ['Mozzarella', 6, 0]]) {
+      await gino.getByRole('button', { name: 'Mouvement', exact: true }).click();
+      const m = gino.locator('.modal');
+      const sel = m.getByLabel('Article');
+      await sel.selectOption(await sel.locator('option', { hasText: name }).first().getAttribute('value'));
+      await fillModal(gino, [['Quantité', n], ['Motif', 'Livraison']]);
+      if (paid) await m.getByLabel(/Payé/).fill(String(paid));
+      await m.getByRole('button', { name: 'Enregistrer' }).click();
+      await toast(gino, new RegExp(name + ' : \\+' + n));
+    }
+    const [achat] = await backend.sql("select amount from public.ledger where category = 'Achats' and label like 'Achat · 10 kg de Farine'");
+    assert.equal(achat.amount, '30.00');
+  });
+  await step('fabrication : recettes et fournées', async () => {
+    await gino.goto(BASE + '/bella-napoli/caisse'); await settle(gino, 'h1:text("Caisse")');
+    await newItem(gino, 'Produit à la carte', [['Nom', 'Margherita'], ['Unité', 'pizza'], ['Prix de vente ($)', 18]]);
+    await gino.goto(BASE + '/bella-napoli/fabrication'); await settle(gino, 'h1:text("Fabrication")');
+    for (const [prod, yld, ins] of [['Pâte à pizza', 4, [['Farine', 1]]], ['Margherita', 1, [['Pâte à pizza', 1], ['Mozzarella', 1]]]]) {
+      await gino.getByRole('button', { name: 'Nouvelle recette' }).click();
+      const m = gino.locator('.modal');
+      await m.getByLabel('Produit fabriqué').selectOption({ label: prod });
+      await m.getByLabel('Quantité produite par fournée').fill(String(yld));
+      for (let i = 0; i < ins.length; i++) {
+        if (i) await m.getByRole('button', { name: 'Ajouter un ingrédient' }).click();
+        await m.getByLabel('Ingrédient', { exact: true }).nth(i).selectOption({ label: ins[i][0] });
+        await m.getByLabel('Quantité', { exact: true }).nth(i).fill(String(ins[i][1]));
+      }
+      await m.getByRole('button', { name: 'Enregistrer la recette' }).click();
+      await toast(gino, 'Recette enregistrée');
+      await settle(gino, '.recipe h2:text("' + prod + '")');
+    }
+    const card = gino.locator('.recipe', { has: gino.locator('h2', { hasText: 'Pâte à pizza' }) });
+    await card.getByLabel('Nombre de fournées').fill('2');
+    await card.getByRole('button', { name: 'Fabriquer' }).click();
+    await toast(gino, /8 pâte de pâte à pizza fabriqué/);
+  });
+  await step('caisse : une pizza préparée à la commande sort ses ingrédients du stock', async () => {
+    await gino.goto(BASE + '/bella-napoli/caisse'); await settle(gino, '.tilebtn');
+    const tile = gino.locator('.tilebtn', { hasText: 'Margherita' });
+    await tile.getByText('6 possibles').waitFor();   // 8 pâtes, 6 mozzarellas
+    await tile.click(); await tile.click();
+    await gino.getByRole('button', { name: /^Encaisser 36/ }).click();
+    await toast(gino, /Ticket n°1 encaissé : 36/);
+    const st = Object.fromEntries((await backend.sql("select name, qty from public.items where org_id = (select id from public.orgs where code = 'bella-napoli')")).map(r => [r.name, Number(r.qty)]));
+    assert.deepEqual([st['Pâte à pizza'], st['Mozzarella']], [6, 4]);
+    await gino.locator('table', { hasText: '2 Margherita' }).waitFor();
+  });
+  await step('service et paie : prise de service, taux horaire, salaires', async () => {
+    await gino.goto(BASE + '/bella-napoli/equipe'); await settle(gino, 'table');
+    await gino.getByRole('button', { name: 'Prendre mon service' }).click(); await toast(gino, 'Bon service');
+    await gino.getByRole('button', { name: 'Finir mon service' }).click(); await toast(gino, 'Service terminé');
+    await backend.sql("update public.shifts set started_at = ended_at - interval '2 hours'");
+    await gino.locator('tr', { hasText: 'Gino Romano' }).getByRole('button', { name: 'Fixer' }).click();
+    await gino.locator('.modal').getByLabel(/Taux/).fill('50');
+    await gino.locator('.modal').getByRole('button', { name: 'Enregistrer' }).click();
+    await toast(gino, 'Taux horaire de Gino Romano');
+    await gino.getByRole('button', { name: /Payer les salaires · 100/ }).click();
+    await toast(gino, /Salaires payés : 100/);
+  });
+  await step('véhicules : ajout, sortie, retour', async () => {
+    await gino.goto(BASE + '/bella-napoli/vehicules'); await settle(gino, 'h1:text("Véhicules")');
+    await gino.getByRole('button', { name: 'Ajouter un véhicule' }).click();
+    await fillModal(gino, [['Modèle', 'Camionnette Rumpo'], ['Plaque', 'bn 201']]);
+    await gino.locator('.modal').getByRole('button', { name: 'Ajouter' }).click();
+    await toast(gino, 'Véhicule ajouté');
+    await gino.locator('.vcard').getByRole('button', { name: 'Sortir' }).click();
+    await gino.locator('.modal').getByRole('button', { name: 'Sortir le véhicule' }).click();
+    await toast(gino, 'Camionnette Rumpo sorti');
+    await gino.locator('.vcard').getByRole('button', { name: 'Rentrer' }).click();
+    await gino.locator('.modal').getByRole('button', { name: 'Rentrer au garage' }).click();
+    await toast(gino, 'rentré au garage');
+    await gino.locator('.plate', { hasText: 'BN 201' }).first().waitFor();
+  });
+  await step('événement en cours : sa propre page, les ventes s’y rattachent', async () => {
+    await gino.goto(BASE + '/bella-napoli/evenements'); await settle(gino, 'h1:text("Événements")');
+    await gino.getByRole('button', { name: 'Créer un événement' }).click();
+    const start = await gino.evaluate(() => { const d = new Date(Date.now() - 30 * 60e3), p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); });
+    await fillModal(gino, [['Nom', 'Soirée karaoké'], ['Début', start], ['Montant visé ($)', 100]]);
+    await gino.locator('.modal').getByRole('button', { name: 'Créer l’événement' }).click();
+    await gino.waitForURL(/\/bella-napoli\/evenements\/[0-9a-f-]{36}$/); await settle(gino, 'h1:text("Soirée karaoké")');
+    S.eventPath = new URL(gino.url()).pathname;
+    await gino.getByRole('link', { name: 'Ouvrir la caisse' }).click(); await settle(gino, '.tilebtn');
+    await gino.locator('.tilebtn', { hasText: 'Margherita' }).click();
+    await gino.getByRole('button', { name: /^Encaisser 18/ }).click();
+    await toast(gino, /compté dans l’événement en cours/);
+    await gino.goto(BASE + S.eventPath); await settle(gino, '.evhero');
+    await gino.locator('.evhero', { hasText: '18 % ' }).or(gino.locator('.evhero', { hasText: '18 %' })).first().waitFor();
+  });
+  await step('récolte, factures et dons', async () => {
+    await gino.goto(BASE + '/bella-napoli/recolte'); await settle(gino, 'h1:text("Récolte")');
+    await newItem(gino, 'Produit récoltable', [['Nom', 'Basilic'], ['Unité', 'botte']]);
+    await settle(gino, 'h2:text("Nouvelle récolte")');
+    await gino.locator('.card', { hasText: 'Nouvelle récolte' }).getByLabel('Quantité').fill('20');
+    await gino.getByRole('button', { name: 'Enregistrer' }).click();
+    await toast(gino, /Prime : 10,00/);
+    await gino.goto(BASE + '/bella-napoli/factures'); await settle(gino, 'h1:text("Factures")');
+    await gino.getByRole('button', { name: 'Nouvelle facture' }).click();
+    const m = gino.locator('.modal');
+    await m.getByLabel('Client', { exact: true }).fill('Garage Benny');
+    await m.getByLabel('Libellé').fill('Traiteur pour la soirée');
+    await m.getByLabel('Prix ($)').fill('250');
+    await m.getByRole('button', { name: 'Émettre la facture' }).click();
+    await toast(gino, 'Facture F-0001 émise');
+    await gino.getByRole('button', { name: 'Marquer payée' }).click();
+    await toast(gino, /F-0001 payée : 250/);
+    await gino.goto(BASE + '/bella-napoli/dons'); await settle(gino, 'h1:text("Dons et distributions")');
+    await gino.getByRole('button', { name: 'Enregistrer un don' }).click();
+    await fillModal(gino, [['Donateur', 'Benny'], ['Montant ($)', 100]]);
+    await gino.locator('.modal').getByRole('button', { name: 'Enregistrer le don' }).click();
+    await toast(gino, 'Don de Benny enregistré');
+    const cats = (await backend.sql("select category, sum(amount)::text s from public.ledger where org_id = (select id from public.orgs where code = 'bella-napoli') group by 1 order by 1")).map(r => r.category + ' ' + r.s);
+    for (const c of ['Dons 100.00', 'Factures 250.00', 'Salaires 100.00']) assert.ok(cats.includes(c), c + ' absent de ' + cats.join(', '));
+  });
+
   // ------------------------------------------------------------ la stagiaire, par Discord
   const nina = await open({ label: 'stagiaire', discord: 'nina-discord' });
   await step('la stagiaire active son compte avec Discord et n’a que ses accès', async () => {
@@ -212,14 +344,28 @@ try {
     await nina.getByRole('button', { name: 'Activer avec cette session' }).click();
     await nina.waitForURL(BASE + '/bella-napoli'); await settle(nina, '.shell');
     const navs = await nina.locator('nav.side .navs a').allInnerTexts();
-    assert.deepEqual(navs.map(s => s.trim()), ['Accueil', 'Équipe']);
+    // le menu suit les modules de l'offre et les accès du grade Stagiaire (encaisser, véhicules, stock)
+    assert.deepEqual(navs.map(s => s.trim()), ['Accueil', 'Caisse', 'Stock', 'Récolte', 'Dons', 'Véhicules', 'Événements', 'Équipe']);
     await nina.locator('.card', { hasText: 'Bienvenue, Nina Costa' }).waitFor();
+    S.ninaId = (await backend.sql("select id from public.members where login = 'nina.costa'"))[0].id;
     await nina.goto(BASE + '/bella-napoli/compta'); await settle(nina, '.shell');
     assert.equal(new URL(nina.url()).pathname, '/bella-napoli');
     // la base refuse aussi, même en passant outre l'écran
     const r = JSON.parse(await nina.evaluate(() => window.__backend(JSON.stringify({ op: 'from', q: { table: 'ledger', filters: [], order: null, limit: null }, uid: JSON.parse(sessionStorage.getItem('windydesk-test-session')).user.id }))));
     assert.deepEqual(r.data, []);
     S.nina = await session(nina);
+  });
+
+  await step('fiche employé : avertissement visible par l’intéressée', async () => {
+    await gino.goto(BASE + '/bella-napoli/equipe'); await settle(gino, 'table');
+    await gino.locator('tr', { hasText: 'Nina Costa' }).click();
+    await gino.waitForURL(BASE + '/bella-napoli/equipe/' + S.ninaId); await settle(gino, 'h1:text("Nina Costa")');
+    await gino.getByRole('button', { name: 'Avertir' }).click();
+    await gino.locator('.modal').getByLabel('Motif').fill('Retard de deux heures au service');
+    await gino.locator('.modal').getByRole('button', { name: 'Donner l’avertissement' }).click();
+    await toast(gino, 'Avertissement enregistré');
+    const w = JSON.parse(await nina.evaluate(() => window.__backend(JSON.stringify({ op: 'from', q: { table: 'warnings', filters: [], order: null, limit: null }, uid: JSON.parse(sessionStorage.getItem('windydesk-test-session')).user.id }))));
+    assert.equal(w.data.length, 1);
   });
 
   // ------------------------------------------------------------ le fisc
@@ -327,7 +473,8 @@ console.log('Revue des pages');
 const [devisId] = (await backend.sql('select id from public.quotes')).map(r => r.id);
 const PAGES = {
   visiteur: [null, ['/', '/connexion', '/connexion/plateforme', '/bella-napoli', S.ginoLink.replace(BASE, ''), '/nulle-part', '/fisc']],
-  patron: [S.gino, ['/bella-napoli', '/bella-napoli/compta', '/bella-napoli/equipe', '/bella-napoli/reglages']],
+  patron: [S.gino, ['/bella-napoli', '/bella-napoli/compta', '/bella-napoli/equipe', '/bella-napoli/reglages', '/bella-napoli/caisse', '/bella-napoli/stock', '/bella-napoli/fabrication',
+    '/bella-napoli/recolte', '/bella-napoli/factures', '/bella-napoli/dons', '/bella-napoli/vehicules', '/bella-napoli/evenements', S.eventPath, '/bella-napoli/equipe/' + S.ninaId]],
   fisc: [S.fisc, ['/fisc', '/fisc/bella-napoli', '/fisc/les-restos-du-coeur', '/fisc/bareme']],
   editeur: [S.editeur, ['/editeur', '/editeur/modules', '/editeur/devis', '/editeur/devis/' + devisId, '/editeur/devis/nouveau']],
 };

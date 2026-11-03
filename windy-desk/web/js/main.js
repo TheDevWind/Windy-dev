@@ -6,6 +6,7 @@ import { $app, $tip, S, calm, arriving, h, ico, modal, toast, run, table, themeS
 import { MODULES, moduleOf, PACKS, CAPS, CATEGORIES, DAYS, quoteTotal } from './catalog.js';
 import { renderDoc, exportModal, quoteDoc } from './doc.js';
 import { landing } from './landing.js';
+import * as MOD from './modules.js';
 import { sb, rpc, rows, emailFor } from './sb.js';
 
 const ME = { session: null, spaces: null, quiet: false };
@@ -51,7 +52,7 @@ async function route() {
     if (a === 'editeur') return await platformSpace('editeur', b, c);
     if (RESERVED.includes(a)) return message('Page introuvable', 'Cette adresse n’existe pas.', h('a', { class: 'btn', href: '/' }, 'Retour à l’accueil'));
     if (b === 'activer') return await activatePage(a, c);
-    return await orgSpace(a, b || 'accueil');
+    return await orgSpace(a, b || 'accueil', c);
   } catch (e) {
     message('Quelque chose s’est mal passé', e.message || String(e), h('a', { class: 'btn', href: location.pathname }, 'Réessayer'));
   }
@@ -232,7 +233,7 @@ async function activatePage(code, token) {
 }
 
 // ================================================================== espace d'une entreprise
-async function orgSpace(code, page) {
+async function orgSpace(code, page, sub) {
   if (!ME.session) return orgLogin(code);
   const sp = await spaces();
   const me = sp.orgs.find(o => o.code === code);
@@ -242,15 +243,24 @@ async function orgSpace(code, page) {
     return message('Pas d’accès à ' + pub.name, 'Ce compte n’a pas (ou plus) accès à cette entreprise. Si c’est une erreur, demande un nouveau lien à ton patron.',
       h('button', { class: 'btn', onclick: signOut }, 'Se connecter avec un autre compte'));
   }
-  const can = cap => me.caps.includes(cap);
+  const can = cap => me.caps.includes(cap), has = m => me.modules.includes(m);
+  // le menu suit l'offre (modules) et le grade (accès)
+  const MODNAV = [['caisse', 'Caisse', 'caisse', can('encaisser')], ['stock', 'Stock', 'boite', can('stock')], ['fabrication', 'Fabrication', 'fiole', can('fabriquer')],
+    ['recolte', 'Récolte', 'epi', true], ['factures', 'Factures', 'facture', can('compta')], ['dons', 'Dons', 'coeur', can('stock')],
+    ['vehicules', 'Véhicules', 'camion', true], ['evenements', 'Événements', 'calendrier', true]];
   const nav = [{ page: 'accueil', href: '/' + code, label: 'Tableau de bord', short: 'Accueil', icon: 'accueil' },
+    ...MODNAV.filter(([id, , , ok]) => ok && has(id)).map(([id, label, icon]) => ({ page: id, href: '/' + code + '/' + id, label, icon })),
     can('compta') || can('declarer') ? { page: 'compta', href: '/' + code + '/compta', label: 'Comptabilité', short: 'Compta', icon: 'balance' } : null,
     { page: 'equipe', href: '/' + code + '/equipe', label: me.is_association ? 'Bénévoles' : 'Équipe', icon: 'joueurs' },
     can('equipe') ? { page: 'reglages', href: '/' + code + '/reglages', label: 'Réglages', icon: 'reglages' } : null].filter(Boolean);
   if (!nav.some(n => n.page === page)) return go('/' + code, true);
-  const ctx = { me, can, nav, who: { name: me.member_name, role: me.grade + ' · ' + me.name } };
+  const ctx = { me, can, has, nav, who: { name: me.member_name, role: me.grade + ' · ' + me.name }, go, fail, reload: () => route(),
+    show: (current, title, sub2, right, ...content) => shell(nav, current, orgHead(ctx, title, sub2, ...[].concat(right || [])), ...content) };
   if (arriving()) rpc('touch_member', { p_org: me.id }).catch(() => {});
-  return ({ accueil: dashboard, compta, equipe, reglages })[page](ctx);
+  const PAGES = { accueil: dashboard, compta, reglages, equipe: sub && has('employes') ? c => MOD.employe(c, sub) : equipe,
+    caisse: MOD.caisse, stock: MOD.stock, fabrication: MOD.fabrication, recolte: MOD.recolte, factures: MOD.factures, dons: MOD.dons, vehicules: MOD.vehicules,
+    evenements: sub ? c => MOD.evenement(c, sub) : MOD.evenements };
+  return PAGES[page](ctx);
 }
 const orgHead = (ctx, title, sub, ...right) => head(title, sub, ctx.who, ...right);
 const weekBook = (org, ms) => rpc('week_book', { p_org: org, p_week: new Date(ms).toISOString().slice(0, 10) });
@@ -264,7 +274,7 @@ function ledgerTable(list, short) {
 async function dashboard(ctx) {
   const { me, can } = ctx;
   const books = can('compta') || can('declarer');
-  const [controls, wb, lb, recent] = await Promise.all([rows('controls', q => q.eq('org_id', me.id).is('closed_at', null)),
+  const [widgets, controls, wb, lb, recent] = await Promise.all([MOD.moduleWidgets(ctx), rows('controls', q => q.eq('org_id', me.id).is('closed_at', null)),
     books ? weekBook(me.id, Date.now()) : null, books ? weekBook(me.id, lastWeekMs()) : null,
     can('compta') ? rows('ledger', q => q.eq('org_id', me.id).gte('at', new Date(Date.now() - 14 * DAY).toISOString()).order('at', { ascending: false })) : []]);
   const control = controls[0];
@@ -279,6 +289,7 @@ async function dashboard(ctx) {
       h('a', { class: 'btn small', href: '/' + me.code + '/compta' }, 'Déclarer')) : null,
     wb ? h('section', { class: 'card' }, h('h2', {}, 'Cette semaine'), strip([[me.is_association ? 'Entrées' : 'Chiffre d’affaires', money(income)], ['Dépenses', money(wb.charges)],
       ['Résultat', money(income - wb.charges), income - wb.charges < 0 ? 'neg' : null], [wb.exempt ? 'Impôt' : 'Impôt estimé', wb.exempt ? 'Exonérée' : money(wb.tax)]])) : null,
+    ...widgets.top,
     h('div', { class: 'dash' },
       h('div', { class: 'col' },
         can('compta') ? h('section', { class: 'card' }, h('h2', {}, me.is_association ? 'Entrées d’argent' : 'Recettes', h('span', { class: 'muted small' }, '14 derniers jours')), dailyBars(per, money)) : null,
@@ -286,9 +297,8 @@ async function dashboard(ctx) {
         !books ? h('section', { class: 'card' }, h('h2', {}, 'Bienvenue, ' + me.member_name), h('p', { class: 'muted' }, 'Ton grade (' + me.grade + ') te donne ces accès :'),
           h('ul', { class: 'l-points' }, CAPS.filter(([k]) => me.caps.includes(k)).map(([, l]) => h('li', {}, ico('coche', 18), l)))) : null),
       h('div', { class: 'col aside' },
-        h('section', { class: 'card' }, h('h2', {}, 'Modules de l’offre'), me.modules.length ? h('ul', { class: 'people' }, me.modules.map(id => h('li', {}, h('span', { class: 'ev-ic' }, ico(moduleOf(id).icon, 16)),
-          h('span', {}, h('b', {}, moduleOf(id).name))))) : h('div', { class: 'calm' }, 'Aucun module : le socle seulement.'),
-          h('p', { class: 'note', style: 'margin-top:12px' }, me.modules.length ? 'Ces modules arrivent avec les prochaines versions de ' + BRAND + ' et s’ajouteront au menu. Le socle (comptabilité, déclarations, équipe, grades, journal) est déjà en service.' : 'Le socle (comptabilité, déclarations, équipe, grades, journal) est en service.')),
+        ...widgets.side,
+        h('section', { class: 'card' }, h('h2', {}, 'Raccourcis'), h('ul', { class: 'people' }, ctx.nav.slice(1).map(n => h('li', {}, h('span', { class: 'ev-ic' }, ico(n.icon, 16)), h('a', { href: n.href }, h('b', {}, n.label)))))),
         h('section', { class: 'card' }, h('h2', {}, 'Licence'), h('p', { class: 'muted', style: 'margin:0' }, new Date(me.licence_until).getTime() < Date.now() ? 'Expirée le ' + date(new Date(me.licence_until).getTime()) + '.' : 'Valable jusqu’au ' + date(new Date(me.licence_until).getTime()) + '.')))));
 }
 
@@ -363,8 +373,13 @@ async function compta(ctx) {
 
 // ---------------------------------------------------------------- équipe
 async function equipe(ctx) {
-  const { me, can } = ctx;
-  const [members, grades] = await Promise.all([rows('members', q => q.eq('org_id', me.id).order('created_at')), rows('grades', q => q.eq('org_id', me.id).order('rank', { ascending: false }))]);
+  const { me, can, has } = ctx;
+  const [members, grades, shifts, warns] = await Promise.all([rows('members', q => q.eq('org_id', me.id).order('created_at')), rows('grades', q => q.eq('org_id', me.id).order('rank', { ascending: false })),
+    has('service') ? rows('shifts', q => q.eq('org_id', me.id).order('started_at', { ascending: false }).limit(1000)) : [], has('employes') ? rows('warnings', q => q.eq('org_id', me.id)) : []]);
+  // service et paie : qui est en service, heures terminées pas encore payées (12 h au plus par service, comme la paie)
+  const HR = 36e5, openOf = id => shifts.find(x => x.member_id === id && !x.ended_at);
+  const unpaid = id => shifts.filter(x => x.member_id === id && x.ended_at && !x.paid_at).reduce((a, x) => a + Math.min(12 * HR, new Date(x.ended_at) - new Date(x.started_at)), 0) / HR;
+  const due = members.reduce((a, m) => a + unpaid(m.id) * Number(m.hourly_rate || 0), 0), mine = openOf(me.member_id);
   const gName = id => (grades.find(g => g.id === id) || { name: '?' }).name, gRank = id => (grades.find(g => g.id === id) || { rank: 0 }).rank;
   const myRank = gRank((members.find(m => m.id === me.member_id) || {}).grade_id);
   const refresh = () => equipe(ctx).catch(fail);
@@ -393,16 +408,32 @@ async function equipe(ctx) {
     ok.addEventListener('click', () => run(ok, async () => { await rpc('set_member', { p_member: mem.id, p_grade: grade.value, p_active: active.checked }); m.close(); refresh(); return { message: 'Compte de ' + mem.name + ' mis à jour.' }; }));
   };
   const renew = (mem, b) => run(b, async () => { const tok = await rpc('renew_invitation', { p_member: mem.id }); refresh(); linkModal('Nouveau lien pour ' + mem.name, activationUrl(me.code, tok), mem.name); });
-  shell(ctx.nav, 'equipe', orgHead(ctx, me.is_association ? 'Bénévoles' : 'Équipe', members.filter(m => m.active).length + ' compte(s) actif(s)', can('equipe') ? h('button', { class: 'btn primary', onclick: inviteModal }, ico('ajout', 18), me.is_association ? 'Accueillir un bénévole' : 'Ajouter quelqu’un') : null),
+  const rateModal = mem => {
+    const r = h('input', { type: 'number', min: 0, step: 0.01, value: Number(mem.hourly_rate || 0), class: 'short' }), ok = h('button', { class: 'btn primary' }, 'Enregistrer');
+    const m = modal('Taux horaire · ' + mem.name, h('label', { class: 'f' }, 'Taux ($ par heure de service)', r), h('div', { class: 'foot' }, h('button', { class: 'btn', onclick: () => m.close() }, 'Annuler'), ok));
+    ok.addEventListener('click', () => run(ok, async () => { await rpc('set_rate', { p_member: mem.id, p_rate: Number(r.value) || 0 }); m.close(); refresh(); return { message: 'Taux horaire de ' + mem.name + ' enregistré.' }; }));
+  };
+  const dutyBtn = has('service') ? h('button', { class: 'btn' + (mine ? '' : ' primary'), onclick: ev => run(ev.currentTarget, async () => { const on = await rpc('toggle_duty', { p_org: me.id }); refresh(); return { message: on ? 'Bon service !' : 'Service terminé.' }; }) },
+    ico('horloge', 18), mine ? 'Finir mon service' : 'Prendre mon service') : null;
+  const payBtn = has('service') && can('paie') ? h('button', { class: 'btn', disabled: due < 0.01, onclick: ev => run(ev.currentTarget, async () => { const v = await rpc('pay_salaries', { p_org: me.id }); refresh(); return { message: 'Salaires payés : ' + money2(v) + '. La dépense est en comptabilité.' }; }) },
+    'Payer les salaires · ' + money2(due)) : null;
+  const hoursDue = members.reduce((a, m) => a + unpaid(m.id), 0);
+  shell(ctx.nav, 'equipe', orgHead(ctx, me.is_association ? 'Bénévoles' : 'Équipe', members.filter(m => m.active).length + ' compte(s) actif(s)' + (has('service') ? ' · ' + shifts.filter(x => !x.ended_at).length + ' en service' : ''),
+      dutyBtn, payBtn, can('equipe') ? h('button', { class: 'btn primary', onclick: inviteModal }, ico('ajout', 18), me.is_association ? 'Accueillir un bénévole' : 'Ajouter quelqu’un') : null),
+    has('service') ? h('section', { class: 'card' }, strip([['En service', String(shifts.filter(x => !x.ended_at).length)], ['Heures à payer', Math.round(hoursDue * 10) / 10 + ' h'], ['Salaires à payer', money(due)]])) : null,
     h('section', { class: 'card' }, table([
       ['Nom', m => h('span', { class: 'person' }, h('span', { class: 'ava sm' }, initials(m.name)), h('span', { class: 'art' }, h('b', {}, m.name), h('small', {}, m.login)))],
       ['Grade', m => pill(gName(m.grade_id), gRank(m.grade_id) === Math.max(...grades.map(g => g.rank)) ? 'info' : null), null, m => -gRank(m.grade_id)],
       ['Compte', m => !m.active ? pill('Désactivé', 'bad') : m.user_id ? pill('Activé', 'ok') : pill('Lien envoyé, pas encore activé', 'warn')],
-      ['Vu', m => m.last_seen ? ago(new Date(m.last_seen).getTime()) : 'jamais', 'num', m => m.last_seen || ''],
+      has('service') ? ['Service', m => { const o = openOf(m.id); return o ? liveDot('En service · ' + clock(new Date(o.started_at).getTime())) : h('span', { class: 'muted' }, 'Hors service'); }, null, m => openOf(m.id) ? 0 : 1] : null,
+      has('service') ? ['Heures à payer', m => Math.round(unpaid(m.id) * 10) / 10 + ' h', 'num', m => unpaid(m.id)] : null,
+      has('service') ? ['Taux', m => can('paie') ? h('button', { class: 'btn small', onclick: ev => { ev.stopPropagation(); rateModal(m); } }, Number(m.hourly_rate) ? money2(m.hourly_rate) + ' / h' : 'Fixer') : (Number(m.hourly_rate) ? money2(m.hourly_rate) + ' / h' : '—'), 'num', m => Number(m.hourly_rate)] : null,
+      has('employes') ? ['Avert.', m => { const n = warns.filter(w => w.member_id === m.id).length; return n ? pill(String(n), n >= 3 ? 'bad' : 'warn') : h('span', { class: 'muted' }, '0'); }, 'num', m => warns.filter(w => w.member_id === m.id).length] : null,
+      has('service') ? null : ['Vu', m => m.last_seen ? ago(new Date(m.last_seen).getTime()) : 'jamais', 'num', m => m.last_seen || ''],
       can('equipe') ? ['', m => m.id === me.member_id || gRank(m.grade_id) > myRank ? h('span', { class: 'muted small' }, m.id === me.member_id ? 'Toi' : 'Grade au-dessus du tien') : h('span', { class: 'acts' },
         h('button', { class: 'btn small', onclick: ev => { ev.stopPropagation(); editModal(m); } }, 'Modifier'), h('button', { class: 'btn small', onclick: ev => { ev.stopPropagation(); renew(m, ev.currentTarget); } }, 'Nouveau lien'))] : null
-    ].filter(Boolean), members)),
-    h('p', { class: 'note' }, '« Nouveau lien » détache l’ancienne connexion (mot de passe oublié, changement de compte Discord) et en crée une nouvelle.'));
+    ].filter(Boolean), members, has('employes') ? m => go('/' + me.code + '/equipe/' + m.id) : null)),
+    h('p', { class: 'note' }, (has('employes') ? 'Touche une personne pour ouvrir sa fiche. ' : '') + '« Nouveau lien » détache l’ancienne connexion (mot de passe oublié, changement de compte Discord) et en crée une nouvelle.'));
 }
 
 // ---------------------------------------------------------------- réglages

@@ -191,15 +191,18 @@ function quoteDoc(q) {
       'Les modules peuvent être ajoutés ou retirés à tout moment ; le prix suit à la semaine suivante.', q.note].filter(Boolean),
     sign: true, stamp: q.status === 'accepte' ? { text: 'ACCEPTÉ', color: PAPER.ok } : q.status === 'refuse' ? { text: 'REFUSÉ', color: PAPER.bad } : null };
 }
+// facture d'une entreprise (module Factures) : inv = ligne de la table invoices, o = { name, kind, owner }
 function invoiceDoc(o, inv) {
-  return { kind: 'FACTURE', num: inv.num, date: inv.time, valid: inv.due, brand: o.name, mark: o.name[0].toUpperCase(), brandSub: o.type + ' · géré avec ' + BRAND,
-    from: { title: 'Émetteur', lines: [o.name, o.owner, o.type] }, to: { title: 'Client', lines: [inv.client] },
+  const st = inv.status === 'attente' && new Date(inv.due_at).getTime() < Date.now() ? 'retard' : inv.status;
+  const m2 = n => Number(n).toLocaleString('fr-FR', { minimumFractionDigits: Number(n) % 1 ? 2 : 0, maximumFractionDigits: 2 }).replace(/\s/g, ' ') + ' $';
+  return { kind: 'FACTURE', num: inv.num, date: new Date(inv.created_at).getTime(), valid: new Date(inv.due_at).getTime(), brand: o.name, mark: o.name[0].toUpperCase(), brandSub: (o.kind || 'Entreprise') + ' · géré avec ' + BRAND,
+    from: { title: 'Émetteur', lines: [o.name, o.owner, o.kind].filter(Boolean) }, to: { title: 'Client', lines: [inv.client] },
     cols: ['Article', 'Quantité', 'Prix unitaire', 'Montant'], colW: [0.46, 0.16, 0.18, 0.2],
-    rows: inv.lines.map(l => ({ name: l[0], sub: null, cells: [String(l[1]), plainMoney(l[2]).replace(' $', '') + ' $', plainMoney(l[1] * l[2])] })),
-    totals: [['Total à payer', plainMoney(inv.total), true]],
+    rows: inv.lines.map(l => ({ name: l.label, sub: null, cells: [Number(l.qty).toLocaleString('fr-FR'), m2(l.price), m2(Number(l.qty) * Number(l.price))] })),
+    totals: [['Total à payer', m2(inv.total), true]],
     notes: ['Paiement à réception, en argent RP.', 'Une facture payée est enregistrée dans la comptabilité des deux entreprises.'],
-    sign: false, stamp: inv.status === 'payee' ? { text: 'PAYÉE', color: PAPER.ok } : inv.status === 'retard' ? { text: 'EN RETARD', color: PAPER.bad } : null };
+    sign: false, stamp: st === 'payee' ? { text: 'PAYÉE', color: PAPER.ok } : st === 'retard' ? { text: 'EN RETARD', color: PAPER.bad } : st === 'annulee' ? { text: 'ANNULÉE', color: PAPER.bad } : null };
 }
 
 
-export { renderDoc, pdfFromCanvas, saveBlob, exportModal, quoteDoc };
+export { renderDoc, pdfFromCanvas, saveBlob, exportModal, quoteDoc, invoiceDoc };

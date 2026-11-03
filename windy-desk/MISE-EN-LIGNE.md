@@ -8,7 +8,7 @@ Toute la sécurité est dans la base : règles RLS en lecture, fonctions SQL pou
 |---|---|
 | Site | https://desk.windydev.fr (projet Netlify `windy-desk`, aussi joignable sur https://windy-desk.netlify.app) |
 | Base Supabase | projet « Comptoir » (`vevezyxavdfykvcbsiws`, l’ancien nom du produit ; le nom du projet Supabase n’apparaît nulle part sur le site) |
-| Schéma | `supabase/migrations/` (4 migrations, déjà appliquées) |
+| Schéma | `supabase/migrations/` (5 migrations, déjà appliquées) |
 | Réglages publics du site | `web/config.js` (adresse Supabase et clé *publishable*, faite pour être publique) |
 | Réglages Netlify | `netlify.toml` **à la racine du dépôt** (dossier `windy-desk`, redirections, en-têtes de sécurité) |
 
@@ -62,6 +62,24 @@ Le nom affiché (`display_name`) apparaît dans le journal des entreprises à ch
 
 Espace éditeur → **Nouveau client** : adresse (`/bella-napoli`), patron, modules, durée de licence.
 Le site donne le lien d’activation du patron (48 h, usage unique). Le patron invite ensuite son équipe depuis **Équipe**.
+
+## Les modules
+
+Chaque module apparaît dans le menu d’une entreprise s’il est dans son offre (éditeur → *Modules*) **et** si le grade
+de la personne a l’accès voulu (entreprise → *Réglages* → grades). La base vérifie les deux à chaque action.
+
+| Module | Ce qu’il fait | Accès du grade |
+|---|---|---|
+| Stock | Articles, emplacements, seuils, entrées / sorties / pertes ; un achat payé part en dépense | Gérer le stock |
+| Fabrication | Recettes et fournées ; coût de revient calculé | Fabriquer |
+| Récolte | Chacun saisit sa récolte, qui entre en stock ; classement et primes au rendement | tout le monde (primes : Payer les salaires) |
+| Caisse | Carte, tickets, carte ou espèces ; un produit avec recette se prépare à la commande | Encaisser |
+| Factures | Factures PNG/PDF ; entre deux entreprises Windy Desk, le paiement entre dans les deux comptabilités | Comptabilité |
+| Service et paie | Prise et fin de service, taux horaire, paie en un clic (12 h max par service) | tout le monde (paie : Payer les salaires) |
+| Dons | Dons en argent (comptabilité) ou en nature (stock), distributions | Gérer le stock |
+| Employés | Fiche (téléphone, contrat, permis), avertissements, notes, départ | Gérer l’équipe |
+| Véhicules | Sorties, retours (carburant, état, km), plein, réparation, assurance | Véhicules |
+| Événements | Page dédiée : compte à rebours, objectif, équipe, stock réservé, tâches, bilan ; les ventes et dons pendant l’événement s’y rattachent | Événements |
 
 ## Bon à savoir
 

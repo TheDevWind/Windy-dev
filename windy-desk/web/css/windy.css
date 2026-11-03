@@ -162,3 +162,7 @@ h1 { font-size: 38px; line-height: 1.05; }
   .auth-lock { justify-self: center; }
   .l-wm { font-size: 23px; }
 }
+
+/* ---------------------------------------------------------------- modules : les boutons des cartes passent à la ligne au lieu d'être coupés */
+.vc-acts { flex-wrap: wrap; }
+.vc-acts .btn { flex: 1 1 auto; }
