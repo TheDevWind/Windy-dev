@@ -280,6 +280,10 @@ try {
     assert.match(await fisc.locator('h1').innerText(), /Accès réservé/);
     await nina.goto(BASE + '/fisc'); await settle(nina, '.gate');
     assert.match(await nina.locator('h1').innerText(), /Accès réservé/);
+    // connectée sans rôle de plateforme : la page de connexion le dit au lieu de rester muette
+    await nina.goto(BASE + '/connexion/plateforme'); await settle(nina, '.gate');
+    assert.match(await nina.locator('h1').innerText(), /Connecté, mais sans accès/);
+    await nina.getByRole('link', { name: 'Aller à Bella Napoli' }).waitFor();
   });
 
   // ------------------------------------------------------------ connexion ordinaire

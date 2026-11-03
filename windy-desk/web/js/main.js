@@ -189,7 +189,16 @@ function platformLogin() {
     h('h1', {}, 'Connexion'), h('p', { class: 'muted' }, 'Ton accès a été ouvert par un lien à usage unique.'),
     passwordForm('plateforme', async () => { const sp = await spaces(true); go(sp.role === 'fisc' ? '/fisc' : sp.role === 'editeur' ? '/editeur' : '/connexion'); }),
     h('div', { class: 'auth-or' }, h('span', {}, 'ou')), discordButton('/connexion/plateforme'));
-  if (ME.session) spaces().then(sp => { if (sp && sp.role) go(sp.role === 'fisc' ? '/fisc' : '/editeur', true); }).catch(() => {});
+  // déjà connecté : on file vers son espace, ou on dit clairement qu'il manque le lien d'accès
+  if (ME.session) spaces().then(sp => {
+    if (!sp || location.pathname !== '/connexion/plateforme') return;
+    if (sp.role) return go(sp.role === 'fisc' ? '/fisc' : '/editeur', true);
+    const u = ME.session.user, md = u.user_metadata || {};
+    const who = md.full_name || md.name || md.user_name || u.email || 'ce compte';
+    message('Connecté, mais sans accès', 'Tu es connecté en tant que ' + who + ', mais ce compte n’a pas encore d’accès au fisc ni à l’éditeur. Ouvre le lien d’accès à usage unique qu’on t’a donné (il commence par /reclamer/) : il relie ce compte à son rôle.',
+      ...sp.orgs.map(o => h('a', { class: 'btn', href: '/' + o.code }, 'Aller à ' + o.name)),
+      h('button', { class: 'btn', onclick: signOut }, 'Utiliser un autre compte'));
+  }).catch(() => {});
 }
 async function claimPage(token) {
   if (!ME.session) {
