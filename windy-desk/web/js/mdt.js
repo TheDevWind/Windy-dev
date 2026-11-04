@@ -5,86 +5,9 @@
 import { S, h, ico, modal, toast, run, table, pill, strip, fchips, money, initials, date, ago, clock, liveDot, copyText, slug, themeSwitch, butterfly, BRAND } from './ui.js';
 import { rpc, rows, upload, signedUrls, publicUrl } from './sb.js';
 import { saveBlob } from './doc.js';
+import { KIND, DANGER, personCards, caseCards, reportAlerts } from './mdt-enquete.js';
 
-const DAY = 864e5, HOUR = 36e5;
-const ms = s => new Date(s).getTime();
-const iso = t => new Date(t).toISOString();
-const day = s => new Date(s).toLocaleDateString('fr-FR');
-const field = (label, ctl, cls) => h('label', { class: 'f' + (cls ? ' ' + cls : '') }, label, ctl);
-const input = attrs => h('input', Object.assign({ type: 'text' }, attrs));
-const area = attrs => h('textarea', attrs);
-const select = (opts, value, attrs) => h('select', attrs || {}, opts.map(([v, l]) => h('option', { value: v, selected: v === value }, l)));
-const foot = (m, ...btns) => h('div', { class: 'foot' }, h('button', { class: 'btn', type: 'button', onclick: () => m.close() }, 'Annuler'), ...btns);
-const fullName = p => p ? p.first_name + ' ' + p.last_name : '—';
-const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
-const toLocal = t => new Date(t - new Date(t).getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
-const weekStart = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); };
-// heures de service depuis « from » (12 h au plus par service, contre les oublis de fin de service)
-const hours = (list, from) => list.reduce((a, x) => { const t0 = Math.max(ms(x.started_at), from), t1 = x.ended_at ? ms(x.ended_at) : Date.now(); return a + Math.max(0, Math.min(t1 - t0, 12 * HOUR)); }, 0) / HOUR;
-const fmtH = x => (Math.round(x * 10) / 10).toLocaleString('fr-FR') + ' h';
-const tabs = (list, current, onPick) => h('div', { class: 'tabs', role: 'tablist' }, list.filter(Boolean).map(([k, l]) => h('button', { type: 'button', role: 'tab', class: 'tab' + (k === current ? ' on' : ''), 'aria-selected': String(k === current), onclick: () => onPick(k) }, l)));
-const search = (value, placeholder, onInput) => { const i = input({ value: value || '', placeholder, 'aria-label': placeholder, class: 'find-in' }); i.addEventListener('input', () => onInput(i.value)); return h('div', { class: 'findbar' }, ico('loupe', 18), i); };
-const match = (q, ...parts) => !q || parts.filter(Boolean).join(' ').toLowerCase().includes(q.trim().toLowerCase());
-
-export const STATUS = { ouvert: ['Ouvert', 'info'], en_cours: ['En cours', 'info'], localise: ['Localisé', 'warn'], arrete: ['Arrêté', 'ok'], rendu: ['S’est rendu', 'ok'], decede: ['Décédé', null], abandonne: ['Abandonné', null] };
-const OPEN = ['ouvert', 'en_cours', 'localise'];
-const PRIO = { normale: ['Normale', null], haute: ['Haute', 'warn'], most_wanted: ['Most Wanted', 'bad'] };
-const WKIND = { arret: 'Mandat d’arrêt', perquisition: 'Perquisition', ecoute: 'Mise sur écoute', saisie: 'Saisie' };
-const WST = { brouillon: ['Brouillon', null], envoye: ['En attente de la Justice', 'warn'], signe: ['Signé', 'ok'], refuse: ['Refusé', 'bad'], execute: ['Exécuté', 'info'], annule: ['Annulé', null], expire: ['Expiré', 'bad'] };
-export const wStatus = w => w.status === 'signe' && w.expires_at && ms(w.expires_at) < Date.now() ? 'expire' : w.status;
-const DUTY = { dispo: ['Disponible', 'ok'], intervention: ['En intervention', 'bad'], pause: ['En pause', 'warn'] };
-const STAGE = { recrue: ['Recrue', 'warn'], formation: ['En formation', 'info'], titulaire: ['Titulaire', null] };
-const CAREER = { recrutement: ['Recrutement', 'info', 'badge'], promotion: ['Promotion', 'ok', 'etoile'], retrogradation: ['Rétrogradation', 'warn', 'fleche'], unite: ['Unités', null, 'grille'],
-  qualification: ['Qualification', 'ok', 'coche'], formation: ['Parcours', 'info', 'journal'], felicitation: ['Félicitation', 'ok', 'etoile'], sanction: ['Sanction', 'bad', 'alerte'],
-  note: ['Note', null, 'journal'], commandement: ['Note du commandement', 'warn', 'cadenas'], depart: ['Départ', 'bad', 'sortie'], retour: ['Retour', 'ok', 'fleche'] };
-const LOG = { note: ['Note', null, 'journal'], piste: ['Piste', 'info', 'loupe'], observation: ['Observation', 'warn', 'localisation'], statut: ['Dossier', 'info', 'dossier'],
-  agent: ['Équipe', null, 'joueurs'], fichier: ['Pièce jointe', null, 'trombone'], mandat: ['Mandat', 'ok', 'marteau'], wanted: ['Most Wanted', 'bad', 'cible'] };
-const ANN = { info: ['Information', 'info'], important: ['Important', 'warn'], urgent: ['Urgent', 'bad'] };
-const AGENDA = { patrouille: 'Patrouille', operation: 'Opération', formation: 'Formation', reunion: 'Réunion', autre: 'Autre' };
-
-// ---------------------------------------------------------------- fichiers (photos, pièces jointes)
-const IMAGE = /^image\/(png|jpeg|webp|gif)$/, ANY = /^(image\/(png|jpeg|webp|gif)|video\/(mp4|webm)|application\/pdf|text\/plain)$/;
-const stamp = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const extOf = f => (f.name.match(/\.([a-z0-9]{1,5})$/i) || [null, 'bin'])[1].toLowerCase();
-async function send(org, folder, file, imageOnly) {
-  if (!file) return null;
-  const max = imageOnly ? 10 : 50;
-  if (file.size > max * 1024 * 1024) throw new Error('Fichier trop lourd : ' + max + ' Mo au plus.');
-  if (!(imageOnly ? IMAGE : ANY).test(file.type)) throw new Error(imageOnly ? 'Choisis une image (PNG, JPEG, WebP ou GIF).' : 'Type refusé : images, vidéos MP4 ou WebM, PDF ou texte.');
-  return upload('mdt', org + '/' + folder + '/' + stamp() + '.' + extOf(file), file);
-}
-const photoIn = () => h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp,image/gif' });
-/** Photo d'un agent ou d'un individu (lien signé, valable une heure), ou ses initiales. */
-const face = (path, urls, name, cls) => path && urls[path] ? h('img', { class: 'ava ' + (cls || ''), src: urls[path], alt: '' }) : h('span', { class: 'ava ' + (cls || ''), 'aria-hidden': 'true' }, initials(name));
-const personCell = (title, sub, path, urls) => h('span', { class: 'person' }, face(path, urls, title, 'sm'), h('span', { class: 'art' }, h('b', {}, title), sub ? h('small', {}, sub) : null));
-const feed = items => items.length ? h('ul', { class: 'feed tl' }, items.map(([at, kind, text, by, map]) => {
-  const [label, cls, icon] = map[kind] || [kind, null, 'journal'];
-  return h('li', { class: 'ev' + (cls ? ' ' + cls : '') }, h('time', {}, date(ms(at))), h('span', { class: 'ev-ic' }, ico(icon, 15)),
-    h('div', { class: 'ev-body' }, h('b', {}, label), h('span', {}, text), by ? h('small', { class: 'muted' }, by) : null));
-})) : h('div', { class: 'empty' }, 'Rien pour l’instant.');
-
-// ---------------------------------------------------------------- données communes
-const load = {
-  members: ctx => rows('members', q => q.eq('org_id', ctx.me.id).order('created_at')),
-  grades: ctx => rows('grades', q => q.eq('org_id', ctx.me.id).order('rank', { ascending: false })),
-  units: ctx => rows('units', q => q.eq('org_id', ctx.me.id).order('code')),
-  people: ctx => rows('people', q => q.eq('org_id', ctx.me.id).order('last_name')),
-};
-const gradeOf = (grades, id) => grades.find(g => g.id === id) || { name: '?', rank: 0, badge: null };
-const myRank = (ctx, members, grades) => gradeOf(grades, (members.find(m => m.id === ctx.me.member_id) || {}).grade_id).rank;
-const absentToday = (absences, id) => absences.some(a => a.member_id === id && a.status === 'validee' && a.starts_on <= today() && a.ends_on >= today());
-/** Où en est l'agent : en service (et son statut), absent, compte à activer, inactif depuis 7 jours, hors service. */
-function stateOf(m, open, absences, shifts) {
-  if (!m.active) return pill('Parti', 'bad');
-  const o = open.find(x => x.member_id === m.id);
-  if (o) return liveDot((DUTY[m.duty_status] || DUTY.dispo)[0]);
-  if (absentToday(absences, m.id)) return pill('Absent', 'warn');
-  if (!m.user_id) return pill('Compte à activer', 'warn');
-  const last = Math.max(...shifts.filter(x => x.member_id === m.id).map(x => ms(x.started_at)), m.last_seen ? ms(m.last_seen) : 0, ms(m.created_at));
-  if (Date.now() - last > 7 * DAY) return pill('Inactif depuis ' + Math.floor((Date.now() - last) / DAY) + ' j', 'bad');
-  return h('span', { class: 'muted' }, 'Hors service');
-}
-const inactiveDays = (m, shifts) => Math.floor((Date.now() - Math.max(...shifts.filter(x => x.member_id === m.id).map(x => ms(x.started_at)), m.last_seen ? ms(m.last_seen) : 0, ms(m.created_at))) / DAY);
+import { DAY, HOUR, ms, iso, day, field, input, area, select, foot, fullName, today, toLocal, weekStart, hours, fmtH, tabs, search, match, STATUS, OPEN, PRIO, WKIND, WST, wStatus, DUTY, STAGE, CAREER, LOG, ANN, AGENDA, IMAGE, ANY, stamp, extOf, send, photoIn, face, personCell, feed, load, gradeOf, myRank, absentToday, stateOf, inactiveDays } from './mdt-kit.js';
 
 // ---------------------------------------------------------------- prise de service (tableau de bord et présence)
 function dutyCard(ctx, mine, meRow) {
@@ -114,6 +37,7 @@ export async function dashboard(ctx) {
     has('presence') ? rows('agenda', q => q.eq('org_id', me.id).gte('ends_at', iso(Date.now())).order('starts_at').limit(5)) : [],
     has('presence') ? rows('absences', q => q.eq('org_id', me.id).eq('status', 'validee').gte('ends_on', today())) : [],
     has('wanted') && can('wanted') ? rows('tips', q => q.eq('org_id', me.id).eq('status', 'nouveau')) : []]);
+  const alerts = await reportAlerts(ctx);
   const active = members.filter(m => m.active), meRow = members.find(m => m.id === me.member_id);
   const urls = await signedUrls(people.filter(p => wanted.some(w => w.person_id === p.id)).map(p => p.photo).concat(active.map(m => m.photo)));
   const pOf = id => people.find(p => p.id === id), mOf = id => members.find(m => m.id === id);
@@ -126,10 +50,12 @@ export async function dashboard(ctx) {
   ctx.show('accueil', me.name, [pill(me.kind, 'info'), ' ', me.grade + ' · ' + new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })], null,
     unread.map(a => h('div', { class: 'banner' + (a.level === 'urgent' ? ' bad' : '') }, ico('megaphone', 20), h('div', {}, h('b', {}, a.title), h('span', {}, a.body.slice(0, 160) + (a.body.length > 160 ? '…' : ''))),
       h('button', { class: 'btn small', type: 'button', onclick: ev => run(ev.currentTarget, async () => { await rpc('read_announcement', { p_id: a.id }); ctx.reload(); return { message: 'Annonce marquée comme lue.' }; }) }, 'J’ai lu'))),
+    alerts.banner,
     has('presence') ? dutyCard(ctx, mine, meRow) : null,
     h('section', { class: 'card' }, strip([has('presence') ? ['En service', open.length + ' / ' + active.length] : ['Effectif', String(active.length)],
       has('dossiers') ? ['Dossiers actifs', String(cases.length)] : null, has('mandats') ? ['Mandats en attente', String(pending.length), pending.length ? 'warn-t' : null] : null,
-      has('mandats') ? ['Mandats à exécuter', String(toRun.length)] : null, has('wanted') && can('wanted') ? ['Signalements', String(tips.length), tips.length ? 'warn-t' : null] : null])),
+      has('mandats') ? ['Mandats à exécuter', String(toRun.length)] : null, has('wanted') && can('wanted') ? ['Signalements', String(tips.length), tips.length ? 'warn-t' : null] : null,
+      alerts.pending !== null ? ['Rapports à valider', String(alerts.pending), alerts.pending ? 'warn-t' : null] : null])),
     h('div', { class: 'dash' },
       h('div', { class: 'col' },
         has('presence') ? h('section', { class: 'card' }, h('h2', {}, 'En service maintenant', h('span', { class: 'right' }, h('a', { href: base + '/presence' }, 'Présence'))),
@@ -416,7 +342,8 @@ function personModal(ctx, p, after) {
   const height = h('input', { type: 'number', min: 100, max: 250, value: v.height || '', class: 'short', placeholder: 'cm' });
   const eyes = input({ maxlength: 20, value: v.eyes || '' }), hair = input({ maxlength: 20, value: v.hair || '' }), marks = input({ maxlength: 200, value: v.marks || '', placeholder: 'Tatouages, cicatrices…' });
   const phone = input({ maxlength: 20, value: v.phone || '' }), address = input({ maxlength: 120, value: v.address || '' }), job = input({ maxlength: 60, value: v.job || '' }), gang = input({ maxlength: 60, value: v.gang || '' });
-  const dangerous = h('input', { type: 'checkbox', checked: !!v.dangerous }), armed = h('input', { type: 'checkbox', checked: !!v.armed });
+  const kind = select(Object.entries(KIND).map(([k, [l]]) => [k, l]), v.kind || 'suspect'), armed = h('input', { type: 'checkbox', checked: !!v.armed });
+  const danger = select([['faible', 'Faible'], ['moyenne', 'Moyenne'], ['elevee', 'Élevée'], ['extreme', 'Extrême']], v.danger || (v.dangerous ? 'elevee' : 'faible'));
   const notes = area({ maxlength: 2000, value: v.notes || '' }), photo = photoIn();
   const lines = (list, cols) => { const box = h('div', { class: 'linelist' }); const add = (x) => { const ins = cols.map(([k, ph, w]) => input({ maxlength: w, value: (x || {})[k] || '', placeholder: ph, 'aria-label': ph }));
     const row = h('div', { class: 'll-row' }, ins, h('button', { class: 'btn small ghost', type: 'button', 'aria-label': 'Retirer', onclick: () => row.remove() }, ico('moins', 16))); row._get = () => Object.fromEntries(cols.map(([k], i) => [k, ins[i].value.trim()])); box.append(row); };
@@ -427,7 +354,7 @@ function personModal(ctx, p, after) {
   const md = modal(p ? fullName(p) : 'Nouvel individu', h('div', { class: 'row' }, field('Prénom', fn, 'grow'), field('Nom', ln, 'grow')), h('div', { class: 'row' }, field('Surnom', alias, 'grow'), field('Né(e) le', birth)),
     h('div', { class: 'row' }, field('Sexe', sex), field('Taille', height), field('Yeux', eyes, 'grow'), field('Cheveux', hair, 'grow')), field('Signes particuliers', marks),
     h('div', { class: 'row' }, field('Téléphone', phone, 'grow'), field('Métier', job, 'grow')), h('div', { class: 'row' }, field('Adresse', address, 'grow'), field('Gang / organisation', gang, 'grow')),
-    h('div', { class: 'row' }, h('label', { class: 'check' }, dangerous, 'Dangereux'), h('label', { class: 'check' }, armed, 'Armé')),
+    h('div', { class: 'row' }, field('Type de fiche', kind, 'grow'), field('Dangerosité', danger, 'grow'), h('label', { class: 'check' }, armed, 'Armé')),
     h('div', { class: 'f' }, 'Véhicules connus', veh, h('button', { class: 'btn small', type: 'button', onclick: addVeh }, ico('ajout', 16), 'Véhicule')),
     h('div', { class: 'f' }, 'Lieux fréquentés', plc, h('button', { class: 'btn small', type: 'button', onclick: addPlc }, ico('ajout', 16), 'Lieu')),
     field('Photo', photo), field('Notes', notes), foot({ close: () => md.close() }, ok));
@@ -437,7 +364,7 @@ function personModal(ctx, p, after) {
     const path = await send(ctx.me.id, 'people', photo.files[0], true);
     const id = await rpc('save_person', { p_org: ctx.me.id, p_id: p ? p.id : null, p: { first_name: fn.value.trim(), last_name: ln.value.trim(), alias: alias.value, birth: birth.value, sex: sex.value,
       height: height.value, eyes: eyes.value, hair: hair.value, marks: marks.value, phone: phone.value, address: address.value, job: job.value, gang: gang.value,
-      dangerous: dangerous.checked, armed: armed.checked, notes: notes.value, photo: path, vehicles: getVeh(), places: getPlc() } });
+      kind: kind.value, danger: danger.value, armed: armed.checked, notes: notes.value, photo: path, vehicles: getVeh(), places: getPlc() } });
     md.close(); if (after) after(id); else ctx.reload(); return { message: p ? 'Fiche enregistrée.' : 'Fiche créée.' };
   }));
 }
@@ -471,7 +398,7 @@ export async function dossiers(ctx) {
       cases.filter(c => (f === 'tous' || (f === 'actifs') === OPEN.includes(c.status)) && match(q, c.num, c.title, c.charges, fullName(pOf(c.person_id)), (pOf(c.person_id) || {}).alias)),
       c => ctx.go('/' + me.code + '/dossiers/' + c.id), 'Aucun dossier.')
       : table([['Individu', p => personCell(fullName(p), p.alias ? '« ' + p.alias + ' »' : null, p.photo, urls), null, p => p.last_name],
-        ['Signalement', p => h('span', { class: 'pills' }, p.dangerous ? pill('Dangereux', 'bad') : null, p.armed ? pill('Armé', 'bad') : null, wanted.some(w => w.person_id === p.id) ? pill('Most Wanted', 'bad') : null)],
+        ['Signalement', p => h('span', { class: 'pills' }, pill(...KIND[p.kind || 'suspect']), p.danger && p.danger !== 'faible' ? pill(...DANGER[p.danger]) : null, p.armed ? pill('Armé', 'bad') : null, wanted.some(w => w.person_id === p.id) ? pill('Most Wanted', 'bad') : null)],
         ['Gang', p => p.gang || '—'], ['Dossiers', p => String(cases.filter(c => c.person_id === p.id).length), 'num', p => cases.filter(c => c.person_id === p.id).length],
         ['Mis à jour', p => day(p.updated_at), 'num', p => p.updated_at]],
       people.filter(p => match(q, fullName(p), p.alias, p.gang, p.phone, plates(p))), p => ctx.go('/' + me.code + '/individus/' + p.id), 'Aucun individu.'));
@@ -490,14 +417,15 @@ export async function dossiers(ctx) {
 
 export async function individu(ctx, id) {
   const { me, can } = ctx;
-  const [people, cases, warrants, wanted] = await Promise.all([rows('people', q => q.eq('id', id)), rows('cases', q => q.eq('person_id', id).order('opened_at', { ascending: false })),
+  const [all, cases, warrants, wanted] = await Promise.all([load.people(ctx), rows('cases', q => q.eq('person_id', id).order('opened_at', { ascending: false })),
     me.modules.includes('mandats') ? rows('warrants', q => q.eq('person_id', id).order('created_at', { ascending: false })) : [], me.modules.includes('wanted') ? rows('wanted', q => q.eq('person_id', id)) : []]);
-  const p = people[0];
+  const p = all.find(x => x.id === id);
   if (!p) return ctx.go('/' + me.code + '/dossiers', true);
   const urls = await signedUrls([p.photo]);
   const info = (k, v) => v ? [h('dt', {}, k), h('dd', {}, v)] : null;
-  const w = wanted[0];
-  ctx.show('dossiers', fullName(p), [p.alias ? '« ' + p.alias + ' » ' : '', p.dangerous ? pill('Dangereux', 'bad') : null, ' ', p.armed ? pill('Armé', 'bad') : null, ' ', w ? pill('Most Wanted n° ' + w.rank, 'bad') : null],
+  const w = wanted[0], more = await personCards(ctx, p, all);
+  ctx.show('dossiers', fullName(p), h('span', { class: 'pills' }, p.alias ? h('span', {}, '« ' + p.alias + ' »') : null, pill(...KIND[p.kind || 'suspect']), pill(...DANGER[p.danger || 'faible']),
+    p.armed ? pill('Armé', 'bad') : null, w ? pill('Most Wanted n° ' + w.rank, 'bad') : null),
     [can('dossiers') ? [h('button', { class: 'btn', type: 'button', onclick: () => personModal(ctx, p) }, 'Modifier'),
       h('button', { class: 'btn primary', type: 'button', onclick: async () => caseModal(ctx, [p], await load.members(ctx), p.id) }, ico('dossier', 18), 'Ouvrir un dossier')] : null,
       h('a', { class: 'btn ghost', href: '/' + me.code + '/dossiers' }, 'Tous les dossiers')],
@@ -505,13 +433,12 @@ export async function individu(ctx, id) {
       h('section', { class: 'card idcard' }, h('div', { class: 'id-top' }, face(p.photo, urls, fullName(p), 'xl'), h('div', { class: 'art' }, h('b', { class: 'id-name' }, fullName(p)), p.alias ? h('span', {}, '« ' + p.alias + ' »') : null,
         h('span', { class: 'muted small' }, 'Fiche mise à jour ' + ago(ms(p.updated_at))))),
         h('dl', { class: 'lines-dl rules' }, info('Né(e) le', p.birth ? day(p.birth) : null), info('Sexe', { H: 'Homme', F: 'Femme', X: 'Autre' }[p.sex]), info('Taille', p.height ? p.height + ' cm' : null), info('Yeux', p.eyes), info('Cheveux', p.hair),
-          info('Signes particuliers', p.marks), info('Téléphone', p.phone), info('Adresse', p.address), info('Métier', p.job), info('Gang / organisation', p.gang))),
+          info('Signes particuliers', p.marks), info('Téléphone', p.phone), info('Adresse', p.address), info('Métier', p.job), info('Gang / organisation', p.gang_id ? h('a', { href: '/' + me.code + '/organisations/' + p.gang_id }, p.gang) : p.gang))),
       h('div', { class: 'stack' },
-        h('section', { class: 'card' }, h('h2', {}, 'Véhicules connus'), (p.vehicles || []).length ? h('ul', { class: 'people' }, p.vehicles.map(v => h('li', {}, h('span', { class: 'plate' }, v.plate || '?'), h('span', { class: 'art' }, h('b', {}, v.model || 'Modèle inconnu'), v.color ? h('small', {}, v.color) : null))))
-          : h('div', { class: 'empty' }, 'Aucun véhicule connu.')),
         h('section', { class: 'card' }, h('h2', {}, 'Lieux fréquentés'), (p.places || []).length ? h('ul', { class: 'people' }, p.places.map(l => h('li', {}, h('span', { class: 'ev-ic' }, ico('localisation', 16)), h('span', { class: 'art' }, h('b', {}, l.label || 'Lieu'), l.address ? h('small', {}, l.address) : null))))
-          : h('div', { class: 'empty' }, 'Aucun lieu connu.')))),
-    p.notes ? h('section', { class: 'card' }, h('h2', {}, 'Notes'), h('p', { class: 'prewrap' }, p.notes)) : null,
+          : h('div', { class: 'empty' }, 'Aucun lieu connu.')),
+        p.notes ? h('section', { class: 'card' }, h('h2', {}, 'Notes'), h('p', { class: 'prewrap' }, p.notes)) : null)),
+    ...more,
     h('section', { class: 'card' }, h('h2', {}, 'Dossiers'), table([['N°', c => h('b', { class: 'nowrap' }, c.num)], ['Titre', c => c.title], ['Statut', c => pill(...STATUS[c.status])], ['Priorité', c => pill(...PRIO[c.priority])], ['Ouvert', c => day(c.opened_at), 'num', c => c.opened_at]],
       cases, c => ctx.go('/' + me.code + '/dossiers/' + c.id), 'Aucun dossier.')),
     warrants.length ? h('section', { class: 'card' }, h('h2', {}, 'Mandats'), warrantTable(ctx, warrants, null)) : null);
@@ -528,6 +455,7 @@ export async function dossier(ctx, id) {
   const p = pp[0];
   const urls = await signedUrls([p && p.photo].concat(files.map(f => f.path)));
   const mOf = x => members.find(m => m.id === x), team = agents.map(a => mOf(a.member_id)).filter(Boolean);
+  const extra = await caseCards(ctx, c);
   const edit = () => {
     const title = input({ maxlength: 80, value: c.title }), st = select(Object.entries(STATUS).map(([k, [l]]) => [k, l]), c.status), pr = select(Object.entries(PRIO).map(([k, [l]]) => [k, l]), c.priority);
     const lead = select(members.filter(m => m.active).map(m => [m.id, m.name]), c.lead_id), charges = area({ maxlength: 500, value: c.charges || '' }), seen = input({ maxlength: 160, value: c.last_seen || '', placeholder: 'Lieu, heure, véhicule…' });
@@ -571,10 +499,10 @@ export async function dossier(ctx, id) {
     [can('dossiers') ? [h('button', { class: 'btn', type: 'button', onclick: edit }, 'Modifier'), h('button', { class: 'btn', type: 'button', onclick: teamModal }, ico('joueurs', 18), 'Agents'),
       h('button', { class: 'btn', type: 'button', onclick: fileModal }, ico('trombone', 18), 'Pièce jointe')] : null,
       has('mandats') && can('mandats') ? h('button', { class: 'btn', type: 'button', onclick: () => warrantModal(ctx, null, { person: c.person_id, case: c.id, people: p ? [p] : [], cases: [c] }) }, ico('marteau', 18), 'Demander un mandat') : null,
-      has('wanted') && can('wanted') && !wanted.length ? h('button', { class: 'btn', type: 'button', onclick: () => wantedModal(ctx, p ? [p] : [], [c], null, c) }, ico('cible', 18), 'Most Wanted') : null],
+      has('wanted') && can('wanted') && !wanted.length ? h('button', { class: 'btn', type: 'button', onclick: () => wantedModal(ctx, p ? [p] : [], [c], null, c) }, ico('cible', 18), 'Most Wanted') : null, extra.buttons],
     h('div', { class: 'grid cols2' },
       h('section', { class: 'card idcard' }, p ? [h('div', { class: 'id-top' }, face(p.photo, urls, fullName(p), 'xl'), h('div', { class: 'art' }, h('a', { class: 'id-name', href: '/' + me.code + '/individus/' + p.id }, fullName(p)),
-        p.alias ? h('span', {}, '« ' + p.alias + ' »') : null, h('span', { class: 'pills' }, p.dangerous ? pill('Dangereux', 'bad') : null, p.armed ? pill('Armé', 'bad') : null, wanted[0] ? pill('Most Wanted n° ' + wanted[0].rank, 'bad') : null))),
+        p.alias ? h('span', {}, '« ' + p.alias + ' »') : null, h('span', { class: 'pills' }, pill(...DANGER[p.danger || 'faible']), p.armed ? pill('Armé', 'bad') : null, wanted[0] ? pill('Most Wanted n° ' + wanted[0].rank, 'bad') : null))),
         h('dl', { class: 'lines-dl rules' }, [h('dt', {}, 'Signalement'), h('dd', {}, [p.sex === 'H' ? 'Homme' : p.sex === 'F' ? 'Femme' : null, p.height ? p.height + ' cm' : null, p.eyes ? 'yeux ' + p.eyes : null, p.hair ? 'cheveux ' + p.hair : null].filter(Boolean).join(', ') || '—')],
           p.marks ? [h('dt', {}, 'Signes'), h('dd', {}, p.marks)] : null, p.gang ? [h('dt', {}, 'Gang'), h('dd', {}, p.gang)] : null)] : h('div', { class: 'empty' }, 'Individu introuvable.')),
       h('section', { class: 'card' }, h('h2', {}, 'Enquête'), h('dl', { class: 'lines-dl rules' }, h('dt', {}, 'Responsable'), h('dd', {}, (mOf(c.lead_id) || {}).name || '—'),
@@ -586,7 +514,8 @@ export async function dossier(ctx, id) {
         can('dossiers') ? h('div', { class: 'logform' }, kseg, text, add) : null, feed(log.map(l => [l.at, l.kind, l.text, l.by_name, LOG]))),
       h('div', { class: 'stack' },
         h('section', { class: 'card' }, h('h2', {}, 'Pièces jointes', h('span', { class: 'muted small' }, String(files.length))), files.length ? h('div', { class: 'files' }, files.map(fileView)) : h('div', { class: 'empty' }, 'Aucune pièce jointe.')),
-        has('mandats') ? h('section', { class: 'card' }, h('h2', {}, 'Mandats'), warrantTable(ctx, warrants, null)) : null)));
+        has('mandats') ? h('section', { class: 'card' }, h('h2', {}, 'Mandats'), warrantTable(ctx, warrants, null)) : null)),
+    ...extra.cards);
 }
 
 // ================================================================== mandats

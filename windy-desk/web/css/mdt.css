@@ -157,6 +157,42 @@ a.id-name:hover { text-decoration: underline; }
 .avis-foot { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 20px; color: var(--muted); font-size: 13px; }
 .avis-fly { width: 40px; height: auto; }
 
+/* recherche, véhicules, organisations */
+.searchcard .findbar { max-width: none; }
+.searchcard .find-in { font-size: 17px; padding: 14px 0; }
+.results { display: grid; gap: 24px; }
+.results:empty { display: none; }
+.people li > a.person, .people li > a.person.grow { color: var(--text); text-decoration: none; min-width: 0; }
+.people li > a.person:hover b { text-decoration: underline; }
+.swatch { display: inline-block; flex: none; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--line); }
+.swatchin { width: 64px; height: 40px; padding: 2px; border-radius: var(--r-sm); }
+.gangs { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.gangcard { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-left: 5px solid var(--gc); border-radius: var(--r); background: var(--stripe); color: var(--text); text-decoration: none; }
+.gangcard:hover { border-color: var(--text); border-left-color: var(--gc); }
+.gangcard b { font-size: 16px; }
+.platebig { margin-bottom: 12px; }
+.platebig .plate { font-size: 22px; padding: 6px 14px; }
+
+/* rapports */
+.seg.wrap { display: flex; flex-wrap: wrap; gap: 2px; }
+.rfields { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items: end; }
+.firecheck { padding: 12px; border-radius: var(--r-sm); background: color-mix(in srgb, var(--bad) 8%, transparent); color: var(--text); }
+.charges { display: grid; gap: 10px; }
+.penal-hits { list-style: none; margin: 0; padding: 0; display: grid; }
+.penal-hits li { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.charges-t { width: 100%; border-collapse: collapse; }
+.charges-t th, .charges-t td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: left; font-size: 14px; }
+.charges-t th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.charges-t .num { text-align: right; white-space: nowrap; }
+.charges-t input.tiny { width: 64px; }
+.charges-total { margin: 4px 0 0; font-weight: 700; text-align: right; }
+.formfoot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.reviewcard { border-left: 4px solid var(--warn); }
+.reviewcard .acts { justify-content: flex-start; }
+
+/* preuves */
+.evphoto { display: block; width: 100%; max-height: 320px; object-fit: contain; border-radius: var(--r-sm); background: var(--tile); }
+
 @media (max-width: 700px) {
   .agenda li { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .ag-acts { flex-direction: row; align-items: center; justify-content: flex-start; }
@@ -173,3 +209,5 @@ a.id-name:hover { text-decoration: underline; }
   .dc-acts .seg button { flex: 1; }
   .dc-acts > .btn { width: 100%; }
 }
+
+.card > .strip:not(:last-child) { margin-bottom: 16px; }

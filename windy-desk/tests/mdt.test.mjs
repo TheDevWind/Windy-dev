@@ -23,7 +23,7 @@ const one = async (who, sql, params) => (await as(who, sql, params))[0];
 const val = async (who, sql, params) => Object.values(await one(who, sql, params))[0];
 const fails = (who, sql, params, re) => assert.rejects(() => as(who, sql, params), re);
 const su = async (sql, params) => (await db.query(sql, params)).rows;
-const MDT = "array['effectifs','presence','dossiers','mandats','wanted','annonces']";
+const MDT = "array['effectifs','presence','dossiers','mandats','wanted','annonces','rapports','preuves']";
 
 let usms, bella, G = {}, M = {}, unit = {}, qual = {};
 
@@ -258,4 +258,112 @@ test('annonces : publiées par le commandement, accusé de lecture', async () =>
   assert.equal((await as('gino', 'select * from public.announcements')).length, 0);
   await one('sup', 'select public.delete_announcement($1)', [a]);
   assert.equal((await as('dep', 'select * from public.announcements')).length, 0);
+});
+
+// ================================================================== étape 2 : base de données, recherche, rapports, preuves
+test('base de données : organisations et véhicules tirés des fiches, entourage, recherche globale', async () => {
+  const [tonyPlate] = await as('rec', "select plate, owner_id from public.plates where plate = '7ABC123'");
+  assert.equal(tonyPlate.owner_id, person);
+  const lance = await val('dep', 'select public.save_person($1, null, $2)', [usms, { first_name: 'Lance', last_name: 'Vance', gang: 'Vagos', danger: 'extreme', kind: 'suspect',
+    vehicles: [{ plate: 'ls 42 42', model: 'Infernus' }] }]);
+  const l = await one('dep', 'select dangerous, danger, gang_id from public.people where id = $1', [lance]);
+  assert.equal(l.dangerous, true); assert.equal(l.danger, 'extreme'); assert.ok(l.gang_id);
+  assert.equal((await one('dep', 'select name from public.gangs where id = $1', [l.gang_id])).name, 'Vagos');
+  // la même organisation tapée autrement ne se duplique pas
+  await one('dep', 'select public.save_person($1, null, $2)', [usms, { first_name: 'Ana', last_name: 'Diaz', gang: 'vagos' }]);
+  assert.equal((await as('dep', 'select * from public.gangs where org_id = $1', [usms])).length, 1);
+  await fails('rec', "select public.save_gang($1, null, 'Ballas', null, null, null, null)", [usms], /ne permet pas/);
+  await one('dep', "select public.save_gang($1, null, 'Ballas', '#7b2d8e', 'Grove Street', 'Trafic de drogue', null)", [usms]);
+
+  await one('dep', "select public.link_people($1, $2, 'complice', 'Évasion')", [person, lance]);
+  await one('dep', "select public.link_people($1, $2, 'proche', null)", [lance, person]);
+  const links = await as('rec', 'select kind from public.person_links where org_id = $1', [usms]);
+  assert.deepEqual(links.map(x => x.kind), ['proche']);
+  await fails('dep', "select public.link_people($1, $1, 'proche', null)", [person], /autre personne/);
+
+  const plate = await val('dep', "select public.save_plate($1, null, 'sx 777', 'Sultan', 'Bleue', $2, true, false, null)", [usms, lance]);
+  await one('rec', "select public.plate_note($1, 'observation', 'Vue à Vinewood')", [plate]);
+  const log = await as('rec', 'select kind from public.plate_log where plate_id = $1 order by id', [plate]);
+  assert.deepEqual(log.map(x => x.kind), ['creation', 'vol', 'observation']);
+  await fails('dep', "select public.save_plate($1, null, 'SX 777', null, null, null, false, false, null)", [usms], /déjà fichée/);
+  await fails('dep', "select public.save_plate($1, null, '!!', null, null, null, false, false, null)", [usms], /Plaque invalide/);
+
+  const s1 = await val('rec', "select public.mdt_search($1, 'vance')", [usms]);
+  assert.deepEqual(s1.people.map(x => x.last_name), ['Vance']);
+  const s2 = await val('rec', "select public.mdt_search($1, '7abc')", [usms]);
+  assert.deepEqual(s2.plates.map(x => x.plate), ['7ABC123']); assert.equal(s2.plates[0].owner, 'Tony Vercetti');
+  const s3 = await val('rec', "select public.mdt_search($1, 'iod-0001')", [usms]);
+  assert.deepEqual(s3.docs.map(x => x.type + ' ' + x.num), ['dossier USMS-IOD-0001']);
+  assert.deepEqual((await val('rec', "select public.mdt_search($1, 'vag')", [usms])).gangs.map(x => x.name), ['Vagos']);
+  await fails('gino', "select public.mdt_search($1, 'vance')", [usms], /Accès refusé/);
+  await fails('rec', "select public.mdt_search($1, 'v')", [usms], /2 caractères/);
+});
+
+let report;
+test('rapports : numéro, champs obligatoires, peine calculée par le code pénal, validation, brouillons privés', async () => {
+  const pc = {}; for (const r of await as('dep', "select id, code from public.penal_code where org_id = $1", [usms])) pc[r.code] = r.id;
+  assert.ok(Object.keys(pc).length >= 25);
+  const save = (who, id, kind, title, fields, narrative, charges, extra = {}) => val(who,
+    'select public.save_report($1, $2, $3, $4, $5, $6, now(), $7, $8, $9, $10, $11, $12)',
+    [usms, id, kind, title, extra.person === undefined ? person : extra.person, extra.case === undefined ? kase : extra.case, extra.place === undefined ? 'Sandy Shores' : extra.place,
+      fields, narrative, charges, !!extra.firearm, extra.participants || []]);
+  const r = await save('dep', null, 'arrestation', 'Arrestation de Tony Vercetti', {}, 'Court', [{ id: pc['D-01'], qty: 2 }, { id: pc['CR-07'], fine: 1 }]);
+  assert.equal(r.num, 'USMS-A-0001'); report = r.id;
+  const row = await one('dep', 'select total_fine, total_jail, charges from public.reports where id = $1', [report]);
+  assert.equal(Number(row.total_fine), 30000); assert.equal(row.total_jail, 65); assert.equal(row.charges.length, 2);
+  await fails('dep', 'select public.submit_report($1)', [report], /20 caractères/);
+  await save('dep', report, 'arrestation', 'Arrestation de Tony Vercetti', {}, 'Interpellé à Sandy Shores après une course-poursuite.', [{ id: pc['D-01'], qty: 2 }, { id: pc['CR-07'] }]);
+  await fails('dep', 'select public.submit_report($1)', [report], /droits/);
+  await save('dep', report, 'arrestation', 'Arrestation de Tony Vercetti', { rights: 'true', health: 'Bon' }, 'Interpellé à Sandy Shores après une course-poursuite.', [{ id: pc['D-01'], qty: 2 }, { id: pc['CR-07'] }]);
+  await fails('dep', "select public.save_report($1, null, 'arrestation', 'X y z', null, null, now(), null, '{}', '', $2, false, '{}')", [usms, JSON.stringify([{ id: '00000000-0000-0000-0000-000000000000' }])], /Infraction inconnue/);
+  // un brouillon n'est lu que par son auteur et par les responsables
+  assert.equal((await as('rec', 'select * from public.reports where id = $1', [report])).length, 0);
+  assert.equal((await as('sup', 'select * from public.reports where id = $1', [report])).length, 1);
+  await one('dep', 'select public.submit_report($1)', [report]);
+  await fails('dep', 'select public.save_report($1, $2, \'arrestation\', \'Autre titre\', null, null, now(), null, \'{}\', \'\', \'[]\', false, \'{}\')', [usms, report], /ne se modifie plus/);
+  await fails('insp', "select public.review_report($1, true, null)", [report], /ne permet pas/);
+  await fails('sup', "select public.review_report($1, false, null)", [report], /corriger/);
+  await one('sup', "select public.review_report($1, false, 'Précise l’heure de l’interpellation.')", [report]);
+  assert.equal((await one('dep', 'select status, review_note from public.reports where id = $1', [report])).status, 'a_corriger');
+  await one('dep', 'select public.submit_report($1)', [report]);
+  await one('sup', "select public.review_report($1, true, 'RAS')", [report]);
+  const done = await one('rec', 'select status, reviewer from public.reports where id = $1', [report]);
+  assert.deepEqual(done, { status: 'valide', reviewer: 'Sam Ortiz' });
+
+  assert.equal((await save('sup', null, 'sog', 'Assaut planque Grove', { objective: 'Interpeller' }, 'x', [], { person: null })).num, 'USMS-SOG-001');
+  const lib = await save('dep', null, 'libre', 'Brouillon à jeter', {}, '', [], { person: null, case: null, place: null });
+  await fails('sup', 'select public.delete_report($1)', [lib.id], /Seul un brouillon/);
+  await one('dep', 'select public.delete_report($1)', [lib.id]);
+});
+
+test('rapports : un tir avec une arme à feu ouvre un dossier Affaires internes, visible du Director seulement', async () => {
+  const r = await val('dep', "select public.save_report($1, null, 'force', 'Tir lors de l’interpellation', $2, null, now(), 'Sandy Shores', $3, $4, '[]', false, '{}')",
+    [usms, person, { force_type: 'Arme à feu', injuries: 'Blessure à la jambe' }, 'Le suspect a pointé une arme, deux tirs de riposte.']);
+  assert.equal(r.num, 'USMS-UF-0001');
+  assert.equal((await one('dep', 'select firearm from public.reports where id = $1', [r.id])).firearm, true);
+  await one('dep', 'select public.submit_report($1)', [r.id]);
+  assert.equal((await as('dep', 'select * from public.ia_cases')).length, 0);
+  assert.equal((await as('sup', 'select * from public.ia_cases')).length, 0);
+  const ia = await as('dir', 'select num, member_id, reason from public.ia_cases');
+  assert.equal(ia.length, 1); assert.equal(ia[0].num, 'USMS-AI-0001'); assert.equal(ia[0].member_id, M['dan.moss']);
+});
+
+test('code pénal et preuves : registre, chaîne de possession, sortie du registre', async () => {
+  await fails('dep', "select public.save_penal($1, null, 'D-99', 'Test', 'delit', 100, 1, false)", [usms], /ne permet pas/);
+  await one('dir', "select public.save_penal($1, null, 'd-99', 'Vandalisme', 'delit', 1200, 2, false)", [usms]);
+  await fails('dir', "select public.save_penal($1, null, 'D-99', 'Doublon', 'delit', 1, 1, false)", [usms], /existe déjà/);
+
+  const e = await val('dep', 'select public.add_evidence($1, $2)', [usms, { kind: 'arme', description: 'Pistolet 9 mm, numéro limé', place: 'Sandy Shores', case_id: kase, report_id: report, person_id: person }]);
+  assert.equal(e.num, 'USMS-P-0001');
+  await fails('rec', 'select public.add_evidence($1, $2)', [usms, { kind: 'drogue', description: 'Sachet' }], /ne permet pas/);
+  await one('dep', 'select public.add_evidence($1, $2)', [usms, { kind: 'argent', description: 'Liasses', amount: '12500' }]);
+  await fails('dep', "select public.evidence_action($1, 'transfert', null)", [e.id], /Précise/);
+  await one('dep', "select public.evidence_action($1, 'transfert', 'Armurerie, casier 4')", [e.id]);
+  await one('insp', "select public.evidence_action($1, 'tribunal', null)", [e.id]);
+  assert.equal((await one('rec', 'select status, holder from public.evidence where id = $1', [e.id])).status, 'tribunal');
+  await one('insp', "select public.evidence_action($1, 'destruction', 'Fin de procédure')", [e.id]);
+  await fails('insp', "select public.evidence_action($1, 'transfert', 'Ailleurs')", [e.id], /sortie du registre/);
+  const chain = await as('rec', 'select action from public.evidence_log where evidence_id = $1 order by id', [e.id]);
+  assert.deepEqual(chain.map(x => x.action), ['saisie', 'transfert', 'tribunal', 'destruction']);
+  assert.ok((await as('rec', "select text from public.case_log where case_id = $1 and text like 'Preuve USMS-P-0001%'", [kase])).length === 1);
 });

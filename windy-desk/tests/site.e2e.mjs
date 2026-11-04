@@ -449,7 +449,7 @@ try {
     S.reedLink = await linkFromModal(ed);
     await ed.locator('table', { hasText: 'US Marshals · Los Santos' }).waitFor();
     const [o] = await backend.sql("select sector, modules from public.orgs where code = 'usms-ls'");
-    assert.equal(o.sector, 'service_public'); assert.equal(o.modules.length, 6);
+    assert.equal(o.sector, 'service_public'); assert.equal(o.modules.length, 8);
     await ed.getByRole('link', { name: 'Accès' }).first().click(); await settle(ed, 'h1:text("Accès")');
     await ed.getByLabel('Nom affiché').fill('Juge Hartley');
     await ed.getByRole('button', { name: 'Créer le lien' }).click();
@@ -496,7 +496,7 @@ try {
     await sam.getByRole('button', { name: 'Activer avec cette session' }).click();
     await sam.waitForURL(BASE + '/usms-ls'); await settle(sam, '.dutycard');
     const navs = await sam.locator('nav.side .navs a').allInnerTexts();
-    assert.deepEqual(navs.map(x => x.trim()), ['Accueil', 'Effectifs', 'Présence', 'Dossiers', 'Mandats', 'Wanted', 'Annonces']);
+    assert.deepEqual(navs.map(x => x.trim()), ['Accueil', 'Recherche', 'Dossiers', 'Rapports', 'Mandats', 'Preuves', 'Wanted', 'Effectifs', 'Présence', 'Annonces']);
     await sam.goto(BASE + '/usms-ls/effectifs'); await settle(sam, 'h1:text("Effectifs")');
     await sam.getByRole('button', { name: 'Recruter' }).click();
     const m = sam.locator('.modal');
@@ -558,7 +558,8 @@ try {
     await m.getByLabel('Nom', { exact: true }).fill('Vercetti');
     await m.getByLabel('Surnom').fill('Le Baron');
     await m.getByLabel('Taille').fill('182');
-    await m.getByLabel('Dangereux').check();
+    await m.getByLabel('Dangerosité').selectOption('elevee');
+    await m.getByLabel('Gang / organisation').fill('Vagos');
     await m.getByRole('button', { name: 'Véhicule', exact: true }).click();
     await m.getByLabel('Plaque').fill('7ABC123');
     await m.getByLabel('Modèle').fill('Sultan');
@@ -683,6 +684,80 @@ try {
     assert.deepEqual(units, [{ code: 'IOD', main: true }, { code: 'SOG', main: false }]);
   });
 
+  await step('rapport d’arrestation : formulaire guidé, peine calculée, validation, document officiel, casier', async () => {
+    await dan.goto(BASE + S.casePath); await settle(dan, 'h1:text("USMS-IOD-0001")');
+    await dan.getByRole('button', { name: 'Rédiger un rapport' }).click();
+    await dan.waitForURL(BASE + '/usms-ls/rapports/nouveau'); await settle(dan, '.charges');
+    assert.equal(await dan.getByLabel('Titre', { exact: true }).inputValue(), 'Rapport d’arrestation · Tony Vercetti');
+    await dan.getByLabel('Lieu (obligatoire)').fill('Sandy Shores');
+    await dan.getByLabel('Chercher une infraction').fill('évasion');
+    await dan.getByRole('button', { name: 'Ajouter CR-07' }).click();
+    await dan.getByLabel('Chercher une infraction').fill('port d');
+    await dan.getByRole('button', { name: 'Ajouter D-01' }).click();
+    await dan.getByRole('button', { name: 'Ajouter D-01' }).click();
+    await dan.getByText(/Amende totale : 30\s000 \$ · Peine totale : 65 mois/).waitFor();
+    await dan.getByRole('button', { name: 'Soumettre pour validation' }).click();
+    await toast(dan, 'au moins 20 caractères');
+    await dan.waitForURL(/\/usms-ls\/rapports\/[0-9a-f-]{36}$/); await settle(dan, '.charges');
+    S.reportPath = new URL(dan.url()).pathname;
+    await dan.getByLabel(/Droits lus/).check();
+    await dan.getByLabel('Récit').fill('Interpellé à Sandy Shores après une courte course-poursuite, sans blessé.');
+    await dan.getByRole('button', { name: 'Soumettre pour validation' }).click();
+    await toast(dan, /USMS-A-0001 soumis pour validation/);
+    await dan.locator('h1', { hasText: 'USMS-A-0001' }).waitFor();
+    await sam.goto(BASE + S.reportPath); await settle(sam, '.reviewcard');
+    await sam.getByRole('button', { name: 'Valider le rapport' }).click();
+    await toast(sam, 'USMS-A-0001 validé');
+    await sam.getByRole('button', { name: 'PNG ou PDF' }).click();
+    await sam.locator('.modal .docimg[src^="data:image/png"]').waitFor();
+    const [png] = await Promise.all([sam.waitForEvent('download'), sam.locator('.modal').getByRole('button', { name: 'PNG', exact: true }).click()]);
+    assert.equal(png.suggestedFilename(), 'usms-a-0001.png');
+    await shot(sam, 'rapport-export');
+    await sam.keyboard.press('Escape');
+    const [r] = await backend.sql("select total_fine::int f, total_jail j, status from public.reports where num = 'USMS-A-0001'");
+    assert.deepEqual(r, { f: 30000, j: 65, status: 'valide' });
+    await sam.goto(BASE + S.personPath); await settle(sam, 'h1:text("Tony Vercetti")');
+    await sam.locator('.card', { hasText: 'Casier judiciaire' }).getByText('USMS-A-0001').waitFor();
+  });
+  await step('preuve : scellé avec photo, chaîne de possession, registre', async () => {
+    await dan.goto(BASE + S.casePath); await settle(dan, 'h1:text("USMS-IOD-0001")');
+    await dan.getByRole('button', { name: 'Enregistrer une saisie' }).click();
+    const m = dan.locator('.modal');
+    await m.getByLabel('Description').fill('Pistolet 9 mm, numéro limé');
+    await m.getByLabel('Emplacement de stockage').fill('Armurerie, casier 4');
+    await m.getByLabel('Photo', { exact: true }).setInputFiles(photo('arme.png'));
+    await m.getByRole('button', { name: 'Placer sous scellé' }).click();
+    await dan.waitForURL(/\/usms-ls\/preuves\/[0-9a-f-]{36}$/); await settle(dan, 'h1:text("USMS-P-0001")');
+    S.evidencePath = new URL(dan.url()).pathname;
+    await dan.locator('img.evphoto').waitFor();
+    await dan.getByRole('button', { name: 'Transférer' }).click();
+    await dan.locator('.modal').getByLabel('À qui ou où ?').fill('Remise à l’Inspector pour expertise');
+    await dan.locator('.modal').getByRole('button', { name: 'Transférer' }).click();
+    await toast(dan, 'Chaîne de possession mise à jour');
+    await dan.locator('.feed', { hasText: 'Remise à l’Inspector' }).waitFor();
+    await dan.goto(BASE + '/usms-ls/preuves'); await settle(dan, 'h1:text("Preuves")');
+    await dan.locator('table', { hasText: 'USMS-P-0001' }).waitFor();
+  });
+  await step('recherche globale : plaque, fiche véhicule, organisation', async () => {
+    await sam.goto(BASE + '/usms-ls/recherche'); await settle(sam, '.searchcard');
+    await sam.getByLabel(/Nom, surnom, plaque/).fill('7abc');
+    await sam.locator('.results a', { hasText: '7ABC123' }).click();
+    await sam.waitForURL(/\/usms-ls\/vehicules\/[0-9a-f-]{36}$/); await settle(sam, 'h1:text("7ABC123")');
+    S.platePath = new URL(sam.url()).pathname;
+    await sam.getByRole('link', { name: 'Tony Vercetti' }).waitFor();
+    await sam.getByRole('button', { name: 'Observation' }).click();
+    await sam.locator('.modal').getByLabel('Texte').fill('Vue à Paleto Bay');
+    await sam.locator('.modal').getByRole('button', { name: 'Ajouter' }).click();
+    await toast(sam, 'Ajouté à l’historique');
+    await sam.locator('.feed', { hasText: 'Paleto Bay' }).waitFor();
+    await sam.goto(BASE + '/usms-ls/recherche'); await settle(sam, '.searchcard');
+    await sam.getByLabel(/Nom, surnom, plaque/).fill('vagos');
+    await sam.locator('.results a', { hasText: 'Vagos' }).click();
+    await sam.waitForURL(/\/usms-ls\/organisations\/[0-9a-f-]{36}$/); await settle(sam, 'h1:text("Vagos")');
+    S.gangPath = new URL(sam.url()).pathname;
+    await sam.locator('.card', { hasText: 'Membres connus' }).getByText('Tony Vercetti').waitFor();
+  });
+
   // ------------------------------------------------------------ connexion ordinaire
   await step('connexion par l’adresse de l’entreprise, mauvais puis bon mot de passe', async () => {
     const p = await open({ label: 'connexion' });
@@ -728,8 +803,9 @@ const PAGES = {
     '/bella-napoli/recolte', '/bella-napoli/factures', '/bella-napoli/dons', '/bella-napoli/vehicules', '/bella-napoli/evenements', S.eventPath, '/bella-napoli/equipe/' + S.ninaId]],
   fisc: [S.fisc, ['/fisc', '/fisc/bella-napoli', '/fisc/les-restos-du-coeur', '/fisc/bareme']],
   editeur: [S.editeur, ['/editeur', '/editeur/modules', '/editeur/acces', '/editeur/devis', '/editeur/devis/' + devisId, '/editeur/devis/nouveau']],
-  director: [S.reed, ['/usms-ls', '/usms-ls/effectifs', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/dossiers', S.personPath, S.casePath, '/usms-ls/mandats', '/usms-ls/wanted', '/usms-ls/annonces', '/usms-ls/reglages']],
-  deputy: [S.dan, ['/usms-ls', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/mandats']],
+  director: [S.reed, ['/usms-ls', '/usms-ls/effectifs', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/dossiers', S.personPath, S.casePath, '/usms-ls/mandats', '/usms-ls/wanted', '/usms-ls/annonces', '/usms-ls/reglages',
+    '/usms-ls/recherche', S.platePath, S.gangPath, '/usms-ls/rapports', S.reportPath, '/usms-ls/rapports/nouveau', '/usms-ls/preuves', S.evidencePath]],
+  deputy: [S.dan, ['/usms-ls', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/mandats', '/usms-ls/rapports', S.reportPath]],
   justice: [S.judge, ['/justice']],
   public: [null, ['/avis/usms-ls', '/usms-ls']],
 };

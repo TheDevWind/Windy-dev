@@ -9,6 +9,7 @@ import { renderDoc, exportModal, quoteDoc } from './doc.js';
 import { landing } from './landing.js';
 import * as MOD from './modules.js';
 import * as MDT from './mdt.js';
+import * as ENQ from './mdt-enquete.js';
 import { sb, rpc, rows, emailFor } from './sb.js';
 
 const ME = { session: null, spaces: null, quiet: false };
@@ -257,24 +258,29 @@ async function orgSpace(code, page, sub) {
     ['vehicules', 'Véhicules', 'camion', true], ['evenements', 'Événements', 'calendrier', true]];
   const svc = me.sector === 'service_public';
   const nav = svc ? [{ page: 'accueil', href: '/' + code, label: 'Tableau de bord', short: 'Accueil', icon: 'accueil' },
-    ...[['effectifs', 'Effectifs', 'badge'], ['presence', 'Présence', 'horloge'], ['dossiers', 'Dossiers', 'dossier'], ['mandats', 'Mandats', 'marteau'], ['wanted', 'Most Wanted', 'cible', 'Wanted'], ['annonces', 'Annonces', 'megaphone']]
-      .filter(([id]) => has(id)).map(([id, label, icon, short]) => ({ page: id, href: '/' + code + '/' + id, label, icon, short })),
+    ...[['recherche', 'Recherche', 'loupe', null, 'dossiers'], ['dossiers', 'Dossiers', 'dossier'], ['rapports', 'Rapports', 'rapport'], ['mandats', 'Mandats', 'marteau'], ['preuves', 'Preuves', 'scelle'],
+      ['wanted', 'Most Wanted', 'cible', 'Wanted'], ['effectifs', 'Effectifs', 'badge'], ['presence', 'Présence', 'horloge'], ['annonces', 'Annonces', 'megaphone']]
+      .filter(([id, , , , mod]) => has(mod || id)).map(([id, label, icon, short]) => ({ page: id, href: '/' + code + '/' + id, label, icon, short: short || null })),
     can('equipe') ? { page: 'reglages', href: '/' + code + '/reglages', label: 'Réglages', icon: 'reglages' } : null].filter(Boolean)
   : [{ page: 'accueil', href: '/' + code, label: 'Tableau de bord', short: 'Accueil', icon: 'accueil' },
     ...MODNAV.filter(([id, , , ok]) => ok && has(id)).map(([id, label, icon]) => ({ page: id, href: '/' + code + '/' + id, label, icon })),
     can('compta') || can('declarer') ? { page: 'compta', href: '/' + code + '/compta', label: 'Comptabilité', short: 'Compta', icon: 'balance' } : null,
     { page: 'equipe', href: '/' + code + '/equipe', label: me.is_association ? 'Bénévoles' : 'Équipe', icon: 'joueurs' },
     can('equipe') ? { page: 'reglages', href: '/' + code + '/reglages', label: 'Réglages', icon: 'reglages' } : null].filter(Boolean);
-  if (!nav.some(n => n.page === ({ individus: 'dossiers' }[page] || page))) return go('/' + code, true);
+  const ALIAS = svc ? { individus: 'dossiers', vehicules: 'recherche', organisations: 'recherche' } : {};   // sous-pages du MDT rattachées à une entrée du menu
+  if (!nav.some(n => n.page === (ALIAS[page] || page))) return go('/' + code, true);
   const ctx = { me, can, has, nav, who: { name: me.member_name, role: me.grade + ' · ' + me.name }, go, fail, reload: () => route(), linkModal, activationUrl,
     show: (current, title, sub2, right, ...content) => shell(nav, current, orgHead(ctx, title, sub2, ...[].concat(right || [])), ...content) };
   if (arriving()) rpc('touch_member', { p_org: me.id }).catch(() => {});
-  const list = '/' + code + '/' + ({ individus: 'dossiers' }[page] || page);
+  const list = '/' + code + '/' + (ALIAS[page] || page);
   if (svc) {
     const PAGES = { accueil: MDT.dashboard, reglages, presence: MDT.presence, mandats: MDT.mandats, wanted: MDT.wanted, annonces: MDT.annonces,
       effectifs: sub ? (isId(sub) ? c => MDT.agent(c, sub) : () => go(list, true)) : MDT.effectifs,
       dossiers: sub ? (isId(sub) ? c => MDT.dossier(c, sub) : () => go(list, true)) : MDT.dossiers,
-      individus: isId(sub) ? c => MDT.individu(c, sub) : () => go(list, true) };
+      individus: isId(sub) ? c => MDT.individu(c, sub) : () => go(list, true),
+      recherche: ENQ.recherche, vehicules: isId(sub) ? c => ENQ.vehicule(c, sub) : () => go(list, true), organisations: isId(sub) ? c => ENQ.organisation(c, sub) : () => go(list, true),
+      rapports: sub ? (isId(sub) || sub === 'nouveau' ? c => ENQ.rapport(c, sub) : () => go(list, true)) : ENQ.rapports,
+      preuves: sub ? (isId(sub) ? c => ENQ.preuve(c, sub) : () => go(list, true)) : ENQ.preuves };
     return PAGES[page](ctx);
   }
   const PAGES = { accueil: dashboard, compta, reglages, equipe: sub && has('employes') ? c => MOD.employe(c, sub) : equipe,

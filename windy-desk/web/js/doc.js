@@ -162,11 +162,11 @@ async function exportModal(d, fileBase) {
   const busy = h('div', { class: 'docwait' }, 'Préparation du document…');
   const png = h('button', { class: 'btn primary' }, ico('telecharger', 18), 'PNG'), pdf = h('button', { class: 'btn primary' }, ico('telecharger', 18), 'PDF');
   const copy = h('button', { class: 'btn' }, ico('copier', 18), 'Copier l’image');
-  const m = modal(d.kind === 'DEVIS' ? 'Devis ' + d.num : 'Facture ' + d.num, h('div', { class: 'docframe' }, busy, img),
+  const m = modal(d.title || (d.kind === 'DEVIS' ? 'Devis ' + d.num : 'Facture ' + d.num), h('div', { class: 'docframe' }, busy, img),
     h('p', { class: 'note' }, 'Si rien ne se télécharge (aperçu sur claude.ai, qui bloque les téléchargements), fais un clic droit ou un appui long sur le document : « Enregistrer l’image ». Sur ton site, les boutons téléchargent directement.'),
     h('div', { class: 'foot' }, h('button', { class: 'btn', onclick: () => m.close() }, 'Fermer'), copy, png, pdf));
   m.box.classList.add('wide');
-  const c = await renderDoc(d);
+  const c = await (d.render ? d.render() : renderDoc(d));   // d.render : un autre document dessiné ailleurs (rapport du MDT)
   img.src = c.toDataURL('image/png');
   busy.remove();
   png.addEventListener('click', async () => { saveBlob(await toBlob(c, 'image/png'), fileBase + '.png'); toast(fileBase + '.png prêt.'); });

@@ -18,7 +18,9 @@ export const MDT_MODULES = [
   { id: 'dossiers', name: 'Dossiers', icon: 'dossier', price: 350, text: 'Individus recherchés et dossiers d’enquête : statut, priorité, agents, journal et pièces jointes.' },
   { id: 'mandats', name: 'Mandats', icon: 'marteau', price: 200, text: 'Demandes de mandat envoyées à la Justice, signature, expiration et exécution.' },
   { id: 'wanted', name: 'Most Wanted', icon: 'cible', price: 200, text: 'Classement des plus recherchés, historique de la semaine, affiche, page publique et signalements anonymes.' },
-  { id: 'annonces', name: 'Annonces', icon: 'megaphone', price: 100, text: 'Annonces du commandement avec accusé de lecture.' }
+  { id: 'annonces', name: 'Annonces', icon: 'megaphone', price: 100, text: 'Annonces du commandement avec accusé de lecture.' },
+  { id: 'rapports', name: 'Rapports', icon: 'rapport', price: 250, text: 'Rapports guidés (arrestation, SOG, transfert, incident, usage de la force, audience, libre), validation, export PDF ou PNG, code pénal et calcul des peines.' },
+  { id: 'preuves', name: 'Preuves et saisies', icon: 'scelle', price: 150, text: 'Registre des scellés, chaîne de possession, statut et inventaire des saisies : armes, drogue, argent, véhicules.' }
 ];
 export const modulesFor = sector => sector === 'service_public' ? MDT_MODULES : MODULES;
 export const moduleOf = id => MODULES.concat(MDT_MODULES).find(m => m.id === id) || { id, name: id, icon: 'grille', price: 0, text: '' };
@@ -33,7 +35,7 @@ export const CAPS = [['encaisser', 'Encaisser'], ['stock', 'Gérer le stock'], [
   ['paie', 'Payer les salaires'], ['equipe', 'Gérer l’équipe et les réglages'], ['vehicules', 'Véhicules'], ['evenements', 'Événements']];
 /** Les accès d'un grade dans un service public. */
 export const MDT_CAPS = [['effectifs', 'Gérer les effectifs (recrutement, grades, carrière, départs)'], ['valider', 'Valider les absences et organiser le planning'], ['dossiers', 'Créer et suivre les dossiers'],
-  ['mandats', 'Demander des mandats'], ['wanted', 'Gérer le Most Wanted et les signalements'], ['annonces', 'Publier des annonces'], ['equipe', 'Réglages du service et comptes']];
+  ['mandats', 'Demander des mandats'], ['wanted', 'Gérer le Most Wanted et les signalements'], ['annonces', 'Publier des annonces'], ['affaires', 'Affaires internes'], ['equipe', 'Réglages du service, code pénal et comptes']];
 export const capsFor = sector => sector === 'service_public' ? MDT_CAPS : CAPS;
 export const CATEGORIES = { in: ['Ventes', 'Factures', 'Dons', 'Subventions', 'Divers'], out: ['Achats', 'Salaires', 'Loyer', 'Licence', 'Entretien', 'Divers'] };
 export const DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];

@@ -90,6 +90,11 @@ de la personne a l’accès voulu (entreprise → *Réglages* → grades). La ba
   où les demandes de mandat de tous les services sont signées ou refusées.
 - **Page publique** : `/avis/<adresse du service>` montre les affiches publiées et reçoit les signalements anonymes
   (30 par heure et par service au plus).
+- **Rapports** : numérotés par type (`USMS-A-0001`, `USMS-SOG-001`…), validés par un grade qui a l’accès « Valider ».
+  L’amende et la peine sont recopiées du code pénal du service (Rapports → Code pénal, modifiable avec l’accès « Réglages »).
+  Un rapport où une arme à feu a servi ouvre un dossier Affaires internes, visible du Director (accès « Affaires internes »).
+- **Recherche** : nom, surnom, téléphone, plaque, numéro de dossier, de mandat, de rapport ou de scellé. Les véhicules et
+  organisations des fiches individus alimentent tout seuls le fichier des véhicules et celui des organisations.
 - **Fichiers** : deux espaces de stockage Supabase. `mdt` (privé, 50 Mo par fichier) pour les photos et pièces jointes,
   lus par liens signés d’une heure ; `avis` (public, 5 Mo) pour les affiches. Rien ne se supprime depuis le site.
 
@@ -105,7 +110,7 @@ de la personne a l’accès voulu (entreprise → *Réglages* → grades). La ba
 
 ```bash
 npm install          # PGlite pour les tests de la base
-npm test             # 30 tests de la base (Postgres en mémoire, mêmes migrations)
-npm run test:site    # scénario complet (entreprises et US Marshals) dans Chromium + revue de 196 pages (Playwright requis)
+npm test             # 34 tests de la base (Postgres en mémoire, mêmes migrations)
+npm run test:site    # scénario complet (entreprises et US Marshals) dans Chromium + revue de 236 pages (Playwright requis)
 npm run serve        # le site en local sur http://localhost:8080, branché sur le vrai Supabase
 ```
