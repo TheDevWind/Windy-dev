@@ -69,21 +69,79 @@ async function route() {
 }
 
 // ---------------------------------------------------------------- cadre des espaces connectés
-function navLink(n, current) {
-  return h('a', { class: 'nav' + (n.page === current ? ' on' : ''), href: n.href, title: n.label, 'aria-current': n.page === current ? 'page' : null }, h('span', { class: 'ic' }, ico(n.icon)), h('span', { class: 'lbl' }, n.short || n.label));
+// groupes du menu : [clé, titre, pages dans l'ordre] ; l'accueil reste en tête et les réglages en pied de liste
+const NAV_SERVICE = [['ops', 'Opérations', ['mandats', 'wanted', 'carte', 'transferts', 'sog']], ['enq', 'Enquêtes', ['recherche', 'dossiers', 'rapports', 'preuves', 'renseignement']],
+  ['jus', 'Justice', ['tribunal', 'witsec']], ['per', 'Personnel', ['effectifs', 'presence', 'academie']], ['cmd', 'Commandement', ['affaires', 'logistique', 'statistiques', 'annonces']]];
+const NAV_COMPANY = [['act', 'Activité', ['caisse', 'stock', 'fabrication', 'recolte', 'dons', 'vehicules', 'evenements']], ['ges', 'Gestion', ['factures', 'compta', 'equipe']]];
+const NAV_QUICK = ['accueil', 'recherche', 'dossiers', 'rapports'];   // onglets du mobile pour un service ; une entreprise garde ses 4 premières entrées
+const NAV_TIPS = { accueil: 'alerte(s) non lue(s)', rapports: 'à valider', affaires: 'plainte(s) à traiter' };
+function arrange(items, groups) {
+  const pos = {};
+  groups.forEach(([k, t, ids], gi) => ids.forEach((id, i) => { pos[id] = { group: k, gtitle: t, rank: gi * 100 + i }; }));
+  const rank = n => n.page === 'accueil' ? -1 : pos[n.page] ? pos[n.page].rank : 999;
+  return items.map(n => pos[n.page] ? { ...n, group: pos[n.page].group, gtitle: pos[n.page].gtitle } : n).sort((a, b) => rank(a) - rank(b));
+}
+// compteurs des pastilles : lus en arrière-plan (3 petites requêtes, au plus toutes les 20 s), jamais bloquants
+const NAVN = { org: null, at: 0, data: {} };
+function paintCounts() {
+  const d = NAVN.data;
+  document.querySelectorAll('.side [data-badge], .tabbar [data-badge], .sheet [data-badge]').forEach(el => {
+    const pages = el.dataset.badge === '*' ? (el.dataset.pages || '').split(',') : [el.dataset.badge];
+    const n = pages.reduce((t, p) => t + (d[p] || 0), 0);
+    el.dataset.n = n > 99 ? '99+' : String(n); el.hidden = !n;
+    const a = el.closest('a, button');
+    if (a && el.dataset.badge !== '*') a.setAttribute('aria-label', n ? a.dataset.label + ', ' + n + ' ' + (NAV_TIPS[el.dataset.badge] || '') : a.dataset.label);
+  });
+}
+function refreshCounts(me, can, has) {
+  if (me.sector !== 'service_public') return;
+  if (NAVN.org !== me.id) NAVN.data = {};
+  if (NAVN.org === me.id && Date.now() - NAVN.at < 20e3) return;
+  NAVN.org = me.id; NAVN.at = Date.now();
+  const n = p => p.then(r => r.length).catch(() => 0);
+  Promise.all([has('rapports') && can('valider') ? n(rows('reports', q => q.eq('org_id', me.id).eq('status', 'soumis').limit(100)).then(r => r.filter(x => x.author_id !== me.member_id))) : 0,
+    me.ia && has('affaires') ? n(rows('complaints', q => q.eq('org_id', me.id).eq('status', 'recue').limit(100))) : 0,
+    n(rows('alerts', q => q.eq('org_id', me.id).is('read_at', null).limit(100)))])
+    .then(([rapports, affaires, accueil]) => { if (NAVN.org === me.id) { NAVN.data = { rapports, affaires, accueil }; paintCounts(); } });
+}
+const navPref = () => { try { return localStorage.getItem('windy.nav') === 'mini'; } catch { return false; } };
+function navLink(n, current, text) {
+  const on = n.page === current, label = text || n.short || n.label;
+  return h('a', { class: 'nav' + (on ? ' on' : ''), href: n.href, title: n.label, 'data-label': n.label, 'aria-current': on ? 'page' : null },
+    h('span', { class: 'ic' }, ico(n.icon), NAV_TIPS[n.page] ? h('span', { class: 'cnt', 'data-badge': n.page, hidden: true, 'aria-hidden': 'true' }) : null), h('span', { class: 'lbl' }, label));
 }
 function shell(nav, current, ...content) {
-  const side = h('nav', { class: 'side', 'aria-label': 'Menu' }, h('a', { class: 'brand', href: nav[0].href, title: BRAND, 'aria-label': BRAND }, butterfly('side-fly', 70)),
-    h('div', { class: 'navs' }, nav.map(n => navLink(n, current))), themeSwitch());
-  const bar = h('nav', { class: 'tabbar', 'aria-label': 'Menu' }, nav.slice(0, 4).map(n => navLink(n, current)),
-    nav.length > 4 ? h('button', { class: 'nav' + (nav.slice(4).some(n => n.page === current) ? ' on' : ''), type: 'button', onclick: () => {
+  const full = n => n.page === 'accueil' ? 'Accueil' : n.label;
+  const groups = [];
+  for (const n of nav) { if (!n.group) groups.push({ items: [n] }); else if (groups.length && groups[groups.length - 1].key === n.group) groups[groups.length - 1].items.push(n); else groups.push({ key: n.group, title: n.gtitle, items: [n] }); }
+  const toggle = h('button', { class: 'fold', type: 'button', onclick: () => {
+    const mini = $shell.classList.toggle('mini');
+    toggle.setAttribute('aria-expanded', String(!mini)); toggle.title = mini ? 'Déplier le menu' : 'Réduire le menu'; toggle.setAttribute('aria-label', toggle.title);
+    try { localStorage.setItem('windy.nav', mini ? 'mini' : 'max'); } catch { /* stockage indisponible : l'état n'est juste pas mémorisé */ }
+  } }, ico('chevron', 16));
+  const mini0 = navPref(); toggle.setAttribute('aria-expanded', String(!mini0)); toggle.title = mini0 ? 'Déplier le menu' : 'Réduire le menu'; toggle.setAttribute('aria-label', toggle.title);
+  const side = h('nav', { class: 'side', 'aria-label': 'Menu principal' }, h('a', { class: 'brand', href: nav[0].href, title: BRAND, 'aria-label': BRAND }, butterfly('side-fly', 70)),
+    h('div', { class: 'navs' }, groups.map((g, i) => g.title ? h('div', { class: 'grp', role: 'group', 'aria-labelledby': 'g-' + g.key }, h('div', { class: 'gt', id: 'g-' + g.key }, g.title), g.items.map(n => navLink(n, current, full(n))))
+      : g.items.map(n => navLink(n, current, full(n))))), toggle, themeSwitch());
+  const quick = nav.some(n => n.page === 'recherche') ? NAV_QUICK.map(p => nav.find(n => n.page === p)).filter(Boolean) : nav.slice(0, 4);
+  for (const n of nav) if (quick.length < 4 && !quick.includes(n)) quick.push(n);
+  const rest = nav.filter(n => !quick.includes(n));
+  const sheetLink = (n, m) => h('a', { class: n.page === current ? 'on' : null, href: n.href, 'data-label': n.label, 'aria-current': n.page === current ? 'page' : null, onclick: () => m.close() },
+    ico(n.icon), h('span', { class: 'grow' }, n.label), NAV_TIPS[n.page] ? h('span', { class: 'cnt', 'data-badge': n.page, hidden: true, 'aria-hidden': 'true' }) : null);
+  const bar = h('nav', { class: 'tabbar', 'aria-label': 'Menu rapide' }, quick.map(n => navLink(n, current)),
+    rest.length ? h('button', { class: 'nav' + (rest.some(n => n.page === current) ? ' on' : ''), type: 'button', 'aria-haspopup': 'dialog', 'data-label': 'Menu', onclick: () => {
       let m;
-      m = modal('Menu', h('div', { class: 'sheet' }, nav.slice(4).map(n => h('a', { class: n.page === current ? 'on' : null, href: n.href, onclick: () => m.close() }, ico(n.icon), n.label)),
+      const sections = []; let last = null;
+      for (const n of nav) { if (!n.group) { sections.push({ items: [n] }); last = null; } else if (last && last.key === n.group) last.items.push(n); else { last = { key: n.group, title: n.gtitle, items: [n] }; sections.push(last); } }
+      m = modal('Menu', h('div', { class: 'sheet' }, sections.map(sec => sec.title ? h('div', { class: 'grp', role: 'group', 'aria-label': sec.title }, h('div', { class: 'gt' }, sec.title), sec.items.map(n => sheetLink(n, m))) : sec.items.map(n => sheetLink(n, m))),
         h('hr', {}), h('div', { class: 'mrow' }, 'Mode sombre', themeSwitch()), h('button', { type: 'button', onclick: () => { m.close(); signOut(); } }, ico('sortie'), 'Se déconnecter')));
-    } }, h('span', { class: 'ic' }, ico('plus')), h('span', { class: 'lbl' }, 'Plus')) : null);
+      paintCounts();
+    } }, h('span', { class: 'ic' }, ico('plus'), h('span', { class: 'cnt', 'data-badge': '*', 'data-pages': rest.map(n => n.page).join(','), hidden: true, 'aria-hidden': 'true' })), h('span', { class: 'lbl' }, 'Menu')) : null);
   const fresh = arriving();
   S.shown = location.pathname;
-  $app.replaceChildren(h('div', { class: 'shell' + (fresh ? ' enter' : '') }, side, h('main', { class: 'main' }, ...content), bar));
+  const $shell = h('div', { class: 'shell' + (fresh ? ' enter' : '') + (mini0 ? ' mini' : '') }, side, h('main', { class: 'main' }, ...content), bar);
+  $app.replaceChildren($shell);
+  paintCounts();
   if (fresh) window.scrollTo(0, 0);
 }
 function head(title, sub, who, ...right) {
@@ -265,7 +323,7 @@ async function orgSpace(code, page, sub) {
   const svc = me.sector === 'service_public';
   // l'étape 4 du MDT (académie, affaires internes, logistique, statistiques, carte) ne s'affiche qu'une fois sa base en place
   const v4 = svc && 'ia' in me;
-  const nav = svc ? [{ page: 'accueil', href: '/' + code, label: 'Tableau de bord', short: 'Accueil', icon: 'accueil' },
+  const nav0 = svc ? [{ page: 'accueil', href: '/' + code, label: 'Tableau de bord', short: 'Accueil', icon: 'accueil' },
     ...[['recherche', 'Recherche', 'loupe', null, 'dossiers'], ['dossiers', 'Dossiers', 'dossier'], ['rapports', 'Rapports', 'rapport'], ['mandats', 'Mandats', 'marteau'], ['preuves', 'Preuves', 'scelle'],
       ['wanted', 'Most Wanted', 'cible', 'Wanted'], ['carte', 'Carte', 'carte', null, null, v4], ['transferts', 'Transferts', 'camion'], ['tribunal', 'Tribunal', 'balance'], ['witsec', 'WITSEC', 'cadenas', null, null, !!me.witsec],
       ['sog', 'SOG', 'bouclier'], ['renseignement', 'Renseignement', 'reseau', 'Rens.'], ['effectifs', 'Effectifs', 'badge'], ['presence', 'Présence', 'horloge'], ['academie', 'Académie', 'diplome', null, null, v4],
@@ -277,10 +335,12 @@ async function orgSpace(code, page, sub) {
     can('compta') || can('declarer') ? { page: 'compta', href: '/' + code + '/compta', label: 'Comptabilité', short: 'Compta', icon: 'balance' } : null,
     { page: 'equipe', href: '/' + code + '/equipe', label: me.is_association ? 'Bénévoles' : 'Équipe', icon: 'joueurs' },
     can('equipe') ? { page: 'reglages', href: '/' + code + '/reglages', label: 'Réglages', icon: 'reglages' } : null].filter(Boolean);
+  const nav = arrange(nav0, svc ? NAV_SERVICE : NAV_COMPANY);
   const ALIAS = svc ? { individus: 'dossiers', vehicules: 'recherche', organisations: 'recherche' } : {};   // sous-pages du MDT rattachées à une entrée du menu
   if (!nav.some(n => n.page === (ALIAS[page] || page))) return go('/' + code, true);
   const ctx = { me, can, has, nav, who: { name: me.member_name, role: me.grade + ' · ' + me.name }, go, fail, reload: () => route(), linkModal, activationUrl,
-    show: (current, title, sub2, right, ...content) => shell(nav, current, orgHead(ctx, title, sub2, ...[].concat(right || [])), ...content) };
+    show: (current, title, sub2, right, ...content) => shell(nav, ALIAS[current] || current, orgHead(ctx, title, sub2, ...[].concat(right || [])), ...content) };
+  refreshCounts(me, can, has);
   if (arriving()) rpc('touch_member', { p_org: me.id }).catch(() => {});
   const list = '/' + code + '/' + (ALIAS[page] || page);
   if (svc) {

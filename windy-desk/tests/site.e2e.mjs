@@ -505,8 +505,8 @@ try {
     await sam.getByRole('button', { name: 'Activer avec cette session' }).click();
     await sam.waitForURL(BASE + '/usms-ls'); await chooseSignature(sam, 'S. Ortiz', 'Paraphe');
     const navs = await sam.locator('nav.side .navs a').allInnerTexts();
-    assert.deepEqual(navs.map(x => x.trim()), ['Accueil', 'Recherche', 'Dossiers', 'Rapports', 'Mandats', 'Preuves', 'Wanted', 'Carte', 'Transferts', 'Tribunal', 'SOG', 'Rens.', 'Effectifs', 'Présence',
-      'Académie', 'Logistique', 'Stats', 'Annonces']);
+    assert.deepEqual(navs.map(x => x.trim()), ['Accueil', 'Mandats', 'Most Wanted', 'Carte', 'Transferts', 'SOG', 'Recherche', 'Dossiers', 'Rapports', 'Preuves', 'Renseignement', 'Tribunal', 'Effectifs', 'Présence',
+      'Académie', 'Logistique', 'Statistiques', 'Annonces']);
     await sam.goto(BASE + '/usms-ls/effectifs'); await settle(sam, 'h1:text("Effectifs")');
     await sam.getByRole('button', { name: 'Recruter' }).click();
     const m = sam.locator('.modal');
