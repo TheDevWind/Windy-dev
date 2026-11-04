@@ -7,6 +7,7 @@ import { rpc, rows, upload, signedUrls, publicUrl } from './sb.js';
 import { saveBlob } from './doc.js';
 import { KIND, DANGER, personCards, caseCards, reportAlerts } from './mdt-enquete.js';
 import { alertsCard } from './mdt-ops.js';
+import { agentExtras, publicApply, publicComplain } from './mdt-gestion.js';
 
 import { DAY, HOUR, ms, iso, day, field, input, area, select, foot, fullName, today, toLocal, weekStart, hours, fmtH, tabs, search, match, STATUS, OPEN, PRIO, WKIND, WST, wStatus, DUTY, STAGE, CAREER, LOG, ANN, AGENDA, IMAGE, ANY, stamp, extOf, send, photoIn, face, personCell, feed, load, gradeOf, myRank, absentToday, stateOf, inactiveDays , SIGS, sigEl, sigPicker, seal } from './mdt-kit.js';
 
@@ -226,6 +227,7 @@ export async function agent(ctx, id) {
   const renew = ev => run(ev.currentTarget, async () => { const tok = await rpc('renew_invitation', { p_member: m.id }); ctx.reload(); ctx.linkModal('Nouveau lien pour ' + m.name, ctx.activationUrl(me.code, tok), m.name); });
   const info = (k, v) => [h('dt', {}, k), h('dd', {}, v)];
   const week = hours(shifts, weekStart());
+  const ex = 'ia' in me ? await agentExtras(ctx, m, { members, grades, quals }) : { actions: [], cards: [], banner: null };
   ctx.show('effectifs', m.name, [g.badge ? h('span', { class: 'insigne' }, g.badge) : null, ' ', pill(g.name, 'info'), ' ', m.matricule || '', m.callsign ? ' · ' + m.callsign : '', ' ',
     !m.active ? pill('Parti', 'bad') : open ? liveDot((DUTY[m.duty_status] || DUTY.dispo)[0]) : null],
     [self && m.active ? [h('button', { class: 'btn', type: 'button', onclick: editModal }, 'Modifier ma fiche'), h('button', { class: 'btn', type: 'button', onclick: () => signatureModal(ctx, m) }, 'Ma signature')] : null,
@@ -233,7 +235,8 @@ export async function agent(ctx, id) {
         h('button', { class: 'btn', type: 'button', onclick: noteModal }, ico('journal', 18), 'Note'), h('button', { class: 'btn danger', type: 'button', onclick: leaveModal }, 'Départ')] : null,
       manage && !m.active ? h('button', { class: 'btn primary', type: 'button', onclick: returnModal }, 'Réintégrer') : null,
       can('equipe') && !self && m.active && g.rank <= rank ? h('button', { class: 'btn', type: 'button', onclick: renew }, 'Nouveau lien') : null,
-      h('a', { class: 'btn ghost', href: '/' + me.code + '/effectifs' }, 'Tous les agents')],
+      ex.actions, h('a', { class: 'btn ghost', href: '/' + me.code + '/effectifs' }, 'Tous les agents')],
+    ex.banner,
     !m.active ? h('div', { class: 'banner bad' }, ico('sortie', 20), h('div', {}, h('b', {}, 'Ancien agent' + (m.left_at ? ' · parti le ' + day(m.left_at) : '')), h('span', {}, m.left_reason || ''))) : null,
     h('div', { class: 'grid cols2' },
       h('section', { class: 'card idcard' }, h('div', { class: 'id-top' }, face(m.photo, urls, m.name, 'xl'), h('div', { class: 'art' }, h('b', { class: 'id-name' }, m.name),
@@ -259,7 +262,8 @@ export async function agent(ctx, id) {
       h('section', { class: 'card' }, h('h2', {}, 'Carrière', h('span', { class: 'muted small' }, career.length + ' entrée(s)')), feed(career.map(e => [e.at, e.kind, e.text, e.by_name, CAREER]))),
       has('presence') ? h('section', { class: 'card' }, h('h2', {}, 'Présence'), strip([['Cette semaine', fmtH(week)], ['30 derniers jours', fmtH(hours(shifts, Date.now() - 30 * DAY))], ['Services', String(shifts.length)]]),
         table([['Début', x => date(ms(x.started_at)), 'num', x => x.started_at], ['Fin', x => x.ended_at ? clock(ms(x.ended_at)) : 'en cours'], ['Durée', x => fmtH(hours([x], 0)), 'num']], shifts.slice(0, 8), null, 'Aucun service.'),
-        absences.length ? [h('h3', { class: 'sub-h' }, 'Absences'), table([['Du', a => day(a.starts_on), 'num', a => a.starts_on], ['Au', a => day(a.ends_on)], ['Motif', a => a.reason], ['', a => absPill(a)]], absences)] : null) : null));
+        absences.length ? [h('h3', { class: 'sub-h' }, 'Absences'), table([['Du', a => day(a.starts_on), 'num', a => a.starts_on], ['Au', a => day(a.ends_on)], ['Motif', a => a.reason], ['', a => absPill(a)]], absences)] : null) : null),
+    ex.cards.some(Boolean) ? h('div', { class: 'grid cols2' }, ex.cards) : null);
 }
 // ---------------------------------------------------------------- signature de l'agent
 function signatureModal(ctx, m) {
@@ -760,9 +764,10 @@ export async function settingsCards(ctx, grades) {
   const gradeModal = g => {
     const badge = input({ maxlength: 12, value: g.badge || '', placeholder: '★★' }), seats = h('input', { type: 'number', min: 1, max: 500, value: g.max_seats || '', class: 'short', placeholder: '∞' });
     const salary = h('input', { type: 'number', min: 0, step: 50, value: g.salary === null || g.salary === undefined ? '' : Number(g.salary), class: 'short' }), ok = h('button', { class: 'btn primary' }, 'Enregistrer');
-    const md = modal('Grade ' + g.name, h('div', { class: 'row' }, field('Insigne', badge, 'grow'), field('Places', seats), field('Salaire ($ / sem.)', salary)),
-      h('p', { class: 'note' }, 'Laisse « Places » vide pour ne pas limiter. Un recrutement ou une promotion est refusé quand le grade est plein.'), foot({ close: () => md.close() }, ok));
-    ok.addEventListener('click', () => run(ok, async () => { await rpc('set_grade_meta', { p_grade: g.id, p_badge: badge.value.trim(), p_seats: seats.value ? Number(seats.value) : null, p_salary: salary.value === '' ? null : Number(salary.value) }); md.close(); ctx.reload(); return { message: 'Grade enregistré.' }; }));
+    const minDays = h('input', { type: 'number', min: 0, max: 365, value: g.min_days === null || g.min_days === undefined ? '' : g.min_days, class: 'short', placeholder: '—', 'aria-label': 'Ancienneté avant promotion (jours)' });
+    const md = modal('Grade ' + g.name, h('div', { class: 'row' }, field('Insigne', badge, 'grow'), field('Places', seats), field('Salaire ($ / sem.)', salary)), field('Ancienneté avant promotion (jours)', minDays),
+      h('p', { class: 'note' }, 'Laisse « Places » vide pour ne pas limiter. Un recrutement ou une promotion est refusé quand le grade est plein. L’ancienneté est vérifiée quand une proposition de promotion est acceptée.'), foot({ close: () => md.close() }, ok));
+    ok.addEventListener('click', () => run(ok, async () => { await rpc('set_grade_meta', { p_grade: g.id, p_badge: badge.value.trim(), p_seats: seats.value ? Number(seats.value) : null, p_salary: salary.value === '' ? null : Number(salary.value), p_min_days: minDays.value === '' ? null : Number(minDays.value) }); md.close(); ctx.reload(); return { message: 'Grade enregistré.' }; }));
   };
   const unitModal = u => {
     const code = input({ maxlength: 8, value: u ? u.code : '', placeholder: 'IOD' }), name = input({ maxlength: 60, value: u ? u.name : '' }), restricted = h('input', { type: 'checkbox', checked: u ? u.restricted : false });
@@ -775,7 +780,7 @@ export async function settingsCards(ctx, grades) {
   qualAdd.addEventListener('click', () => run(qualAdd, async () => { await rpc('save_qualification', { p_org: me.id, p_id: null, p_name: qualIn.value.trim(), p_archived: false }); ctx.reload(); return { message: 'Qualification ajoutée.' }; }));
   return [
     h('section', { class: 'card' }, h('h2', {}, 'Grades : insignes, places et salaires'), table([['Grade', g => h('span', { class: 'gradecell' }, g.badge ? h('span', { class: 'insigne' }, g.badge) : null, h('b', {}, g.name))],
-      ['Agents', g => used(g) + (g.max_seats ? ' / ' + g.max_seats : ''), 'num', g => used(g)], ['Salaire', g => g.salary === null || g.salary === undefined ? '—' : money(g.salary) + ' / sem.', 'num', g => Number(g.salary || 0)],
+      ['Agents', g => used(g) + (g.max_seats ? ' / ' + g.max_seats : ''), 'num', g => used(g)], ['Salaire', g => g.salary === null || g.salary === undefined ? '—' : money(g.salary) + ' / sem.', 'num', g => Number(g.salary || 0)], ['Ancienneté', g => g.min_days ? g.min_days + ' j' : '—', 'num', g => g.min_days || 0],
       ['', g => h('button', { class: 'btn small', type: 'button', onclick: ev => { ev.stopPropagation(); gradeModal(g); } }, 'Modifier')]], grades)),
     h('div', { class: 'grid cols2' },
       h('section', { class: 'card' }, h('h2', {}, 'Unités', h('span', { class: 'right' }, h('button', { class: 'btn small', type: 'button', onclick: () => unitModal(null) }, ico('ajout', 16), 'Unité'))),
@@ -813,24 +818,41 @@ export async function justice(o) {
         ['Décision', w => w.decided_at ? date(ms(w.decided_at)) + ' · ' + w.decided_by : '—', 'num', w => w.decided_at || '']], all.filter(groups[f]), w => warrantView({ can: () => false }, w, h('span', { class: 'muted small' }, w.org)), 'Aucun mandat.')));
 }
 
-// ================================================================== page publique : avis de recherche et signalement anonyme
-export async function publicWanted(code, $app) {
-  const d = await rpc('wanted_public', { p_code: code });
-  if (!d) return false;
-  const pick = select([['', 'Je ne sais pas / autre']].concat(d.list.map(w => [w.id, w.rank + '. ' + w.name])), '', { 'aria-label': 'Au sujet de' });
-  const text = area({ maxlength: 1000, rows: 5, placeholder: 'Où, quand, avec qui, quel véhicule…', 'aria-label': 'Ce que tu as vu' }), contact = input({ maxlength: 80, placeholder: 'Facultatif : numéro ou pseudo Discord', 'aria-label': 'Contact (facultatif)' });
-  const ok = h('button', { class: 'btn primary wide' }, 'Envoyer le signalement'), done = h('p', { class: 'sent', hidden: true, role: 'status' }, 'Merci. Ton signalement est transmis aux enquêteurs.');
-  ok.addEventListener('click', () => run(ok, async () => {
-    await rpc('send_tip', { p_code: code, p_wanted: pick.value || null, p_text: text.value.trim(), p_contact: contact.value.trim() || null });
-    text.value = ''; contact.value = ''; done.hidden = false; return { message: 'Signalement envoyé, merci.' };
-  }));
-  $app.replaceChildren(h('div', { class: 'avis' }, h('header', { class: 'avis-head' }, h('div', { class: 'avis-brand' }, h('img', { class: 'avis-seal', src: '/img/usms-seal.png', alt: '' }), h('span', { class: 'art' }, h('b', {}, d.name), h('small', {}, d.kind))), themeSwitch()),
-    h('main', { class: 'avis-main' }, h('h1', {}, 'Avis de recherche'), h('p', { class: 'muted' }, 'Ces personnes sont recherchées. Ne tente pas de les arrêter toi-même : signale-les, même anonymement.'),
+// ================================================================== page publique du service : avis de recherche, candidature, plainte (sans connexion)
+export async function publicWanted(code, $app, sub) {
+  // service_info arrive avec l'étape 4 de la base ; avant, la page ne montre que les avis de recherche
+  const info = await rpc('service_info', { p_code: code }).catch(() => ({ code, wanted: true, apply: false, complain: false, logo: null, name: null, kind: null }));
+  if (!info) return false;
+  const pages = [info.wanted ? ['', 'Avis de recherche'] : null, info.apply ? ['candidature', 'Candidater'] : null, info.complain ? ['plainte', 'Porter plainte'] : null].filter(Boolean);
+  if (!pages.length) return false;
+  const cur = pages.some(([k]) => k === (sub || '')) ? (sub || '') : pages[0][0];
+  let main;
+  if (cur === '') {
+    const d = await rpc('wanted_public', { p_code: code });
+    if (!d) return false;
+    info.name = info.name || d.name; info.kind = info.kind || d.kind;
+    const pick = select([['', 'Je ne sais pas / autre']].concat(d.list.map(w => [w.id, w.rank + '. ' + w.name])), '', { 'aria-label': 'Au sujet de' });
+    const text = area({ maxlength: 1000, rows: 5, placeholder: 'Où, quand, avec qui, quel véhicule…', 'aria-label': 'Ce que tu as vu' }), contact = input({ maxlength: 80, placeholder: 'Facultatif : numéro ou pseudo Discord', 'aria-label': 'Contact (facultatif)' });
+    const ok = h('button', { class: 'btn primary wide' }, 'Envoyer le signalement'), done = h('p', { class: 'sent', hidden: true, role: 'status' }, 'Merci. Ton signalement est transmis aux enquêteurs.');
+    ok.addEventListener('click', () => run(ok, async () => {
+      await rpc('send_tip', { p_code: code, p_wanted: pick.value || null, p_text: text.value.trim(), p_contact: contact.value.trim() || null });
+      text.value = ''; contact.value = ''; done.hidden = false; return { message: 'Signalement envoyé, merci.' };
+    }));
+    main = [h('h1', {}, 'Avis de recherche'), h('p', { class: 'muted' }, 'Ces personnes sont recherchées. Ne tente pas de les arrêter toi-même : signale-les, même anonymement.'),
       d.list.length ? h('div', { class: 'avis-grid' }, d.list.map(w => h('article', { class: 'avis-card' }, w.photo ? h('img', { src: publicUrl(w.photo), alt: 'Affiche de ' + w.name, loading: 'lazy' }) : null,
         h('div', { class: 'avis-info' }, h('span', { class: 'rank' }, String(w.rank)), h('span', { class: 'art' }, h('b', {}, w.name), h('small', {}, (w.alias ? '« ' + w.alias + ' » · ' : '') + w.reason)), Number(w.reward) ? pill('Récompense ' + money(w.reward), 'ok') : null))))
         : h('div', { class: 'card' }, h('div', { class: 'empty' }, 'Aucun avis publié pour l’instant.')),
       h('section', { class: 'card avis-form' }, h('h2', {}, 'Signaler anonymement'), field('Au sujet de', pick), field('Ce que tu as vu', text), field('Contact', contact), ok, done,
-        h('p', { class: 'note' }, 'Aucune connexion, aucune adresse IP n’est enregistrée avec ton message.'))),
+        h('p', { class: 'note' }, 'Aucune connexion, aucune adresse IP n’est enregistrée avec ton message.'))];
+  } else if (cur === 'candidature') {
+    main = [h('h1', {}, 'Rejoindre ' + info.name), publicApply(info)];
+  } else {
+    main = [h('h1', {}, 'Porter plainte'), publicComplain(info)];
+  }
+  $app.replaceChildren(h('div', { class: 'avis' }, h('header', { class: 'avis-head' }, h('div', { class: 'avis-brand' }, h('img', { class: 'avis-seal', src: info.logo ? publicUrl(info.logo) : '/img/usms-seal.png', alt: '' }),
+    h('span', { class: 'art' }, h('b', {}, info.name), h('small', {}, info.kind))), themeSwitch()),
+    pages.length > 1 ? h('nav', { class: 'avis-tabs', 'aria-label': 'Pages publiques' }, pages.map(([k, l]) => h('a', { href: '/avis/' + code + (k ? '/' + k : ''), class: k === cur ? 'on' : null, 'aria-current': k === cur ? 'page' : null }, l))) : null,
+    h('main', { class: 'avis-main' }, ...main),
     h('footer', { class: 'avis-foot' }, butterfly('avis-fly'), h('span', {}, BRAND))));
   return true;
 }

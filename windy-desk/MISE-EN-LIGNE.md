@@ -110,6 +110,23 @@ de la personne a l’accès voulu (entreprise → *Réglages* → grades). La ba
 - **Renseignement** : informateurs sous nom de code, paiements, notes classées Diffusion, Confidentiel, Secret,
   Très secret (les deux dernières réservées à l’accès « Renseignement »), graphe des relations.
 - **Alertes** : affichées sur le tableau de bord de chaque agent (l’envoi sur Discord viendra avec l’intégration).
+- **Page publique** : `/avis/<adresse>` (avis de recherche), `/avis/<adresse>/candidature` (formulaire de candidature,
+  20 par heure au plus, une seule en cours par compte Discord) et `/avis/<adresse>/plainte` (plainte contre un agent,
+  lue par les Affaires internes seules). Le logo du service s’envoie dans *Réglages → Identité du service*.
+- **Académie** : candidatures (entretien inscrit au planning du recruteur, « Accepter et recruter » crée le compte),
+  parcours des recrues (modules validés par un FTO, formateur attribué), bibliothèque, examens QCM corrigés par le serveur
+  (réponses jamais envoyées au navigateur, nouvelle tentative 24 h après un échec), évaluations terrain, entraînements
+  avec appel, propositions de promotion avec les statistiques de l’agent. L’ancienneté requise se règle par grade
+  (*Réglages → Grades*) ; seul le Director peut passer outre.
+- **Affaires internes** : visibles du Director, des grades qui ont l’accès « Affaires internes » et de la personne que le
+  Director désigne. Un dossier s’ouvre seul pour un tir, une évasion ou un témoin WITSEC perdu. Les sanctions s’appliquent
+  tout de suite : une suspension coupe tout accès au MDT jusqu’à son terme (ou jusqu’à ce qu’elle soit levée), une
+  rétrogradation fait descendre d’un grade, un renvoi désactive le compte. Un dossier qui vise l’enquêteur lui reste fermé.
+- **Logistique** : armes par numéro de série (arme lourde réservée au SOG), équipement en stock, parc automobile
+  (blindé réservé au SOG, réservations, dégâts signalés au retour).
+- **Carte** : l’image de la carte de ton serveur s’envoie dans *Réglages → Carte de la ville* ; les repères se placent
+  en un clic. Les planques WITSEC n’apparaissent qu’à ceux qui ont l’accès WITSEC.
+- **Sauvegarde** : *Réglages → Sauvegarde* télécharge toutes les données du service (sauf les vrais noms WITSEC).
 - **Fichiers** : deux espaces de stockage Supabase. `mdt` (privé, 50 Mo par fichier) pour les photos et pièces jointes,
   lus par liens signés d’une heure ; `avis` (public, 5 Mo) pour les affiches. Rien ne se supprime depuis le site.
 
@@ -125,7 +142,7 @@ de la personne a l’accès voulu (entreprise → *Réglages* → grades). La ba
 
 ```bash
 npm install          # PGlite pour les tests de la base
-npm test             # 40 tests de la base (Postgres en mémoire, mêmes migrations)
-npm run test:site    # scénario complet (entreprises et US Marshals) dans Chromium + revue de 276 pages (Playwright requis)
+npm test             # 45 tests de la base (Postgres en mémoire, mêmes migrations)
+npm run test:site    # scénario complet (entreprises et US Marshals) dans Chromium + revue de 328 pages (Playwright requis)
 npm run serve        # le site en local sur http://localhost:8080, branché sur le vrai Supabase
 ```

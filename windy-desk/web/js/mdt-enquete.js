@@ -304,9 +304,9 @@ export async function rapport(ctx, id) {
   const r = isNew ? null : (await rows('reports', q => q.eq('id', id)))[0];
   if (!isNew && !r) return ctx.go(base(ctx) + '/rapports', true);
   const editable = isNew || (r.author_id === me.member_id && ['brouillon', 'a_corriger'].includes(r.status));
-  const [people, cases, members, penal] = await Promise.all([load.people(ctx), has('dossiers') ? rows('cases', q => q.eq('org_id', me.id).order('opened_at', { ascending: false })) : [], load.members(ctx),
-    editable ? rows('penal_code', q => q.eq('org_id', me.id).order('code')) : []]);
-  return editable ? reportEditor(ctx, r, { people, cases, members, penal }) : reportView(ctx, r, { people, cases, members });
+  const [people, cases, members, penal, templates] = await Promise.all([load.people(ctx), has('dossiers') ? rows('cases', q => q.eq('org_id', me.id).order('opened_at', { ascending: false })) : [], load.members(ctx),
+    editable ? rows('penal_code', q => q.eq('org_id', me.id).order('code')) : [], isNew && 'ia' in me ? rows('doc_templates', q => q.eq('org_id', me.id)) : []]);
+  return editable ? reportEditor(ctx, r, { people, cases, members, penal, templates }) : reportView(ctx, r, { people, cases, members });
 }
 
 function reportEditor(ctx, r, d) {
@@ -325,7 +325,11 @@ function reportEditor(ctx, r, d) {
   const form = h('div', { class: 'stack' });
   let get = () => ({});
   const autoTitle = per => { if (!titleTouched) { const p = d.people.find(x => x.id === (per && per.value)); title.value = RTYPES[kind].label + (p ? ' · ' + fullName(p) : ''); } };
+  // un nouveau rapport part du modèle de récit du service (Réglages → Modèles de documents), tant qu'on ne l'a pas réécrit
+  let tpl = '';
+  const useTemplate = () => { if (r || (narrative.value.trim() && narrative.value !== tpl)) return; const t = ((d.templates || []).find(x => x.kind === 'r_' + kind) || {}).body; tpl = (t && t.text) || ''; narrative.value = tpl; };
   const paint = () => {
+    useTemplate();
     const T = RTYPES[kind], els = {};
     const per = T.person ? select([['', T.needPerson ? 'Choisir…' : 'Aucune']].concat(d.people.map(p => [p.id, fullName(p) + (p.alias ? ' « ' + p.alias + ' »' : '')])), state.person || '') : null;
     if (per) per.addEventListener('change', () => { state.person = per.value || null; autoTitle(per); });

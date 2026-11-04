@@ -458,7 +458,7 @@ try {
     S.reedLink = await linkFromModal(ed);
     await ed.locator('table', { hasText: 'US Marshals · Los Santos' }).waitFor();
     const [o] = await backend.sql("select sector, modules from public.orgs where code = 'usms-ls'");
-    assert.equal(o.sector, 'service_public'); assert.equal(o.modules.length, 13);
+    assert.equal(o.sector, 'service_public'); assert.equal(o.modules.length, 18);
     await ed.getByRole('link', { name: 'Accès' }).first().click(); await settle(ed, 'h1:text("Accès")');
     await ed.getByLabel('Nom affiché').fill('Juge Hartley');
     await ed.getByRole('button', { name: 'Créer le lien' }).click();
@@ -505,7 +505,8 @@ try {
     await sam.getByRole('button', { name: 'Activer avec cette session' }).click();
     await sam.waitForURL(BASE + '/usms-ls'); await chooseSignature(sam, 'S. Ortiz', 'Paraphe');
     const navs = await sam.locator('nav.side .navs a').allInnerTexts();
-    assert.deepEqual(navs.map(x => x.trim()), ['Accueil', 'Recherche', 'Dossiers', 'Rapports', 'Mandats', 'Preuves', 'Wanted', 'Transferts', 'Tribunal', 'SOG', 'Rens.', 'Effectifs', 'Présence', 'Annonces']);
+    assert.deepEqual(navs.map(x => x.trim()), ['Accueil', 'Recherche', 'Dossiers', 'Rapports', 'Mandats', 'Preuves', 'Wanted', 'Carte', 'Transferts', 'Tribunal', 'SOG', 'Rens.', 'Effectifs', 'Présence',
+      'Académie', 'Logistique', 'Stats', 'Annonces']);
     await sam.goto(BASE + '/usms-ls/effectifs'); await settle(sam, 'h1:text("Effectifs")');
     await sam.getByRole('button', { name: 'Recruter' }).click();
     const m = sam.locator('.modal');
@@ -879,6 +880,189 @@ try {
     await dan.locator('.intelcard', { hasText: 'Livraison d’armes' }).waitFor();
   });
 
+  // ------------------------------------------------------------ étape 4 : académie, affaires internes, logistique, statistiques, carte, réglages
+  await step('candidature publique, entretien, recrutement depuis l’académie', async () => {
+    const v = await open({ label: 'candidat' });
+    await v.goto(BASE + '/avis/usms-ls/candidature'); await settle(v, 'h1:text("Rejoindre")');
+    await v.getByLabel('Nom de ton personnage').fill('Léo Martin');
+    await v.getByLabel('Identifiant Discord').fill('55555555');
+    for (const q of ['Âge et origine de ton personnage', 'Ton expérience (police, armée, sécurité, autre service)', 'Pourquoi veux-tu rejoindre les US Marshals ?', 'Tes disponibilités (jours et heures)',
+      'As-tu lu le règlement du service et du serveur ?', 'Ton âge réel (hors RP)']) await v.getByLabel(q, { exact: true }).fill('Réponse sérieuse');
+    await v.getByRole('button', { name: 'Envoyer ma candidature' }).click();
+    await toast(v, 'Candidature envoyée');
+    await v.locator('.sent', { hasText: 'USMS-CAND-0001' }).waitFor();
+    await shot(v, 'candidature-publique', true);
+    await v.context().close();
+    await sam.goto(BASE + '/usms-ls/academie'); await settle(sam, 'h1:text("Académie")');
+    await sam.getByRole('tab', { name: 'Candidatures (1)' }).click();
+    await sam.locator('tr', { hasText: 'Léo Martin' }).click();
+    await sam.locator('.modal').getByRole('button', { name: 'Entretien' }).click();
+    await sam.locator('.modal').getByRole('button', { name: 'Programmer' }).click();
+    await toast(sam, 'Entretien programmé');
+    await sam.locator('tr', { hasText: 'Léo Martin' }).click();
+    await sam.locator('.modal').getByRole('button', { name: 'Accepter et recruter' }).click();
+    const m = sam.locator('.modal');
+    assert.equal(await m.getByLabel('Identifiant de connexion').inputValue(), 'leo.martin');
+    await m.getByRole('button', { name: 'Recruter' }).click();
+    S.leoLink = await linkFromModal(sam);
+    const [a] = await backend.sql("select a.status, m.matricule, g.name from public.applications a join public.members m on m.id = a.member_id join public.grades g on g.id = m.grade_id");
+    assert.equal(a.status, 'acceptee'); assert.equal(a.name, 'Recrue');
+    S.leoId = (await backend.sql("select id from public.members where login = 'leo.martin'"))[0].id;
+  });
+  await step('examen en ligne : QCM corrigé par le serveur, module du parcours validé', async () => {
+    await dan.goto(BASE + '/usms-ls/academie'); await settle(dan, 'h1:text("Académie")');
+    await dan.getByRole('tab', { name: 'Examens' }).click();
+    await dan.getByRole('button', { name: 'Passer l’examen' }).click();
+    const m = dan.locator('.modal');
+    const answers = ['Reçu, compris', '10-32', 'Agent en détresse, toutes les unités', '10-20', 'Situation sous contrôle'];
+    for (const [i, a] of answers.entries()) await m.locator('fieldset').nth(i).getByLabel(a, { exact: true }).check();
+    await shot(dan, 'examen');
+    await m.getByRole('button', { name: 'Rendre ma copie' }).click();
+    await toast(dan, 'Réussi : 100 %');
+    const [tp] = await backend.sql("select tm.name from public.training_progress tp join public.training_modules tm on tm.id = tp.module_id where tp.member_id = $1", [S.danId]);
+    assert.equal(tp.name, 'Radio et indicatifs');
+  });
+  await step('promotion : proposée avec les statistiques, ancienneté vérifiée, acceptée par le Director', async () => {
+    await sam.getByRole('tab', { name: /^Promotions/ }).click();
+    await sam.getByRole('button', { name: 'Proposer une promotion' }).click();
+    const m = sam.locator('.modal');
+    await m.getByLabel('Agent', { exact: true }).selectOption(S.leoId);
+    await m.getByLabel('Grade proposé').selectOption({ label: 'Deputy' });
+    await m.getByLabel('Motivation').fill('Très bon entretien, sérieux et disponible.');
+    await m.getByRole('button', { name: 'Proposer' }).click();
+    await toast(sam, 'Proposition envoyée');
+    await reed.goto(BASE + '/usms-ls/academie'); await settle(reed, 'h1:text("Académie")');
+    await reed.getByRole('tab', { name: 'Promotions (1)' }).click();
+    const c = reed.locator('.wcard', { hasText: 'Léo Martin' });
+    await c.locator('.pill', { hasText: '✗ Ancienneté' }).waitFor();
+    await shot(reed, 'promotion', true);
+    await c.getByRole('button', { name: 'Promouvoir' }).click();
+    await reed.locator('.modal').getByLabel('Passer outre l’ancienneté (Director)').check();
+    await reed.locator('.modal').getByRole('button', { name: 'Promouvoir' }).click();
+    await toast(reed, 'Léo Martin passe Deputy');
+    const [g] = await backend.sql("select g.name from public.members m join public.grades g on g.id = m.grade_id where m.id = $1", [S.leoId]);
+    assert.equal(g.name, 'Deputy');
+  });
+  await step('affaires internes : plainte publique, enquête close, suspension qui coupe l’accès puis levée', async () => {
+    const v = await open({ label: 'plaignant' });
+    await v.goto(BASE + '/avis/usms-ls/plainte'); await settle(v, 'h1:text("Porter plainte")');
+    await v.getByLabel('Agent concerné').fill('Marshal-12');
+    await v.getByLabel('Quand et où').fill('Hier soir, Vinewood');
+    await v.getByLabel('Les faits').fill('L’agent a été insultant pendant un contrôle routier.');
+    await v.getByRole('button', { name: 'Déposer la plainte' }).click();
+    await toast(v, 'Plainte déposée');
+    await v.context().close();
+    await reed.goto(BASE + '/usms-ls/affaires'); await settle(reed, 'h1:text("Affaires internes")');
+    await reed.getByRole('tab', { name: 'Plaintes (1)' }).click();
+    await reed.locator('tr', { hasText: 'USMS-PL-0001' }).getByRole('button', { name: 'Enquêter' }).click();
+    await reed.waitForURL(/\/usms-ls\/affaires\/[0-9a-f-]{36}$/); await settle(reed, 'h1:text("Dossier USMS-AI-")');
+    S.iaPath = new URL(reed.url()).pathname;
+    await reed.getByLabel('Entrée', { exact: true }).fill('Audition du plaignant : propos confirmés par un témoin.');
+    await reed.getByLabel('Type d’entrée').selectOption('audition');
+    await reed.getByRole('button', { name: 'Ajouter au journal' }).click();
+    await toast(reed, 'Ajouté au journal d’enquête');
+    await reed.getByRole('button', { name: 'Clore le dossier' }).first().click();
+    await reed.locator('.modal').getByLabel('Décision').fill('Faits établis, rappel à l’ordre de l’agent.');
+    await reed.locator('.modal').getByRole('button', { name: 'Clore le dossier' }).click();
+    await toast(reed, 'Dossier clos');
+    await reed.goto(BASE + '/usms-ls/effectifs/' + S.danId); await settle(reed, 'h1:text("Dan Moss")');
+    await reed.getByRole('button', { name: 'Sanctionner' }).click();
+    const m = reed.locator('.modal');
+    await m.getByLabel('Sanction').selectOption('suspension');
+    await m.getByLabel('Durée (jours)').fill('1');
+    await m.getByLabel('Motif').fill('Insultes pendant un contrôle');
+    await m.getByRole('button', { name: 'Appliquer la sanction' }).click();
+    await toast(reed, 'Sanction appliquée');
+    await reed.locator('.banner', { hasText: 'Suspendu jusqu’au' }).waitFor();
+    await dan.goto(BASE + '/usms-ls'); await settle(dan, 'h1:text("Accès suspendu")');
+    await reed.goto(BASE + '/usms-ls/affaires'); await settle(reed, 'h1:text("Affaires internes")');
+    await reed.getByRole('tab', { name: 'Casier disciplinaire' }).click();
+    await reed.locator('tr', { hasText: 'Dan Moss' }).getByRole('button', { name: 'Lever' }).click();
+    await toast(reed, 'Suspension levée');
+    await dan.goto(BASE + '/usms-ls'); await settle(dan, '.dutycard');
+  });
+  await step('logistique : blindé réservé au SOG, retour avec dégâts, arme remise, stock', async () => {
+    await reed.goto(BASE + '/usms-ls/logistique'); await settle(reed, 'h1:text("Logistique")');
+    await reed.getByRole('button', { name: 'Ajouter un véhicule' }).click();
+    let m = reed.locator('.modal');
+    await m.getByLabel('Modèle').fill('Granger blindé'); await m.getByLabel('Plaque').fill('usms 01'); await m.getByLabel('Type').selectOption('blinde');
+    await m.getByRole('button', { name: 'Enregistrer' }).click();
+    await toast(reed, 'Véhicule enregistré');
+    await sam.goto(BASE + '/usms-ls/logistique'); await settle(sam, 'h1:text("Logistique")');
+    await sam.locator('tr', { hasText: 'USMS 01' }).getByRole('button', { name: 'Prendre' }).click();
+    await sam.locator('.modal').getByRole('button', { name: 'Prendre le véhicule' }).click();
+    await toast(sam, 'réservé au SOG');
+    await sam.keyboard.press('Escape');
+    await dan.goto(BASE + '/usms-ls/logistique'); await settle(dan, 'h1:text("Logistique")');
+    await dan.locator('tr', { hasText: 'USMS 01' }).getByRole('button', { name: 'Prendre' }).click();
+    await dan.locator('.modal').getByLabel('Motif').fill('Assaut planque Grove');
+    await dan.locator('.modal').getByRole('button', { name: 'Prendre le véhicule' }).click();
+    await toast(dan, 'Bonne route');
+    await dan.locator('tr', { hasText: 'USMS 01' }).getByRole('button', { name: 'Rendre' }).click();
+    await dan.locator('.modal').getByLabel('Dégâts').fill('Rétroviseur arraché');
+    await dan.locator('.modal').getByRole('button', { name: 'Rendre le véhicule' }).click();
+    await toast(dan, 'Véhicule rendu');
+    assert.equal((await backend.sql("select state from public.fleet where plate = 'USMS 01'"))[0].state, 'abime');
+    await reed.getByRole('tab', { name: 'Armurerie' }).click();
+    await reed.getByRole('button', { name: 'Entrer une arme' }).click();
+    m = reed.locator('.modal');
+    await m.getByLabel('Numéro de série').fill('gl17-0042'); await m.getByLabel('Modèle').fill('Glock 17');
+    await m.getByRole('button', { name: 'Enregistrer' }).click();
+    await toast(reed, 'Arme enregistrée');
+    await reed.locator('tr', { hasText: 'GL17-0042' }).getByRole('button', { name: 'Remettre' }).click();
+    await reed.locator('.modal').getByLabel('Agent').selectOption(S.danId);
+    await reed.locator('.modal').getByRole('button', { name: 'Remettre l’arme' }).click();
+    await toast(reed, 'Arme remise');
+    await reed.getByRole('tab', { name: 'Équipement' }).click();
+    await reed.getByRole('button', { name: 'Nouvel article' }).click();
+    await reed.locator('.modal').getByLabel('Article').fill('Gilet pare-balles'); await reed.locator('.modal').getByLabel('Type').selectOption('gilet');
+    await reed.locator('.modal').getByRole('button', { name: 'Enregistrer' }).click();
+    await toast(reed, 'Article enregistré');
+    await reed.locator('tr', { hasText: 'Gilet pare-balles' }).getByRole('button', { name: 'Mouvement' }).click();
+    await reed.locator('.modal').getByLabel('Mouvement').selectOption('in');
+    await reed.locator('.modal').getByLabel('Quantité').fill('10');
+    await reed.locator('.modal').getByRole('button', { name: 'Enregistrer' }).click();
+    await toast(reed, 'Stock : 10 unité');
+  });
+  await step('réglages, carte et statistiques : formulaire modifié, logo, carte, repère, bilan exporté', async () => {
+    await reed.goto(BASE + '/usms-ls/reglages'); await settle(reed, 'h1:text("Réglages")');
+    await reed.getByLabel('Question', { exact: true }).first().fill('Nom, âge et origine de ton personnage');
+    await reed.locator('section.card', { hasText: 'Modèles de documents' }).getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    await toast(reed, 'Formulaire enregistré');
+    await reed.goto(BASE + '/usms-ls/reglages'); await settle(reed, 'h1:text("Réglages")');
+    await reed.getByLabel('Logo du service').setInputFiles(photo('logo.png'));
+    await reed.getByRole('button', { name: 'Envoyer le logo' }).click();
+    await toast(reed, 'Logo enregistré');
+    await reed.locator('img.logoprev').waitFor();
+    await reed.getByLabel('Carte de la ville').setInputFiles(photo('carte.png'));
+    await reed.getByRole('button', { name: 'Envoyer la carte' }).click();
+    await toast(reed, 'Carte enregistrée');
+    await shot(reed, 'reglages-service', true);
+    await reed.goto(BASE + '/usms-ls/carte'); await settle(reed, 'img.mapimg');
+    await reed.getByRole('button', { name: 'Ajouter un repère' }).click();
+    const box = await reed.locator('.mapbox').boundingBox();
+    await reed.locator('.mapbox').click({ position: { x: box.width * 0.4, y: box.height * 0.3 } });
+    const m = reed.locator('.modal');
+    await m.getByLabel('Nom du repère').fill('Vu au garage');
+    await m.getByLabel('Individu').selectOption(S.personPath.split('/').pop());
+    await m.getByRole('button', { name: 'Placer le repère' }).click();
+    await toast(reed, 'Repère enregistré');
+    await reed.locator('.pin.mk-position.hunted').waitFor();
+    const [mk] = await backend.sql('select x, y from public.map_marks');
+    assert.ok(Math.abs(mk.x - 0.4) < 0.02 && Math.abs(mk.y - 0.3) < 0.02);
+    await shot(reed, 'carte', true);
+    await reed.goto(BASE + '/usms-ls/statistiques'); await settle(reed, 'h1:text("Statistiques")');
+    await reed.getByRole('button', { name: 'Bilan de la semaine' }).click();
+    await reed.locator('.modal img.docimg[src^="data:image/png"]').waitFor();
+    await shot(reed, 'bilan');
+    await reed.keyboard.press('Escape');
+    const v = await open({ label: 'public' });
+    await v.goto(BASE + '/avis/usms-ls/candidature'); await settle(v, 'h1:text("Rejoindre")');
+    await v.getByLabel('Nom, âge et origine de ton personnage').waitFor();
+    assert.match(await v.locator('.avis-seal').getAttribute('src'), /logo/);
+    await v.context().close();
+  });
+
   // ------------------------------------------------------------ connexion ordinaire
   await step('connexion par l’adresse de l’entreprise, mauvais puis bon mot de passe', async () => {
     const p = await open({ label: 'connexion' });
@@ -926,10 +1110,12 @@ const PAGES = {
   editeur: [S.editeur, ['/editeur', '/editeur/modules', '/editeur/acces', '/editeur/devis', '/editeur/devis/' + devisId, '/editeur/devis/nouveau']],
   director: [S.reed, ['/usms-ls', '/usms-ls/effectifs', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/dossiers', S.personPath, S.casePath, '/usms-ls/mandats', '/usms-ls/wanted', '/usms-ls/annonces', '/usms-ls/reglages',
     '/usms-ls/recherche', S.platePath, S.gangPath, '/usms-ls/rapports', S.reportPath, '/usms-ls/rapports/nouveau', '/usms-ls/preuves', S.evidencePath,
-    '/usms-ls/transferts', '/usms-ls/tribunal', '/usms-ls/witsec', S.witnessPath, '/usms-ls/sog', S.missionPath, '/usms-ls/renseignement']],
-  deputy: [S.dan, ['/usms-ls', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/mandats', '/usms-ls/rapports', S.reportPath, '/usms-ls/transferts', '/usms-ls/tribunal', '/usms-ls/sog']],
+    '/usms-ls/transferts', '/usms-ls/tribunal', '/usms-ls/witsec', S.witnessPath, '/usms-ls/sog', S.missionPath, '/usms-ls/renseignement',
+    '/usms-ls/academie', '/usms-ls/affaires', S.iaPath, '/usms-ls/logistique', '/usms-ls/statistiques', '/usms-ls/carte', '/usms-ls/effectifs/' + S.leoId]],
+  deputy: [S.dan, ['/usms-ls', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/mandats', '/usms-ls/rapports', S.reportPath, '/usms-ls/transferts', '/usms-ls/tribunal', '/usms-ls/sog',
+    '/usms-ls/academie', '/usms-ls/logistique', '/usms-ls/statistiques', '/usms-ls/carte']],
   justice: [S.judge, ['/justice']],
-  public: [null, ['/avis/usms-ls', '/usms-ls']],
+  public: [null, ['/avis/usms-ls', '/avis/usms-ls/candidature', '/avis/usms-ls/plainte', '/usms-ls']],
 };
 const problems = [];
 for (const [variant, o] of [['ordi-clair', {}], ['ordi-sombre', { dark: true }], ['tel-clair', { mobile: true }], ['tel-sombre', { mobile: true, dark: true }]]) {

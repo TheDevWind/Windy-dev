@@ -29,7 +29,7 @@ const linkTo = (href, text) => h('a', { href }, text);
 export async function alertsCard(ctx) {
   const list = await rows('alerts', q => q.eq('org_id', ctx.me.id).is('read_at', null).order('at', { ascending: false }).limit(20));
   if (!list.length) return null;
-  const IC = { witsec: 'cadenas', sog: 'bouclier', transfert: 'camion', menace: 'alerte', autre: 'megaphone' };
+  const IC = { witsec: 'cadenas', sog: 'bouclier', transfert: 'camion', menace: 'alerte', affaires: 'oeil', academie: 'diplome', logistique: 'boite', autre: 'megaphone' };
   return h('section', { class: 'card alertcard' }, h('h2', {}, 'Alertes', h('span', { class: 'right' }, h('button', { class: 'btn small', type: 'button',
     onclick: ev => run(ev.currentTarget, async () => { await rpc('read_alerts', { p_org: ctx.me.id }); ctx.reload(); return { message: 'Alertes marquées comme lues.' }; }) }, 'Tout marquer comme lu'))),
     h('ul', { class: 'people' }, list.map(a => h('li', { class: 'al-' + a.kind }, h('span', { class: 'ev-ic' }, ico(IC[a.kind] || 'alerte', 16)),

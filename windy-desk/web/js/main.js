@@ -11,6 +11,7 @@ import * as MOD from './modules.js';
 import * as MDT from './mdt.js';
 import * as ENQ from './mdt-enquete.js';
 import * as OPS from './mdt-ops.js';
+import * as GES from './mdt-gestion.js';
 import { sb, rpc, rows, emailFor } from './sb.js';
 
 const ME = { session: null, spaces: null, quiet: false };
@@ -58,7 +59,7 @@ async function route() {
     if (a === 'fisc') return await platformSpace('fisc', b);
     if (a === 'editeur') return await platformSpace('editeur', b, c);
     if (a === 'justice') return await platformSpace('justice', b);
-    if (a === 'avis') return await avisPage(b);
+    if (a === 'avis') return await avisPage(b, c);
     if (RESERVED.includes(a)) return message('Page introuvable', 'Cette adresse n’existe pas.', h('a', { class: 'btn', href: '/' }, 'Retour à l’accueil'));
     if (b === 'activer') return await activatePage(a, c);
     return await orgSpace(a, b || 'accueil', c);
@@ -252,7 +253,9 @@ async function orgSpace(code, page, sub) {
     return message('Pas d’accès à ' + pub.name, 'Ce compte n’a pas (ou plus) accès à cette entreprise. Si c’est une erreur, demande un nouveau lien à ton patron.',
       h('button', { class: 'btn', onclick: signOut }, 'Se connecter avec un autre compte'));
   }
-  // service public : à la première connexion, l'agent choisit sa signature avant d'entrer dans le MDT
+  // service public : un agent suspendu par les Affaires internes n'entre plus ; à la première connexion, il choisit sa signature
+  if (me.suspended_until) return message('Accès suspendu', 'Ton accès au MDT de ' + me.name + ' est suspendu par les Affaires internes jusqu’au '
+    + new Date(me.suspended_until).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) + '.', h('button', { class: 'btn', onclick: signOut }, 'Se déconnecter'));
   if (me.sector === 'service_public' && !me.signature_style) return MDT.signatureGate(me, () => { ME.spaces = null; route(); });
   const can = cap => me.caps.includes(cap), has = m => me.modules.includes(m);
   // le menu suit l'offre (modules) et le grade (accès)
@@ -260,10 +263,13 @@ async function orgSpace(code, page, sub) {
     ['recolte', 'Récolte', 'epi', true], ['factures', 'Factures', 'facture', can('compta')], ['dons', 'Dons', 'coeur', can('stock')],
     ['vehicules', 'Véhicules', 'camion', true], ['evenements', 'Événements', 'calendrier', true]];
   const svc = me.sector === 'service_public';
+  // l'étape 4 du MDT (académie, affaires internes, logistique, statistiques, carte) ne s'affiche qu'une fois sa base en place
+  const v4 = svc && 'ia' in me;
   const nav = svc ? [{ page: 'accueil', href: '/' + code, label: 'Tableau de bord', short: 'Accueil', icon: 'accueil' },
     ...[['recherche', 'Recherche', 'loupe', null, 'dossiers'], ['dossiers', 'Dossiers', 'dossier'], ['rapports', 'Rapports', 'rapport'], ['mandats', 'Mandats', 'marteau'], ['preuves', 'Preuves', 'scelle'],
-      ['wanted', 'Most Wanted', 'cible', 'Wanted'], ['transferts', 'Transferts', 'camion'], ['tribunal', 'Tribunal', 'balance'], ['witsec', 'WITSEC', 'cadenas', null, null, !!me.witsec],
-      ['sog', 'SOG', 'bouclier'], ['renseignement', 'Renseignement', 'reseau', 'Rens.'], ['effectifs', 'Effectifs', 'badge'], ['presence', 'Présence', 'horloge'], ['annonces', 'Annonces', 'megaphone']]
+      ['wanted', 'Most Wanted', 'cible', 'Wanted'], ['carte', 'Carte', 'carte', null, null, v4], ['transferts', 'Transferts', 'camion'], ['tribunal', 'Tribunal', 'balance'], ['witsec', 'WITSEC', 'cadenas', null, null, !!me.witsec],
+      ['sog', 'SOG', 'bouclier'], ['renseignement', 'Renseignement', 'reseau', 'Rens.'], ['effectifs', 'Effectifs', 'badge'], ['presence', 'Présence', 'horloge'], ['academie', 'Académie', 'diplome', null, null, v4],
+      ['logistique', 'Logistique', 'boite', null, null, v4], ['affaires', 'Affaires internes', 'oeil', 'Aff. int.', null, !!me.ia], ['statistiques', 'Statistiques', 'graph', 'Stats', null, v4], ['annonces', 'Annonces', 'megaphone']]
       .filter(([id, , , , mod, ok]) => has(mod || id) && ok !== false).map(([id, label, icon, short]) => ({ page: id, href: '/' + code + '/' + id, label, icon, short: short || null })),
     can('equipe') ? { page: 'reglages', href: '/' + code + '/reglages', label: 'Réglages', icon: 'reglages' } : null].filter(Boolean)
   : [{ page: 'accueil', href: '/' + code, label: 'Tableau de bord', short: 'Accueil', icon: 'accueil' },
@@ -287,7 +293,9 @@ async function orgSpace(code, page, sub) {
       preuves: sub ? (isId(sub) ? c => ENQ.preuve(c, sub) : () => go(list, true)) : ENQ.preuves,
       transferts: OPS.transferts, tribunal: OPS.tribunal, renseignement: OPS.renseignement,
       witsec: sub ? (isId(sub) ? c => OPS.temoin(c, sub) : () => go(list, true)) : OPS.witsec,
-      sog: sub ? (isId(sub) ? c => OPS.mission(c, sub) : () => go(list, true)) : OPS.sog };
+      sog: sub ? (isId(sub) ? c => OPS.mission(c, sub) : () => go(list, true)) : OPS.sog,
+      academie: GES.academie, logistique: GES.logistique, statistiques: GES.statistiques, carte: GES.carte,
+      affaires: sub ? (isId(sub) ? c => GES.affaire(c, sub) : () => go(list, true)) : GES.affaires };
     return PAGES[page](ctx);
   }
   const PAGES = { accueil: dashboard, compta, reglages, equipe: sub && has('employes') ? c => MOD.employe(c, sub) : equipe,
@@ -475,7 +483,7 @@ async function reglages(ctx) {
   const [grades, journal, orgRow] = await Promise.all([rows('grades', q => q.eq('org_id', me.id).order('rank', { ascending: false })), rows('journal', q => q.eq('org_id', me.id).order('at', { ascending: false }).limit(100)),
     rows('orgs', q => q.eq('id', me.id))]);
   const o = orgRow[0];
-  const svcCards = me.sector === 'service_public' ? await MDT.settingsCards(ctx, grades) : null;
+  const svcCards = me.sector === 'service_public' ? [...await MDT.settingsCards(ctx, grades), ...('ia' in me ? await GES.adminCards(ctx, grades) : [])] : null;
   const refresh = () => reglages(ctx).catch(fail);
   const top = Math.max(...grades.map(g => g.rank));
   const box = (g, cap) => {
@@ -816,10 +824,10 @@ async function devisEdit(nav, who, id) {
 }
 
 // ================================================================== page publique des avis de recherche (sans connexion)
-async function avisPage(code) {
+async function avisPage(code, sub) {
   S.shown = null;
-  if (!code || !(await MDT.publicWanted(code.toLowerCase(), $app))) return message('Page introuvable', 'Aucun avis de recherche publié à cette adresse.', h('a', { class: 'btn', href: '/' }, 'Accueil'));
-  document.title = 'Avis de recherche · ' + BRAND;
+  if (!code || !(await MDT.publicWanted(code.toLowerCase(), $app, sub))) return message('Page introuvable', 'Rien de public à cette adresse.', h('a', { class: 'btn', href: '/' }, 'Accueil'));
+  document.title = ({ candidature: 'Candidature', plainte: 'Plainte' }[sub] || 'Avis de recherche') + ' · ' + BRAND;
 }
 
 // ================================================================== démarrage

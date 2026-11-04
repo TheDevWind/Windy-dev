@@ -9,7 +9,7 @@ const db = new PGlite();
 await db.exec(readFileSync(new URL('./supabase-shim.sql', import.meta.url), 'utf8'));
 for (const f of readdirSync(dir).sort()) await db.exec(readFileSync(new URL(f, dir), 'utf8'));
 
-const U = { editeur: 'e1', fisc: 'f1', juge: 'e2', dir: 'a1', chief: 'a2', sup: 'a3', insp: 'a4', dep: 'a5', rec: 'a6', gino: 'c1', autre: 'd9' };
+const U = { editeur: 'e1', fisc: 'f1', juge: 'e2', dir: 'a1', chief: 'a2', sup: 'a3', insp: 'a4', dep: 'a5', rec: 'a6', gino: 'c1', autre: 'd9', intrus: 'd8' };
 for (const k of Object.keys(U)) U[k] = '00000000-0000-0000-0000-0000000000' + U[k];
 for (const id of Object.values(U)) await db.query('insert into auth.users (id) values ($1)', [id]);
 
@@ -23,7 +23,7 @@ const one = async (who, sql, params) => (await as(who, sql, params))[0];
 const val = async (who, sql, params) => Object.values(await one(who, sql, params))[0];
 const fails = (who, sql, params, re) => assert.rejects(() => as(who, sql, params), re);
 const su = async (sql, params) => (await db.query(sql, params)).rows;
-const MDT = "array['effectifs','presence','dossiers','mandats','wanted','annonces','rapports','preuves','transferts','tribunal','witsec','sog','renseignement']";
+const MDT = "array['effectifs','presence','dossiers','mandats','wanted','annonces','rapports','preuves','transferts','tribunal','witsec','sog','renseignement','academie','affaires','logistique','statistiques','carte']";
 
 let usms, bella, G = {}, M = {}, unit = {}, qual = {};
 
@@ -105,8 +105,8 @@ test('effectifs : recrutement numéroté, places par grade, droits selon le grad
   assert.equal(d.callsign, 'Marshal-12'); assert.equal(d.phone, '555-0199');
   await fails('dep', 'select public.save_agent($1, null, $2, null, null, null)', [M['ines.park'], '1'], /propre fiche/);
   // un grade limité ne descend pas sous le nombre d'agents en poste
-  await fails('dir', 'select public.set_grade_meta($1, $2, 0, null)', [G['Supervisory'], '★★'], /Insigne|places/);
-  await one('dir', 'select public.set_grade_meta($1, $2, 3, 4500)', [G['Supervisory'], '★★']);
+  await fails('dir', 'select public.set_grade_meta($1, $2, 0, null, null)', [G['Supervisory'], '★★'], /Insigne|places/);
+  await one('dir', 'select public.set_grade_meta($1, $2, 3, 4500, null)', [G['Supervisory'], '★★']);
 });
 
 test('effectifs : départ, liste noire et retour', async () => {
@@ -479,4 +479,203 @@ test('renseignement : informateurs et paiements réservés, notes classifiées s
   assert.equal((await as('insp', 'select * from public.intel')).length, 3);
   await one('dep', 'select public.read_alerts($1)', [usms]);
   assert.equal((await alertsOf('dep')).length, 0);
+});
+
+// ================================================================== étape 4 : académie, affaires internes, logistique, statistiques, carte, administration
+let leo;
+test('académie : candidature publique, entretien, recrutement ; examen corrigé par le serveur ; parcours, FTO et entraînements', async () => {
+  const info = await val(null, "select public.service_info('usms-ls')");
+  assert.equal(info.apply, true); assert.equal(info.complain, true); assert.equal(info.questions.length, 6);
+  const answers = info.questions.map(q => ({ q: q.q, a: 'Réponse à ' + q.q }));
+  const num = await val(null, "select public.send_application('usms-ls', 'Léo Martin', '55555555', 'Léo#1234', $1)", [JSON.stringify(answers)]);
+  assert.equal(num, 'USMS-CAND-0001');
+  await fails(null, "select public.send_application('usms-ls', 'Léo Bis', '55555555', null, $1)", [JSON.stringify(answers)], /déjà en cours/);
+  await fails(null, "select public.send_application('usms-ls', 'Vide', null, null, $1)", [JSON.stringify([{ q: 'Question', a: '  ' }])], /toutes les questions/);
+  assert.equal((await as('dep', 'select * from public.applications')).length, 0);
+  const app = await one('sup', 'select id, status from public.applications where num = $1', [num]);
+  assert.ok((await alertsOf('sup')).some(a => a.kind === 'academie' && a.text.includes('USMS-CAND-0001')));
+  await fails('dep', "select public.schedule_interview($1, now() + interval '1 day', null)", [app.id], /ne permet pas/);
+  await one('sup', "select public.schedule_interview($1, now() + interval '1 day', $2)", [app.id, M['ava.chen']]);
+  assert.ok((await alertsOf('chief')).some(a => a.text.startsWith('Entretien de Léo Martin')));
+  assert.equal((await as('chief', "select a.title from public.agenda a join public.agenda_staff s on s.agenda_id = a.id where s.member_id = $1 and a.kind = 'reunion'", [M['ava.chen']]))[0].title, 'Entretien · Léo Martin');
+  await fails('dep', 'select public.accept_application($1, $2, $3, null)', [app.id, 'leo.martin', G['Recrue']], /ne permet pas/);
+  const r = await val('sup', 'select public.accept_application($1, $2, $3, $4)', [app.id, 'leo.martin', G['Recrue'], 'Marshal-40']);
+  assert.match(r.matricule, /^USMS-\d{4}$/);
+  leo = r.member_id;
+  await one('autre', 'select public.accept_invitation($1)', [r.token]);
+  const done = await one('sup', 'select status, member_id from public.applications where id = $1', [app.id]);
+  assert.equal(done.status, 'acceptee'); assert.equal(done.member_id, leo);
+  await fails('sup', "select public.refuse_application($1, 'Trop tard')", [app.id], /déjà décidée/);
+
+  // examen : les réponses ne sortent jamais ; corrigé par le serveur ; 24 h après un échec ; réussi, il valide le module
+  const exam = await one('dep', "select id, questions from public.exams where org_id = $1 and title = 'Codes radio'", [usms]);
+  assert.equal(exam.questions, 5);
+  assert.equal((await as('dep', 'select * from public.exam_keys')).length, 0);
+  const paper = await val('dep', 'select public.exam_paper($1)', [exam.id]);
+  assert.equal(paper.questions.length, 5); assert.ok(!JSON.stringify(paper).includes('answer'));
+  const ko = await val('dep', 'select public.submit_exam($1, $2)', [exam.id, JSON.stringify([1, 0, 0, 1, 1])]);
+  assert.equal(ko.score, 0); assert.equal(ko.passed, false);
+  await fails('dep', 'select public.submit_exam($1, $2)', [exam.id, JSON.stringify([0, 1, 2, 0, 0])], /repasser/);
+  await fails('rec', 'select public.submit_exam($1, $2)', [exam.id, JSON.stringify([0, 1])], /toutes les questions/);
+  const okr = await val('rec', 'select public.submit_exam($1, $2)', [exam.id, JSON.stringify([0, 1, 2, 0, 0])]);
+  assert.equal(okr.score, 100); assert.equal(okr.passed, true);
+  await fails('rec', 'select public.submit_exam($1, $2)', [exam.id, JSON.stringify([0, 1, 2, 0, 0])], /déjà réussi/);
+  const radio = await val('rec', "select id from public.training_modules where org_id = $1 and name = 'Radio et indicatifs'", [usms]);
+  assert.equal((await as('rec', 'select by_name from public.training_progress where member_id = $1 and module_id = $2', [M['remi.laval'], radio]))[0].by_name, 'Examen en ligne');
+  await fails('sup', 'select public.save_exam($1, null, $2)', [usms, { title: 'Mauvais', questions: [{ q: 'Une question ?', choices: ['A'], answer: 0 }] }], /2 à 6 réponses/);
+  await fails('sup', 'select public.save_exam($1, null, $2)', [usms, { title: 'Mauvais', questions: [{ q: 'Une question ?', choices: ['A', 'B'], answer: 2 }] }], /bonne réponse/);
+  const e2 = await val('sup', 'select public.save_exam($1, null, $2)', [usms, { title: 'Procédures', pass_pct: 50, questions: [{ q: 'Lire les droits ?', choices: ['Oui', 'Non'], answer: 0 }] }]);
+  assert.equal((await one('sup', 'select questions from public.exam_keys where exam_id = $1', [e2])).questions[0].answer, 0);
+
+  // parcours : formateur attribué, modules validés par un FTO, évaluation terrain
+  const proc = await val('rec', "select id from public.training_modules where org_id = $1 and name = 'Procédures d’interpellation'", [usms]);
+  await one('sup', 'select public.set_fto($1, $2)', [M['remi.laval'], M['dan.moss']]);
+  assert.equal((await one('rec', 'select fto_id from public.members where id = $1', [M['remi.laval']])).fto_id, M['dan.moss']);
+  await fails('dep', 'select public.validate_module($1, $2, true, null)', [M['remi.laval'], proc], /formateurs/);
+  await one('sup', 'select public.set_qualification($1, $2, true)', [M['dan.moss'], qual.FTO]);
+  await one('dep', "select public.validate_module($1, $2, true, 'Menottage propre')", [M['remi.laval'], proc]);
+  await fails('dep', 'select public.validate_module($1, $2, true, null)', [M['dan.moss'], proc], /Un autre formateur/);
+  await fails('dep', 'select public.add_field_eval($1, $2, 4, null)', [M['remi.laval'], { Conduite: 7 }], /de 1 à 5/);
+  await one('dep', "select public.add_field_eval($1, $2, 4, 'Bon contact, à l’aise à la radio')", [M['remi.laval'], { Conduite: 4, 'Procédures': 5 }]);
+  assert.equal((await as('rec', 'select overall from public.field_evals')).length, 1);
+  assert.equal((await as('insp', 'select * from public.field_evals')).length, 0);
+  // entraînement : planifié par l'académie, inscription, appel par le formateur
+  const tr = await val('sup', "select public.plan_training($1, 'Tir de précision', now() + interval '30 minutes', now() + interval '2 hours', 'Stand de tir', null)", [usms]);
+  await one('rec', 'select public.training_join($1, true)', [tr]);
+  await fails('rec', 'select public.mark_presence($1, $2, true)', [tr, M['remi.laval']], /formateurs/);
+  await one('dep', 'select public.mark_presence($1, $2, true)', [tr, M['remi.laval']]);
+  assert.equal((await one('rec', 'select present from public.agenda_staff where agenda_id = $1 and member_id = $2', [tr, M['remi.laval']])).present, true);
+});
+
+test('promotions : proposition avec les statistiques de l’agent, ancienneté et places vérifiées', async () => {
+  await fails('dep', "select public.propose_promotion($1, $2, 'Très bon élément, sérieux.')", [M['remi.laval'], G['Deputy']], /ne permet pas/);
+  await fails('sup', "select public.propose_promotion($1, $2, 'Très bon élément, sérieux.')", [M['remi.laval'], G['Recrue']], /plus haut que Recrue/);
+  const pid = await val('sup', "select public.propose_promotion($1, $2, 'Examen radio réussi, bon début de terrain.')", [M['remi.laval'], G['Deputy']]);
+  await fails('sup', "select public.propose_promotion($1, $2, 'Une deuxième proposition.')", [M['remi.laval'], G['Deputy']], /déjà en attente/);
+  const p = await one('chief', 'select stats from public.promotions where id = $1', [pid]);
+  assert.ok(p.stats.modules >= 2); assert.equal(p.stats.days_in_grade, 0);
+  assert.ok((await alertsOf('chief')).some(a => a.text.includes('Proposition de promotion : Rémi Laval')));
+  assert.equal((await as('rec', 'select * from public.promotions')).length, 0);
+  await fails('chief', 'select public.decide_promotion($1, true, null, false)', [pid], /Ancienneté insuffisante : 0 jour\(s\) en Recrue, 7 requis/);
+  await fails('chief', 'select public.decide_promotion($1, true, null, true)', [pid], /Ancienneté insuffisante/);   // seul le Director passe outre
+  await one('dir', "select public.decide_promotion($1, true, 'Accélérée par le Director', true)", [pid]);
+  assert.equal((await one('rec', 'select g.name from public.members m join public.grades g on g.id = m.grade_id where m.id = $1', [M['remi.laval']])).name, 'Deputy');
+  assert.ok((await alertsOf('rec')).some(a => a.text.includes('Félicitations')));
+  await fails('dir', 'select public.decide_promotion($1, false, null, false)', [pid], /déjà décidée/);
+});
+
+test('affaires internes : plainte publique, enquête, sanction appliquée, suspension qui coupe l’accès, ouverture automatique', async () => {
+  await fails(null, "select public.send_complaint('usms-ls', $1)", [{ facts: 'Trop court' }], /20 caractères/);
+  const pl = await val(null, "select public.send_complaint('usms-ls', $1)", [{ against: 'Agent au matricule 0005', facts: 'L’agent m’a parlé de manière insultante lors d’un contrôle.', happened: 'Hier soir, Vinewood' }]);
+  assert.equal(pl, 'USMS-PL-0001');
+  await fails('chief', 'select public.set_ia_officer($1, $2)', [usms, M['ines.park']], /Seul le Director/);
+  await one('dir', 'select public.set_ia_officer($1, $2)', [usms, M['ines.park']]);
+  assert.equal((await val('insp', 'select public.my_spaces()')).orgs[0].ia, true);
+  assert.equal((await val('dep', 'select public.my_spaces()')).orgs[0].ia, false);
+  assert.equal((await as('insp', 'select num from public.complaints')).length, 1);
+  assert.equal((await as('dep', 'select num from public.complaints')).length, 0);
+  // plainte interne : l'auteur suit la sienne, l'agent visé ne la voit pas
+  await fails('rec', 'select public.file_complaint($1, $2)', [usms, { against_member_id: M['remi.laval'], facts: 'Contre moi-même, ce qui n’a pas de sens.' }], /toi-même/);
+  const pl2 = await val('rec', 'select public.file_complaint($1, $2)', [usms, { against_member_id: M['dan.moss'], facts: 'Propos déplacés pendant la formation au tir, devant témoins.' }]);
+  assert.equal(pl2, 'USMS-PL-0002');
+  assert.equal((await as('rec', 'select num from public.complaints')).length, 1);
+  assert.equal((await as('dep', 'select num from public.complaints')).length, 0);
+  const c2 = await one('insp', 'select id from public.complaints where num = $1', [pl2]);
+  const ia = await val('insp', 'select public.open_ia_case($1, $2)', [usms, { complaint_id: c2.id }]);
+  assert.match(ia.num, /^USMS-AI-\d{4}$/);
+  assert.ok((await alertsOf('dir')).some(a => a.kind === 'affaires' && a.text.includes(ia.num)));
+  assert.ok(!(await alertsOf('dep')).some(a => a.text.includes(ia.num)));
+  await one('insp', "select public.ia_note($1, 'audition', 'Audition de l’agent : il reconnaît les faits.', null, null)", [ia.id]);
+  await one('insp', 'select public.ia_update($1, $2)', [ia.id, { agent_version: 'Je regrette mes propos.' }]);
+  await fails('insp', "select public.ia_close($1, 'Court', null, null)", [ia.id], /10 caractères/);
+  await one('insp', "select public.ia_close($1, 'Faits établis par deux témoins.', 'suspension', 3)", [ia.id]);
+  assert.equal((await one('insp', 'select status from public.complaints where id = $1', [c2.id])).status, 'classee');
+  // suspendu : plus aucun accès, mais l'espace dit pourquoi
+  assert.ok((await val('dep', 'select public.my_spaces()')).orgs[0].suspended_until);
+  assert.equal((await as('dep', 'select * from public.members')).length, 0);
+  await fails('dep', 'select public.mdt_duty($1)', [usms], /Accès refusé/);
+  assert.equal((await as('sup', "select kind from public.discipline where member_id = $1", [M['dan.moss']]))[0].kind, 'suspension');
+  await one('insp', 'select public.lift_suspension($1)', [M['dan.moss']]);
+  assert.equal((await as('dep', 'select * from public.members where id = $1', [M['dan.moss']])).length, 1);
+  // rétrogradation automatique ; on ne se sanctionne pas soi-même, ni le Director
+  await one('insp', "select public.apply_sanction($1, 'retrogradation', 'Faute grave en intervention', null, null)", [M['remi.laval']]);
+  assert.equal((await one('rec', 'select g.name from public.members m join public.grades g on g.id = m.grade_id where m.id = $1', [M['remi.laval']])).name, 'Recrue');
+  await fails('insp', "select public.apply_sanction($1, 'blame', 'Essai', null, null)", [M['ines.park']], /toi-même/);
+  await fails('insp', "select public.apply_sanction($1, 'blame', 'Essai', null, null)", [(await one('dir', "select id from public.members where login = 'jack.reed'")).id], /Director/);
+  await fails('dep', "select public.apply_sanction($1, 'blame', 'Essai', null, null)", [M['remi.laval']], /Affaires internes/);
+  // un dossier qui vise l'enquêteur lui reste fermé ; le journal d'audit est consultable
+  const self = await val('dir', 'select public.open_ia_case($1, $2)', [usms, { member_id: M['ines.park'], reason: 'Fuite d’informations' }]);
+  assert.equal((await as('insp', 'select * from public.ia_cases where id = $1', [self.id])).length, 0);
+  await fails('insp', "select public.ia_note($1, 'note', 'Je regarde mon dossier', null, null)", [self.id], /te concerne/);
+  assert.ok((await as('insp', 'select * from public.journal where org_id = $1', [usms])).length > 0);
+  // témoin WITSEC perdu : dossier ouvert tout seul
+  const w = await su("select id from public.witnesses where code = 'WS-ALPHA-01'");
+  await one('dir', 'select public.save_witness($1, $2, $3)', [usms, w[0].id, { status: 'perdu' }]);
+  assert.equal((await as('dir', "select count(*)::int as n from public.ia_cases where reason = 'Témoin WITSEC WS-ALPHA-01 perdu'"))[0].n, 1);
+});
+
+test('logistique : armes lourdes réservées au SOG, équipement en stock, parc, réservations et dégâts', async () => {
+  await fails('sup', 'select public.save_weapon($1, null, $2)', [usms, { serial: 'M4-0001', model: 'Carabine M4', category: 'lourde' }], /ne permet pas/);
+  const m4 = await val('chief', 'select public.save_weapon($1, null, $2)', [usms, { serial: 'm4-0001', model: 'Carabine M4', category: 'lourde' }]);
+  assert.equal((await one('dep', 'select serial from public.weapons where id = $1', [m4])).serial, 'M4-0001');
+  await fails('chief', 'select public.save_weapon($1, null, $2)', [usms, { serial: 'M4-0001', model: 'Doublon', category: 'poing' }], /existe déjà/);
+  await fails('chief', 'select public.issue_weapon($1, $2, null)', [m4, M['remi.laval']], /réservé au SOG/);
+  await one('chief', "select public.issue_weapon($1, $2, 'Opération Grove')", [m4, M['dan.moss']]);
+  await fails('chief', 'select public.issue_weapon($1, $2, null)', [m4, M['ines.park']], /pas disponible/);
+  assert.equal((await as('dep', 'select * from public.weapon_loans')).length, 1);
+  assert.equal((await as('insp', 'select * from public.weapon_loans')).length, 0);
+  await one('chief', 'select public.return_weapon($1, null)', [m4]);
+  const glock = await val('chief', 'select public.save_weapon($1, null, $2)', [usms, { serial: 'GL-17-0042', model: 'Glock 17', category: 'poing', min_grade_id: G['Inspector'] }]);
+  await fails('chief', 'select public.issue_weapon($1, $2, null)', [glock, M['dan.moss']], /grade minimum Inspector/);
+  const vest = await val('chief', 'select public.save_equipment($1, null, $2)', [usms, { name: 'Gilet pare-balles', kind: 'gilet', alert_below: 3 }]);
+  assert.equal(await val('chief', "select public.move_equipment($1, 10, null, 'Livraison')", [vest]), 10);
+  await fails('chief', 'select public.move_equipment($1, -12, null, null)', [vest], /Stock insuffisant : il reste 10/);
+  assert.equal(await val('chief', 'select public.move_equipment($1, -2, $2, null)', [vest, M['dan.moss']]), 8);
+  // parc : blindé réservé au SOG, un véhicule sorti une seule fois, retour avec dégâts, réparation
+  const tank = await val('chief', 'select public.fleet_save($1, null, $2)', [usms, { model: 'Granger blindé', plate: 'usms 01', kind: 'blinde' }]);
+  assert.equal((await one('rec', 'select plate from public.fleet where id = $1', [tank])).plate, 'USMS 01');
+  await fails('rec', "select public.fleet_take($1, 'Patrouille', null)", [tank], /réservé au SOG/);
+  const trip = await val('dep', "select public.fleet_take($1, 'Assaut', null)", [tank]);
+  await fails('chief', 'select public.fleet_take($1, null, null)', [tank], /déjà sorti/);
+  await fails('rec', "select public.fleet_return($1, null)", [trip], /conducteur/);
+  await one('dep', "select public.fleet_return($1, 'Rétroviseur arraché')", [trip]);
+  assert.equal((await one('rec', 'select state from public.fleet where id = $1', [tank])).state, 'abime');
+  await one('chief', "select public.fleet_state($1, 'ok')", [tank]);
+  assert.equal((await one('rec', 'select repaired_by from public.fleet_damage where vehicle_id = $1', [tank])).repaired_by, 'Ava Chen');
+  const car = await val('chief', 'select public.fleet_save($1, null, $2)', [usms, { model: 'Buffalo', plate: 'USMS 02', kind: 'marque' }]);
+  const book = await val('insp', "select public.fleet_book($1, now() + interval '5 minutes', now() + interval '2 hours', 'Audience')", [car]);
+  await fails('rec', "select public.fleet_book($1, now() + interval '1 hour', now() + interval '3 hours', null)", [car], /déjà réservé/);
+  await fails('rec', "select public.fleet_take($1, null, null)", [car], /Réservé par Ines Park/);
+  assert.equal(await val('insp', "select public.fleet_take($1, null, null)", [car]), book);
+  await one('insp', 'select public.fleet_return($1, null)', [book]);
+});
+
+test('statistiques, carte et administration : bilan, repères, modèles, logo, sauvegarde', async () => {
+  const st = await val('dep', 'select public.mdt_stats($1, 4)', [usms]);
+  assert.equal(st.series.length, 4); assert.ok(st.agents.some(a => a.name === 'Dan Moss'));
+  assert.ok(st.cases.total >= 1); assert.ok(Array.isArray(st.late));
+  await fails('intrus', 'select public.mdt_stats($1, 4)', [usms], /Accès refusé/);
+  // carte
+  const mk = await val('dep', 'select public.save_mark($1, null, $2)', [usms, { kind: 'position', label: 'Vu au garage', x: 0.42, y: 0.61, person_id: person }]);
+  await fails('dep', 'select public.save_mark($1, null, $2)', [usms, { kind: 'lieu', label: 'Hors carte', x: 1.5, y: 0.2 }], /hors de la carte/);
+  await fails('dep', 'select public.save_mark($1, null, $2)', [usms, { kind: 'territoire', label: 'Grove', x: 0.5, y: 0.5 }], /organisation/);
+  await fails('autre', 'select public.delete_mark($1)', [mk], /Seul son auteur/);
+  await one('dep', 'select public.delete_mark($1)', [mk]);
+  const sh = await su("select id from public.safehouses where code = 'PL-NORD'");
+  await fails('dep', 'select public.place_safehouse($1, 0.3, 0.3)', [sh[0].id], /WITSEC/);
+  await one('insp', 'select public.place_safehouse($1, 0.3, 0.3)', [sh[0].id]);
+  // administration : modèle du formulaire, recrutement fermé, logo vérifié, ancienneté, export réservé au Director
+  await fails('dir', "select public.save_template($1, 'candidature', $2)", [usms, { questions: [{ q: 'Ab' }] }], /3 à 200/);
+  await one('dir', "select public.save_template($1, 'candidature', $2)", [usms, { questions: [{ q: 'Nom et âge RP' }, { q: 'Motivations', long: true }] }]);
+  assert.equal((await val(null, "select public.service_info('usms-ls')")).questions.length, 2);
+  await one('dir', "select public.save_template($1, 'r_arrestation', $2)", [usms, { text: 'Le [date], à [lieu], j’ai procédé à l’interpellation de…' }]);
+  await one('dir', 'select public.save_service_settings($1, $2)', [usms, { recruiting: false }]);
+  await fails(null, "select public.send_application('usms-ls', 'Tard Venu', null, null, '[]')", [], /fermé/);
+  await fails('dir', 'select public.save_service_settings($1, $2)', [usms, { logo_path: usms + '/logo/absent.png' }], /introuvable/);
+  await one('dir', 'select public.set_grade_meta($1, $2, 12, 3000, 30)', [G['Deputy'], 'DUSM']);
+  assert.equal((await one('dep', 'select min_days from public.grades where id = $1', [G['Deputy']])).min_days, 30);
+  await fails('chief', 'select public.export_service($1)', [usms], /Seul le Director/);
+  const ex = await val('dir', 'select public.export_service($1)', [usms]);
+  assert.ok(ex.tables.applications.length === 1 && ex.tables.weapons.length === 2 && !('witness_secrets' in ex.tables));
+  assert.ok(!JSON.stringify(ex).includes('Lucia Moretti'));
 });
