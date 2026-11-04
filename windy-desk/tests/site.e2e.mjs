@@ -436,6 +436,15 @@ try {
   // ------------------------------------------------------------ services publics : les US Marshals
   const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
   const photo = name => ({ name, mimeType: 'image/png', buffer: PNG });
+  // première connexion à un service : nom de signature et modèle, avant d'entrer dans le MDT
+  const chooseSignature = async (p, name, model) => {
+    await settle(p, '.sigpage');
+    await p.getByLabel('Nom de signature').fill(name);
+    await p.getByRole('radio', { name: 'Modèle ' + model }).click();
+    await shot(p, 'signature-' + model.toLowerCase());
+    await p.getByRole('button', { name: 'Enregistrer ma signature' }).click();
+    await settle(p, '.dutycard');
+  };
   await step('l’éditeur crée le service US Marshals et un accès Justice', async () => {
     await ed.goto(BASE + '/editeur'); await settle(ed, 'h1:text("Clients")');
     await ed.getByRole('button', { name: 'Nouveau client' }).click();
@@ -464,7 +473,7 @@ try {
     await reed.getByLabel(/Choisis un mot de passe/).fill(PW);
     await reed.getByLabel('Le même, une seconde fois').fill(PW);
     await reed.getByRole('button', { name: 'Créer mon accès' }).click();
-    await reed.waitForURL(BASE + '/usms-ls'); await settle(reed, '.dutycard');
+    await reed.waitForURL(BASE + '/usms-ls'); await chooseSignature(reed, 'J. Reed', 'Rapide');
     await reed.getByRole('button', { name: 'Prendre mon service' }).click();
     await toast(reed, 'Bon service');
     await reed.getByRole('button', { name: 'En intervention' }).click();
@@ -494,7 +503,7 @@ try {
     await sam.goto(S.samLink); await settle(sam, '.auth');
     await sam.getByRole('button', { name: 'Continuer avec Discord' }).click();
     await sam.getByRole('button', { name: 'Activer avec cette session' }).click();
-    await sam.waitForURL(BASE + '/usms-ls'); await settle(sam, '.dutycard');
+    await sam.waitForURL(BASE + '/usms-ls'); await chooseSignature(sam, 'S. Ortiz', 'Paraphe');
     const navs = await sam.locator('nav.side .navs a').allInnerTexts();
     assert.deepEqual(navs.map(x => x.trim()), ['Accueil', 'Recherche', 'Dossiers', 'Rapports', 'Mandats', 'Preuves', 'Wanted', 'Effectifs', 'Présence', 'Annonces']);
     await sam.goto(BASE + '/usms-ls/effectifs'); await settle(sam, 'h1:text("Effectifs")');
@@ -513,7 +522,7 @@ try {
     await dan.getByLabel(/Choisis un mot de passe/).fill(PW);
     await dan.getByLabel('Le même, une seconde fois').fill(PW);
     await dan.getByRole('button', { name: 'Créer mon accès' }).click();
-    await dan.waitForURL(BASE + '/usms-ls'); await settle(dan, '.dutycard');
+    await dan.waitForURL(BASE + '/usms-ls'); await chooseSignature(dan, 'Dan Moss', 'Classique');
     S.danId = (await backend.sql("select id from public.members where login = 'dan.moss'"))[0].id;
     await dan.goto(BASE + '/usms-ls/effectifs/' + S.danId); await settle(dan, 'h1:text("Dan Moss")');
     await dan.getByRole('button', { name: 'Modifier ma fiche' }).click();
@@ -706,12 +715,17 @@ try {
     await toast(dan, /USMS-A-0001 soumis pour validation/);
     await dan.locator('h1', { hasText: 'USMS-A-0001' }).waitFor();
     await sam.goto(BASE + S.reportPath); await settle(sam, '.reviewcard');
-    await sam.getByRole('button', { name: 'Valider le rapport' }).click();
-    await toast(sam, 'USMS-A-0001 validé');
+    await sam.locator('.reviewcard .sig', { hasText: 'S. Ortiz' }).waitFor();
+    await sam.getByRole('button', { name: 'Signer et valider' }).click();
+    await toast(sam, 'USMS-A-0001 validé et signé');
+    await sam.locator('.signbox', { hasText: 'Superviseur' }).locator('.sig', { hasText: 'S. Ortiz' }).waitFor();
+    const [sg] = await backend.sql("select author_signature->>'style' a, reviewer_signature->>'name' b from public.reports where num = 'USMS-A-0001'");
+    assert.deepEqual(sg, { a: 'classique', b: 'S. Ortiz' });
     await sam.getByRole('button', { name: 'PNG ou PDF' }).click();
     await sam.locator('.modal .docimg[src^="data:image/png"]').waitFor();
     const [png] = await Promise.all([sam.waitForEvent('download'), sam.locator('.modal').getByRole('button', { name: 'PNG', exact: true }).click()]);
     assert.equal(png.suggestedFilename(), 'usms-a-0001.png');
+    if (SHOTS) await png.saveAs(SHOTS + 'rapport-document.png');
     await shot(sam, 'rapport-export');
     await sam.keyboard.press('Escape');
     const [r] = await backend.sql("select total_fine::int f, total_jail j, status from public.reports where num = 'USMS-A-0001'");

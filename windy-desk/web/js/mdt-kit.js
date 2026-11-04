@@ -1,6 +1,6 @@
 // ================================================================== Windy Desk · outils partagés du MDT (services publics)
 // Petites briques d'interface, libellés, fichiers et lectures communes aux pages du MDT (mdt.js, mdt-enquete.js).
-import { h, ico, pill, liveDot, initials, date } from './ui.js';
+import { h, s, ico, pill, liveDot, initials, date } from './ui.js';
 import { rows, upload } from './sb.js';
 
 export const DAY = 864e5, HOUR = 36e5;
@@ -82,3 +82,61 @@ export function stateOf(m, open, absences, shifts) {
   return h('span', { class: 'muted' }, 'Hors service');
 }
 export const inactiveDays = (m, shifts) => Math.floor((Date.now() - Math.max(...shifts.filter(x => x.member_id === m.id).map(x => ms(x.started_at)), m.last_seen ? ms(m.last_seen) : 0, ms(m.created_at))) / DAY);
+
+// ---------------------------------------------------------------- signatures manuscrites (choisies à la première connexion)
+// Six modèles, chacun une police manuscrite libre hébergée sur le site (voir fonts/LICENCE-signatures.txt) et un trait final.
+export const SIGS = {
+  classique: { label: 'Classique', font: 'Sig Classique', scale: 1, flourish: 'swash' },
+  elegante: { label: 'Élégante', font: 'Sig Elegante', scale: .95, flourish: 'none' },
+  rapide: { label: 'Rapide', font: 'Sig Rapide', scale: 1.05, flourish: 'line' },
+  paraphe: { label: 'Paraphe', font: 'Sig Paraphe', scale: 1.4, flourish: 'loop' },
+  manuscrite: { label: 'Manuscrite', font: 'Sig Manuscrite', scale: .62, flourish: 'none' },
+  moderne: { label: 'Moderne', font: 'Sig Moderne', scale: 1.1, flourish: 'line' },
+};
+const FLOURISH = { swash: 'M2 9 C 28 2, 58 14, 98 4', line: 'M4 8 L 96 5', loop: 'M2 7 C 16 13, 26 1, 40 7 S 74 12, 98 2', none: null };
+export const INK = '#1d3a8a';
+/** Une signature à l'écran : le nom dans la police du modèle, et son trait final. */
+export function sigEl(sig, px) {
+  const m = SIGS[(sig && sig.style) || 'classique'] || SIGS.classique, size = (px || 34) * m.scale;
+  const path = FLOURISH[m.flourish];
+  return h('span', { class: 'sigwrap' }, h('span', { class: 'sig', style: 'font-family:"' + m.font + '",cursive;font-size:' + size + 'px' }, (sig && sig.name) || '—'),
+    path ? s('svg', { class: 'sigline', viewBox: '0 0 100 14', preserveAspectRatio: 'none', 'aria-hidden': 'true' }, s('path', { d: path })) : null);
+}
+/** Choix du nom et du modèle : renvoie l'élément et la lecture de la valeur. */
+export function sigPicker(name, style) {
+  let cur = SIGS[style] ? style : 'classique';
+  const nameIn = input({ maxlength: 40, value: name || '', 'aria-label': 'Nom de signature', autocomplete: 'off' });
+  const grid = h('div', { class: 'sigpick', role: 'radiogroup', 'aria-label': 'Modèle de signature' });
+  const paint = () => grid.replaceChildren(...Object.entries(SIGS).map(([k, s]) => h('button', { type: 'button', role: 'radio', class: 'sigopt' + (k === cur ? ' on' : ''), 'aria-checked': String(k === cur), 'aria-label': 'Modèle ' + s.label,
+    onclick: () => { cur = k; paint(); } }, sigEl({ name: nameIn.value.trim() || 'Ton nom', style: k }, 34), h('small', {}, s.label))));
+  nameIn.addEventListener('input', paint);
+  paint();
+  return { el: h('div', { class: 'stack sigpicker' }, field('Ton nom, tel que tu signes', nameIn), grid), get: () => ({ name: nameIn.value.trim(), style: cur }) };
+}
+/** Les polices des signatures doivent être chargées avant de dessiner un document. */
+export async function sigFontsReady(styles) {
+  try { await Promise.all([...new Set(styles.filter(Boolean))].map(k => document.fonts.load('40px "' + (SIGS[k] || SIGS.classique).font + '"'))); } catch (e) { /* police de secours */ }
+}
+/** Dessine une signature sur un document (canvas), centrée sur cx, posée sur la ligne y. */
+export function drawSig(g, sig, cx, y, maxW, px) {
+  const s = SIGS[(sig && sig.style) || 'classique'] || SIGS.classique;
+  let size = px * s.scale;
+  g.font = size + 'px "' + s.font + '", cursive';
+  const text = (sig && sig.name) || '';
+  let w = g.measureText(text).width;
+  if (w > maxW) { size *= maxW / w; g.font = size + 'px "' + s.font + '", cursive'; w = maxW; }
+  g.save(); g.fillStyle = INK; g.textAlign = 'center'; g.fillText(text, cx, y); g.restore();
+  const path = FLOURISH[s.flourish];
+  if (!path) return;
+  // le trait final, redessiné à l'échelle du nom
+  const pts = path.match(/-?[\d.]+/g).map(Number), x0 = cx - w / 2 - 6, sx = (w + 12) / 100, y0 = y + size * .05, sy = size / 60;
+  g.save(); g.strokeStyle = INK; g.lineWidth = Math.max(1.4, size / 26); g.lineCap = 'round'; g.beginPath();
+  const P = i => [x0 + pts[i] * sx, y0 + pts[i + 1] * sy];
+  if (s.flourish === 'line') { g.moveTo(...P(0)); g.lineTo(...P(2)); }
+  else if (s.flourish === 'swash') { g.moveTo(...P(0)); g.bezierCurveTo(...P(2), ...P(4), ...P(6)); }
+  else { g.moveTo(...P(0)); g.bezierCurveTo(...P(2), ...P(4), ...P(6)); g.bezierCurveTo(...P(6).map((v, i) => v + (v - P(4)[i])), ...P(8), ...P(10)); }
+  g.stroke(); g.restore();
+}
+/** Le sceau des US Marshals, chargé une fois (pour les documents dessinés). */
+let sealP = null;
+export const seal = () => sealP || (sealP = new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = '/img/usms-seal.png'; }));

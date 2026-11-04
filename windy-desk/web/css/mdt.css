@@ -211,3 +211,35 @@ a.id-name:hover { text-decoration: underline; }
 }
 
 .card > .strip:not(:last-child) { margin-bottom: 16px; }
+
+/* signatures manuscrites (polices libres hébergées, voir fonts/LICENCE-signatures.txt) */
+@font-face { font-family: "Sig Classique"; src: url(/fonts/sig-classique.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Sig Elegante"; src: url(/fonts/sig-elegante.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Sig Rapide"; src: url(/fonts/sig-rapide.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Sig Paraphe"; src: url(/fonts/sig-paraphe.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Sig Manuscrite"; src: url(/fonts/sig-manuscrite.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Sig Moderne"; src: url(/fonts/sig-moderne.woff2) format("woff2"); font-display: swap; }
+.sigwrap { position: relative; display: inline-flex; flex-direction: column; align-items: center; max-width: 100%; color: var(--ink, #1d3a8a); line-height: 1.15; }
+.sig { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 4px; }
+.sigline { width: 100%; height: 12px; margin-top: -6px; overflow: visible; }
+.sigline path { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+:root { --ink: #1d3a8a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ink: #a9bdf5; } }
+:root[data-theme="dark"] { --ink: #a9bdf5; }
+.sigpick { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.sigopt { display: grid; gap: 6px; justify-items: center; align-content: center; min-height: 104px; padding: 14px 10px 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); color: var(--text); overflow: hidden; }
+.sigopt small { color: var(--muted); font-size: 12px; font-weight: 600; }
+.sigopt:hover { border-color: var(--text); }
+.sigopt.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.sigsetup { width: min(760px, 100%); display: grid; gap: 18px; padding: 28px; text-align: left; }
+.sigsetup .sealrow { display: flex; align-items: center; gap: 16px; }
+.sigsetup .sealrow img { width: 72px; height: 72px; flex: none; }
+.sigsetup h1 { margin: 0; font: 600 34px/1.1 var(--serif); }
+.sigsetup p { margin: 0; }
+.signs { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.signbox { display: grid; gap: 4px; justify-items: center; align-content: end; min-height: 150px; padding: 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--stripe); text-align: center; }
+.signbox .lbl { justify-self: start; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.signbox .rule { display: block; width: 80%; height: 1px; background: var(--text); opacity: .5; margin: 2px 0 6px; }
+.signbox .wait { color: var(--muted); font-style: italic; }
+.idsig { margin-top: 4px; }
+.avis-seal { width: 48px; height: 48px; flex: none; }

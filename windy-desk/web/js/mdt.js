@@ -2,12 +2,12 @@
 // Tableau de bord, effectifs et fiche agent, présence, dossiers et individus, mandats, Most Wanted, annonces,
 // réglages propres aux services, espace Justice et page publique des avis de recherche.
 // Comme le reste du site : lecture des tables (les règles RLS filtrent), écriture par les fonctions SQL.
-import { S, h, ico, modal, toast, run, table, pill, strip, fchips, money, initials, date, ago, clock, liveDot, copyText, slug, themeSwitch, butterfly, BRAND } from './ui.js';
+import { $app, S, h, ico, modal, toast, run, table, pill, strip, fchips, money, initials, date, ago, clock, liveDot, copyText, slug, themeSwitch, butterfly, BRAND } from './ui.js';
 import { rpc, rows, upload, signedUrls, publicUrl } from './sb.js';
 import { saveBlob } from './doc.js';
 import { KIND, DANGER, personCards, caseCards, reportAlerts } from './mdt-enquete.js';
 
-import { DAY, HOUR, ms, iso, day, field, input, area, select, foot, fullName, today, toLocal, weekStart, hours, fmtH, tabs, search, match, STATUS, OPEN, PRIO, WKIND, WST, wStatus, DUTY, STAGE, CAREER, LOG, ANN, AGENDA, IMAGE, ANY, stamp, extOf, send, photoIn, face, personCell, feed, load, gradeOf, myRank, absentToday, stateOf, inactiveDays } from './mdt-kit.js';
+import { DAY, HOUR, ms, iso, day, field, input, area, select, foot, fullName, today, toLocal, weekStart, hours, fmtH, tabs, search, match, STATUS, OPEN, PRIO, WKIND, WST, wStatus, DUTY, STAGE, CAREER, LOG, ANN, AGENDA, IMAGE, ANY, stamp, extOf, send, photoIn, face, personCell, feed, load, gradeOf, myRank, absentToday, stateOf, inactiveDays , SIGS, sigEl, sigPicker, seal } from './mdt-kit.js';
 
 // ---------------------------------------------------------------- prise de service (tableau de bord et présence)
 function dutyCard(ctx, mine, meRow) {
@@ -226,7 +226,7 @@ export async function agent(ctx, id) {
   const week = hours(shifts, weekStart());
   ctx.show('effectifs', m.name, [g.badge ? h('span', { class: 'insigne' }, g.badge) : null, ' ', pill(g.name, 'info'), ' ', m.matricule || '', m.callsign ? ' · ' + m.callsign : '', ' ',
     !m.active ? pill('Parti', 'bad') : open ? liveDot((DUTY[m.duty_status] || DUTY.dispo)[0]) : null],
-    [self && m.active ? h('button', { class: 'btn', type: 'button', onclick: editModal }, 'Modifier ma fiche') : null,
+    [self && m.active ? [h('button', { class: 'btn', type: 'button', onclick: editModal }, 'Modifier ma fiche'), h('button', { class: 'btn', type: 'button', onclick: () => signatureModal(ctx, m) }, 'Ma signature')] : null,
       manage && m.active ? [h('button', { class: 'btn', type: 'button', onclick: editModal }, 'Modifier'), h('button', { class: 'btn', type: 'button', onclick: gradeModal }, ico('etoile', 18), 'Grade'),
         h('button', { class: 'btn', type: 'button', onclick: noteModal }, ico('journal', 18), 'Note'), h('button', { class: 'btn danger', type: 'button', onclick: leaveModal }, 'Départ')] : null,
       manage && !m.active ? h('button', { class: 'btn primary', type: 'button', onclick: returnModal }, 'Réintégrer') : null,
@@ -235,6 +235,7 @@ export async function agent(ctx, id) {
     !m.active ? h('div', { class: 'banner bad' }, ico('sortie', 20), h('div', {}, h('b', {}, 'Ancien agent' + (m.left_at ? ' · parti le ' + day(m.left_at) : '')), h('span', {}, m.left_reason || ''))) : null,
     h('div', { class: 'grid cols2' },
       h('section', { class: 'card idcard' }, h('div', { class: 'id-top' }, face(m.photo, urls, m.name, 'xl'), h('div', { class: 'art' }, h('b', { class: 'id-name' }, m.name),
+        m.signature_style ? h('span', { class: 'idsig' }, sigEl({ name: m.signature_name, style: m.signature_style }, 26)) : null,
         h('span', {}, g.name + (m.rank_since ? ' depuis le ' + day(m.rank_since) : '')), h('span', { class: 'pills' }, myUnits.map(([u, main]) => pill(u.code + (main ? ' · principale' : ''), main ? 'info' : null))))),
         h('dl', { class: 'lines-dl rules' }, info('Matricule', m.matricule || '—'), info('Indicatif', m.callsign || '—'), info('Parcours', STAGE[m.stage][0]), info('Téléphone', m.phone || '—'),
           info('Discord', m.discord_id || '—'), info('FiveM', m.fivem_id || '—'), info('Recruté le', day(m.created_at)), info('Vu', m.last_seen ? ago(ms(m.last_seen)) : 'jamais'),
@@ -257,6 +258,24 @@ export async function agent(ctx, id) {
       has('presence') ? h('section', { class: 'card' }, h('h2', {}, 'Présence'), strip([['Cette semaine', fmtH(week)], ['30 derniers jours', fmtH(hours(shifts, Date.now() - 30 * DAY))], ['Services', String(shifts.length)]]),
         table([['Début', x => date(ms(x.started_at)), 'num', x => x.started_at], ['Fin', x => x.ended_at ? clock(ms(x.ended_at)) : 'en cours'], ['Durée', x => fmtH(hours([x], 0)), 'num']], shifts.slice(0, 8), null, 'Aucun service.'),
         absences.length ? [h('h3', { class: 'sub-h' }, 'Absences'), table([['Du', a => day(a.starts_on), 'num', a => a.starts_on], ['Au', a => day(a.ends_on)], ['Motif', a => a.reason], ['', a => absPill(a)]], absences)] : null) : null));
+}
+// ---------------------------------------------------------------- signature de l'agent
+function signatureModal(ctx, m) {
+  const pick = sigPicker(m.signature_name || m.name, m.signature_style), ok = h('button', { class: 'btn primary' }, 'Enregistrer');
+  const md = modal('Ma signature', h('p', { class: 'muted', style: 'margin:0' }, 'Elle figure au bas de tes rapports et de ceux que tu valides. Les rapports déjà signés gardent l’ancienne.'), pick.el, foot({ close: () => md.close() }, ok));
+  md.box.classList.add('wide');
+  ok.addEventListener('click', () => run(ok, async () => { const v = pick.get(); await rpc('save_signature', { p_org: ctx.me.id, p_name: v.name, p_style: v.style }); md.close(); ctx.reload(); return { message: 'Signature enregistrée.' }; }));
+}
+/** Première connexion à un service : l'agent écrit son nom et choisit sa signature avant d'entrer dans le MDT. */
+export async function signatureGate(me, done) {
+  S.shown = null;
+  const img = await seal();
+  const pick = sigPicker(me.member_name, null), ok = h('button', { class: 'btn primary wide' }, 'Enregistrer ma signature');
+  ok.addEventListener('click', () => run(ok, async () => { const v = pick.get(); await rpc('save_signature', { p_org: me.id, p_name: v.name, p_style: v.style }); done(); return { message: 'Signature enregistrée. Bienvenue, ' + me.member_name + '.' }; }));
+  $app.replaceChildren(h('div', { class: 'gate wide sigpage' }, themeSwitch(), h('section', { class: 'card sigsetup' },
+    h('div', { class: 'sealrow' }, img ? h('img', { src: img.src, alt: '' }) : null, h('div', { class: 'art' }, h('span', { class: 'muted small' }, me.name + ' · ' + me.grade), h('h1', {}, 'Ta signature'))),
+    h('p', { class: 'muted' }, 'Avant ta première prise de service, écris ton nom tel que tu signes et choisis un modèle. Ta signature figurera au bas de tes rapports et de ceux que tu valides ; tu pourras la changer depuis ta fiche.'),
+    pick.el, ok)));
 }
 const absPill = a => a.status === 'validee' ? pill('Validée', 'ok') : a.status === 'refusee' ? pill('Refusée', 'bad') : pill('À valider', 'warn');
 
@@ -611,6 +630,8 @@ async function poster(org, w, p, photoUrl) {
   const ink = '#2b2118', paper = '#f4ead8', red = '#9b1c16';
   x.fillStyle = paper; x.fillRect(0, 0, W, H);
   x.strokeStyle = ink; x.lineWidth = 6; x.strokeRect(36, 36, W - 72, H - 72); x.lineWidth = 2; x.strokeRect(52, 52, W - 104, H - 104);
+  const sealImg = await seal();
+  if (sealImg) { x.drawImage(sealImg, 84, 74, 124, 124); x.drawImage(sealImg, W - 208, 74, 124, 124); }
   const t = (s, px, py, font, color, align) => { x.font = font; x.fillStyle = color || ink; x.textAlign = align || 'center'; x.fillText(s, px, py); };
   t((org.kind || 'US Marshals Service').toUpperCase(), W / 2, 130, '600 30px ' + sans, ink);
   t('WANTED', W / 2, 290, '600 190px ' + serif, ink);
@@ -801,7 +822,7 @@ export async function publicWanted(code, $app) {
     await rpc('send_tip', { p_code: code, p_wanted: pick.value || null, p_text: text.value.trim(), p_contact: contact.value.trim() || null });
     text.value = ''; contact.value = ''; done.hidden = false; return { message: 'Signalement envoyé, merci.' };
   }));
-  $app.replaceChildren(h('div', { class: 'avis' }, h('header', { class: 'avis-head' }, h('div', { class: 'avis-brand' }, h('span', { class: 'avis-star' }, ico('etoile', 26)), h('span', { class: 'art' }, h('b', {}, d.name), h('small', {}, d.kind))), themeSwitch()),
+  $app.replaceChildren(h('div', { class: 'avis' }, h('header', { class: 'avis-head' }, h('div', { class: 'avis-brand' }, h('img', { class: 'avis-seal', src: '/img/usms-seal.png', alt: '' }), h('span', { class: 'art' }, h('b', {}, d.name), h('small', {}, d.kind))), themeSwitch()),
     h('main', { class: 'avis-main' }, h('h1', {}, 'Avis de recherche'), h('p', { class: 'muted' }, 'Ces personnes sont recherchées. Ne tente pas de les arrêter toi-même : signale-les, même anonymement.'),
       d.list.length ? h('div', { class: 'avis-grid' }, d.list.map(w => h('article', { class: 'avis-card' }, w.photo ? h('img', { src: publicUrl(w.photo), alt: 'Affiche de ' + w.name, loading: 'lazy' }) : null,
         h('div', { class: 'avis-info' }, h('span', { class: 'rank' }, String(w.rank)), h('span', { class: 'art' }, h('b', {}, w.name), h('small', {}, (w.alias ? '« ' + w.alias + ' » · ' : '') + w.reason)), Number(w.reward) ? pill('Récompense ' + money(w.reward), 'ok') : null))))

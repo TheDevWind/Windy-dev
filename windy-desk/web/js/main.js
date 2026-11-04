@@ -251,6 +251,8 @@ async function orgSpace(code, page, sub) {
     return message('Pas d’accès à ' + pub.name, 'Ce compte n’a pas (ou plus) accès à cette entreprise. Si c’est une erreur, demande un nouveau lien à ton patron.',
       h('button', { class: 'btn', onclick: signOut }, 'Se connecter avec un autre compte'));
   }
+  // service public : à la première connexion, l'agent choisit sa signature avant d'entrer dans le MDT
+  if (me.sector === 'service_public' && !me.signature_style) return MDT.signatureGate(me, () => { ME.spaces = null; route(); });
   const can = cap => me.caps.includes(cap), has = m => me.modules.includes(m);
   // le menu suit l'offre (modules) et le grade (accès)
   const MODNAV = [['caisse', 'Caisse', 'caisse', can('encaisser')], ['stock', 'Stock', 'boite', can('stock')], ['fabrication', 'Fabrication', 'fiole', can('fabriquer')],

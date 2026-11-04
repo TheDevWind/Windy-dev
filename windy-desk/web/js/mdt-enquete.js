@@ -5,7 +5,7 @@
 import { S, h, ico, modal, toast, run, table, pill, strip, fchips, money, date, ago, slug, BRAND } from './ui.js';
 import { rpc, rows, signedUrls } from './sb.js';
 import { exportModal } from './doc.js';
-import { DAY, ms, iso, day, field, input, area, select, foot, fullName, toLocal, tabs, search, match, STATUS, OPEN, face, personCell, feed, load, send, photoIn } from './mdt-kit.js';
+import { DAY, ms, iso, day, field, input, area, select, foot, fullName, toLocal, tabs, search, match, STATUS, OPEN, face, personCell, feed, load, send, photoIn, sigEl, drawSig, sigFontsReady, seal, INK } from './mdt-kit.js';
 
 export const KIND = { suspect: ['Suspect', 'warn'], civil: ['Civil', null], temoin: ['Témoin', 'info'], victime: ['Victime', 'info'] };
 export const DANGER = { faible: ['Danger faible', null], moyenne: ['Danger moyen', 'warn'], elevee: ['Danger élevé', 'bad'], extreme: ['Danger extrême', 'bad'] };
@@ -390,13 +390,19 @@ function reportView(ctx, r, d) {
   const extra = T.fields.map(fieldText).filter(Boolean);
   const review = can('valider') && r.status === 'soumis' && r.author_id !== me.member_id;
   const note = area({ maxlength: 1000, placeholder: 'Remarque pour l’auteur (obligatoire pour renvoyer en correction)', 'aria-label': 'Remarque du valideur' });
-  const decide = ok => ev => run(ev.currentTarget, async () => { await rpc('review_report', { p_id: r.id, p_ok: ok, p_note: note.value }); ctx.reload(); return { message: ok ? 'Rapport ' + r.num + ' validé.' : 'Rapport renvoyé à ' + r.author_name + ' pour correction.' }; });
+  const decide = ok => ev => run(ev.currentTarget, async () => { await rpc('review_report', { p_id: r.id, p_ok: ok, p_note: note.value }); ctx.reload(); return { message: ok ? 'Rapport ' + r.num + ' validé et signé.' : 'Rapport renvoyé à ' + r.author_name + ' pour correction.' }; });
+  const mySig = me.signature_style ? { name: me.signature_name, style: me.signature_style, printed: me.member_name, grade: me.grade } : null;
+  const authorSig = r.author_signature || (r.status !== 'brouillon' ? { name: r.author_name, style: 'classique', printed: r.author_name } : null);
+  const signBox = (label, sig, at, wait) => h('div', { class: 'signbox' }, h('span', { class: 'lbl' }, label), sig ? sigEl(sig, 36) : h('span', { class: 'wait' }, wait), h('i', { class: 'rule' }),
+    sig ? [h('b', {}, sig.printed || sig.name), h('small', { class: 'muted' }, [sig.grade, sig.matricule].filter(Boolean).join(' · ')), at ? h('small', { class: 'muted' }, 'Signé le ' + date(ms(at))) : null] : null);
   const exp = () => exportModal({ kind: T.label.toUpperCase(), num: r.num, title: 'Rapport ' + r.num, render: () => reportCanvas(ctx.me, r, { T, person: p, caseNum: c ? c.num + ' · ' + c.title : null, parts, extra }) }, slug(r.num));
   ctx.show('rapports', r.num + ' · ' + r.title, h('span', { class: 'pills' }, pill(T.label, 'info'), statusPill(r)),
     [h('button', { class: 'btn', type: 'button', onclick: exp }, ico('telecharger', 18), 'PNG ou PDF'), h('a', { class: 'btn ghost', href: base(ctx) + '/rapports' }, 'Tous les rapports')],
     r.firearm ? h('div', { class: 'banner bad' }, ico('alerte', 20), h('div', {}, h('b', {}, 'Usage d’une arme à feu'), h('span', {}, r.status === 'brouillon' ? 'Un dossier Affaires internes s’ouvrira à la soumission.' : 'Un dossier Affaires internes a été ouvert automatiquement.'))) : null,
-    review ? h('section', { class: 'card stack reviewcard' }, h('h2', {}, 'Validation'), note, h('div', { class: 'acts' }, h('button', { class: 'btn', type: 'button', onclick: decide(false) }, 'Renvoyer pour correction'),
-      h('button', { class: 'btn primary', type: 'button', onclick: decide(true) }, ico('coche', 18), 'Valider le rapport'))) : null,
+    review ? h('section', { class: 'card stack reviewcard' }, h('h2', {}, 'Validation'), h('p', { class: 'muted', style: 'margin:0' }, 'En validant, ta signature est apposée au bas du rapport.'),
+      h('div', { class: 'signs' }, signBox('Ta signature', mySig, null, 'Choisis ta signature depuis ta fiche agent')), note,
+      h('div', { class: 'acts' }, h('button', { class: 'btn', type: 'button', onclick: decide(false) }, 'Renvoyer pour correction'),
+        h('button', { class: 'btn primary', type: 'button', onclick: decide(true) }, ico('coche', 18), 'Signer et valider'))) : null,
     h('div', { class: 'grid cols2' },
       h('section', { class: 'card' }, h('h2', {}, 'Informations'), h('dl', { class: 'lines-dl rules' }, info('Auteur', r.author_name), info('Date des faits', date(ms(r.occurred_at))), info('Lieu', r.place),
         info(T.person || 'Personne', p ? linkTo(base(ctx) + '/individus/' + p.id, fullName(p)) : null), info('Dossier', c ? linkTo(base(ctx) + '/dossiers/' + c.id, c.num) : null),
@@ -407,83 +413,112 @@ function reportView(ctx, r, d) {
     r.charges.length ? h('section', { class: 'card' }, h('h2', {}, 'Infractions'), table([['Code', x => h('b', {}, x.code)], ['Infraction', x => x.title], ['Nombre', x => String(x.qty), 'num'],
       ['Amende', x => money(x.fine * x.qty), 'num', x => x.fine * x.qty], ['Peine', x => months(x.jail * x.qty), 'num', x => x.jail * x.qty]], r.charges),
       h('p', { class: 'charges-total' }, 'Amende totale : ' + money(r.total_fine) + ' · Peine totale : ' + months(r.total_jail))) : null,
-    h('section', { class: 'card' }, h('h2', {}, 'Récit'), h('p', { class: 'prewrap' }, r.narrative || '—')));
+    h('section', { class: 'card' }, h('h2', {}, 'Récit'), h('p', { class: 'prewrap' }, r.narrative || '—')),
+    h('section', { class: 'card' }, h('h2', {}, 'Signatures'), h('div', { class: 'signs' }, signBox('Agent rédacteur', authorSig, r.submitted_at, 'Non signé : brouillon'),
+      signBox('Superviseur', r.status === 'valide' ? r.reviewer_signature || { name: r.reviewer, style: 'classique', printed: r.reviewer } : null, r.reviewed_at,
+        r.status === 'a_corriger' ? 'Renvoyé pour correction' : 'En attente de validation'))));
 }
 
-// le document officiel : un PNG A4 (et son PDF), toujours sur papier blanc
+// le document officiel : un PNG A4 (et son PDF), papier blanc, au sceau des US Marshals ; signé en bas de page
 async function reportCanvas(org, r, x) {
-  try { await Promise.all(['400', '600', '700'].map(w => document.fonts.load(w + ' 24px Inter')).concat([document.fonts.load('600 40px "Cormorant Garamond"')])); } catch (e) { /* police de secours */ }
-  const W = 1240, H = 1754, M = 90, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const author = r.author_signature || (r.status !== 'brouillon' ? { name: r.author_name, style: 'classique', printed: r.author_name } : null);
+  const boss = r.status === 'valide' ? r.reviewer_signature || { name: r.reviewer, style: 'classique', printed: r.reviewer } : null;
+  try { await Promise.all(['400', '600', '700'].map(w => document.fonts.load(w + ' 24px Inter')).concat(['500', '600'].map(w => document.fonts.load(w + ' 40px "Cormorant Garamond"')))); } catch (e) { /* police de secours */ }
+  await sigFontsReady([author && author.style, boss && boss.style]);
+  const img = await seal();
+  const W = 1240, H = 1754, M = 96, c = document.createElement('canvas'); c.width = W; c.height = H;
   const g = c.getContext('2d'), sans = 'Inter, "Helvetica Neue", Arial, sans-serif', serif = '"Cormorant Garamond", Georgia, serif';
-  const ink = '#1d2433', muted = '#5b6170', line = '#d9dce3', navy = '#1f2a44', gold = '#c9a227';
-  const font = (w, s, f) => { g.font = w + ' ' + s + 'px ' + (f || sans); };
+  const ink = '#16213a', muted = '#5d6577', line = '#c9cfdb', navy = '#1b2a4e', gold = '#b08d3c', tint = '#f2f4f8';
+  const font = (w, sz, f) => { g.font = w + ' ' + sz + 'px ' + (f || sans); };
   const text = (t, px, py, color, align) => { g.fillStyle = color || ink; g.textAlign = align || 'left'; g.fillText(t, px, py); };
+  const spaced = (t, px, py, color, align, sp) => { g.save(); g.letterSpacing = (sp || 2) + 'px'; text(t, px, py, color, align); g.restore(); };
   const wrap = (t, maxW) => String(t || '').split('\n').flatMap(par => { const out = []; let cur = ''; par.split(/\s+/).forEach(w => { const n = cur ? cur + ' ' + w : w; if (g.measureText(n).width > maxW && cur) { out.push(cur); cur = w; } else cur = n; }); out.push(cur); return out; });
+  const fit = (t, maxW) => { let v = String(t || ''); if (g.measureText(v).width <= maxW) return v; while (v.length > 1 && g.measureText(v + '…').width > maxW) v = v.slice(0, -1); return v + '…'; };
+  const plain = n => Math.round(Number(n)).toLocaleString('fr-FR').replace(/\s/g, ' ') + ' $';
+  const when = t => new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(' ', ' à ');
   g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
-  // bandeau et sceau
-  g.fillStyle = navy; g.fillRect(0, 0, W, 200);
-  g.fillStyle = gold; g.beginPath(); g.arc(M + 55, 100, 55, 0, Math.PI * 2); g.fill();
-  g.fillStyle = navy; g.beginPath();
-  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? 18 : 42; g.lineTo(M + 55 + Math.cos(a) * rr, 100 + Math.sin(a) * rr); }
-  g.closePath(); g.fill();
-  font('700', 30); g.save(); g.letterSpacing = '3px'; text('UNITED STATES MARSHALS SERVICE', M + 135, 92, '#ffffff'); g.restore();
-  font('400', 21); text('Département de la Justice · ' + org.name, M + 135, 128, '#c7cde0');
-  font('700', 24); text('N° ' + r.num, W - M, 94, gold, 'right');
-  font('400', 18); text('Émis le ' + new Date().toLocaleDateString('fr-FR'), W - M, 128, '#c7cde0', 'right');
-  // tampon du statut
-  const stamp = { valide: ['VALIDÉ', '#2f6b2a'], soumis: ['EN ATTENTE', '#8a5100'], a_corriger: ['À CORRIGER', '#ad241d'], brouillon: ['BROUILLON', '#5b6170'] }[r.status];
-  g.save(); g.translate(W - M - 140, 262); g.rotate(-0.08); g.strokeStyle = stamp[1]; g.lineWidth = 4; g.strokeRect(-130, -34, 260, 64);
-  font('700', 30); text(stamp[0], 0, 11, stamp[1], 'center'); g.restore();
-  font('700', 18); g.save(); g.letterSpacing = '3px'; text(x.T.label.toUpperCase(), M, 250, navy); g.restore();
-  let y = 300;
-  font('600', 40, serif); text(r.title.length > 40 ? r.title.slice(0, 39) + '…' : r.title, M, y, ink);
-  y += 30;
-  const section = t => { y += 34; font('700', 15); g.save(); g.letterSpacing = '2px'; text(t.toUpperCase(), M, y, muted); g.restore(); y += 12; g.fillStyle = ink; g.fillRect(M, y, W - 2 * M, 2); y += 10; };
-  // informations
+  // filigrane : le sceau, très pâle, au centre de la page
+  if (img) { g.save(); g.globalAlpha = .045; g.drawImage(img, (W - 720) / 2, 560, 720, 720); g.restore(); }
+  // en-tête : sceau, ministère, service, cartouche de référence
+  if (img) g.drawImage(img, M, 64, 150, 150);
+  const hx = M + 176;
+  font('600', 14); spaced('U.S. DEPARTMENT OF JUSTICE', hx, 104, gold, 'left', 4);
+  font('600', 46, serif); text('United States Marshals Service', hx, 152, navy);
+  font('400', 18); text(fit(org.name, 470), hx, 186, muted);
+  const bx = W - M - 270, by = 70, bw = 270, bh = 140;
+  g.strokeStyle = navy; g.lineWidth = 1.5; g.strokeRect(bx, by, bw, bh);
+  g.fillStyle = navy; g.fillRect(bx, by, bw, 34);
+  font('700', 13); spaced('RÉFÉRENCE DU DOCUMENT', bx + bw / 2, by + 22, '#ffffff', 'center', 2);
+  font('700', 24); text(r.num, bx + bw / 2, by + 72, navy, 'center');
+  font('400', 14); text('Émis le ' + new Date().toLocaleDateString('fr-FR'), bx + bw / 2, by + 100, muted, 'center');
+  text('Usage interne · confidentiel', bx + bw / 2, by + 124, muted, 'center');
+  g.fillStyle = navy; g.fillRect(M, 244, W - 2 * M, 3); g.fillStyle = gold; g.fillRect(M, 251, W - 2 * M, 1);
+  // intitulé
+  font('700', 24); spaced(x.T.label.toUpperCase(), W / 2, 300, navy, 'center', 4);
+  font('italic 500', 26, serif); text(fit(r.title, W - 2 * M - 80), W / 2, 338, muted, 'center');
+  let y = 372, n = 0;
+  const section = t => { y += 30; n++; font('700', 14); spaced(['I', 'II', 'III', 'IV'][n - 1] + '. ' + t.toUpperCase(), M, y, navy, 'left', 3); g.fillStyle = gold; g.fillRect(M, y + 9, 46, 2); g.fillStyle = line; g.fillRect(M + 52, y + 10, W - 2 * M - 52, 1); y += 24; };
+  // I. informations, en cases de formulaire
   section('Informations');
-  const items = [['Agent', r.author_name], ['Date des faits', new Date(r.occurred_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })], ['Lieu', r.place],
+  const items = [['Agent rédacteur', r.author_name + (author && author.matricule ? ' · ' + author.matricule : '')], ['Date et heure des faits', when(r.occurred_at)], ['Lieu', r.place],
     [x.T.person || 'Personne', x.person ? fullName(x.person) + (x.person.alias ? ' « ' + x.person.alias + ' »' : '') : null], ['Dossier', x.caseNum],
     ['Agents présents', x.parts.map(m => m.callsign || m.name).join(', ')]].concat(x.extra).filter(([, v]) => v);
-  const colW = (W - 2 * M - 40) / 2;
+  const cw = (W - 2 * M) / 2, ch = 66;
   items.forEach(([k, v], i) => {
-    const cx = M + (i % 2) * (colW + 40), cy = y + Math.floor(i / 2) * 64;
-    font('600', 15); text(k, cx, cy + 22, muted);
-    font('400', 20); const lines = wrap(v, colW); text(lines[0] + (lines.length > 1 ? '…' : ''), cx, cy + 50, ink);
-    g.fillStyle = line; g.fillRect(cx, cy + 62, colW, 1);
+    const cx = M + (i % 2) * cw, cy = y + Math.floor(i / 2) * ch;
+    g.strokeStyle = line; g.lineWidth = 1; g.strokeRect(cx, cy, cw, ch);
+    font('600', 12); spaced(k.toUpperCase(), cx + 14, cy + 22, muted, 'left', 1.5);
+    font('400', 19); text(fit(v, cw - 28), cx + 14, cy + 50, ink);
   });
-  y += Math.ceil(items.length / 2) * 64 + 6;
-  // infractions
+  y += Math.ceil(items.length / 2) * ch;
+  // II. infractions retenues
   if (r.charges.length) {
     section('Infractions retenues');
-    font('600', 15); const cols = [M, M + 120, W - M - 330, W - M - 180, W - M];
-    text('CODE', cols[0], y + 22, muted); text('INFRACTION', cols[1], y + 22, muted); text('NOMBRE', cols[2] + 60, y + 22, muted, 'right'); text('AMENDE', cols[3] + 60, y + 22, muted, 'right'); text('PEINE', cols[4], y + 22, muted, 'right');
-    y += 34;
-    r.charges.slice(0, 10).forEach(ch => {
-      font('700', 18); text(ch.code, cols[0], y + 22, ink); font('400', 18); text(ch.title.length > 46 ? ch.title.slice(0, 45) + '…' : ch.title, cols[1], y + 22, ink);
-      text(String(ch.qty), cols[2] + 60, y + 22, ink, 'right'); text(money(ch.fine * ch.qty).replace(/\s/g, ' '), cols[3] + 60, y + 22, ink, 'right'); text(months(ch.jail * ch.qty), cols[4], y + 22, ink, 'right');
-      g.fillStyle = line; g.fillRect(M, y + 34, W - 2 * M, 1); y += 38;
+    const cols = [M + 14, M + 130, W - M - 330, W - M - 170, W - M - 14];
+    g.fillStyle = tint; g.fillRect(M, y, W - 2 * M, 36);
+    font('700', 12); [['CODE', 0, 'left'], ['INFRACTION', 1, 'left'], ['NOMBRE', 2, 'right'], ['AMENDE', 3, 'right'], ['PEINE', 4, 'right']].forEach(([t, i, a]) => spaced(t, cols[i] + (i === 2 ? 70 : i === 3 ? 60 : 0), y + 23, muted, a, 1.5));
+    y += 36;
+    r.charges.slice(0, 9).forEach((cg, i) => {
+      if (i % 2) { g.fillStyle = '#fafbfd'; g.fillRect(M, y, W - 2 * M, 38); }
+      font('700', 17); text(cg.code, cols[0], y + 25, navy); font('400', 17); text(fit(cg.title, cols[2] - cols[1] - 20), cols[1], y + 25, ink);
+      text(String(cg.qty), cols[2] + 70, y + 25, ink, 'right'); text(plain(cg.fine * cg.qty), cols[3] + 60, y + 25, ink, 'right'); text(months(cg.jail * cg.qty), cols[4], y + 25, ink, 'right');
+      g.fillStyle = line; g.fillRect(M, y + 38, W - 2 * M, 1); y += 38;
     });
-    if (r.charges.length > 10) { font('400', 16); text('… et ' + (r.charges.length - 10) + ' autre(s) infraction(s)', M, y + 20, muted); y += 30; }
-    font('700', 20); text('Amende totale : ' + money(r.total_fine).replace(/\s/g, ' ') + '    Peine totale : ' + months(r.total_jail), W - M, y + 34, ink, 'right'); y += 50;
+    if (r.charges.length > 9) { font('italic 400', 15); text('… et ' + (r.charges.length - 9) + ' autre(s) infraction(s), détaillées dans le MDT.', M + 14, y + 22, muted); y += 32; }
+    g.fillStyle = navy; g.fillRect(M, y, W - 2 * M, 2);
+    font('700', 18); text('Amende totale : ' + plain(r.total_fine) + '      Peine totale : ' + months(r.total_jail), cols[4], y + 30, navy, 'right');
+    font('600', 13); spaced('TOTAL', cols[0], y + 29, muted, 'left', 2);
+    y += 44;
   }
-  // récit
-  section('Récit');
-  font('400', 19);
-  const maxY = H - 300, lines = wrap(r.narrative || '—', W - 2 * M);
-  let i = 0;
-  for (; i < lines.length && y + 30 < maxY; i++) { y += 30; text(lines[i], M, y, ink); }
-  if (i < lines.length) { y += 30; font('400', 16); text('… suite du récit dans le MDT (' + (lines.length - i) + ' ligne(s)).', M, y, muted); }
-  // signatures
-  const sy = H - 240, bw = (W - 2 * M - 40) / 2;
-  [['Rédigé par', r.author_name, r.submitted_at || r.created_at], ['Validé par', r.status === 'valide' ? r.reviewer : '—', r.status === 'valide' ? r.reviewed_at : null]].forEach(([k, v, at], j) => {
-    const bx = M + j * (bw + 40);
-    g.strokeStyle = line; g.lineWidth = 2; g.strokeRect(bx, sy, bw, 130);
-    font('600', 15); text(k.toUpperCase(), bx + 20, sy + 32, muted);
-    font('600', 30, serif); text(v || '—', bx + 20, sy + 80, ink);
-    if (at) { font('400', 16); text('le ' + new Date(at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }), bx + 20, sy + 110, muted); }
+  // III. récit
+  section('Récit des faits');
+  const sigTop = H - 330;
+  font('400', 18);
+  const lines = wrap(r.narrative || '—', W - 2 * M - 40), maxLines = Math.max(2, Math.floor((sigTop - 40 - y) / 29));
+  const shown = lines.slice(0, maxLines);
+  const boxH = shown.length * 29 + 30 + (lines.length > maxLines ? 26 : 0);
+  g.strokeStyle = line; g.lineWidth = 1; g.strokeRect(M, y, W - 2 * M, boxH);
+  shown.forEach((l, i) => text(l, M + 20, y + 36 + i * 29, ink));
+  if (lines.length > maxLines) { font('italic 400', 15); text('… suite du récit dans le MDT (' + (lines.length - maxLines) + ' ligne(s)).', M + 20, y + boxH - 14, muted); }
+  // signatures, en bas de page
+  const sw = (W - 2 * M - 60) / 2;
+  [['L’agent rédacteur', author, r.submitted_at, r.status === 'brouillon' ? 'Brouillon : non signé' : ''], ['Le superviseur', boss, r.reviewed_at, r.status === 'a_corriger' ? 'Renvoyé pour correction' : 'En attente de validation']].forEach(([k, sig, at, wait], i) => {
+    const sx = M + i * (sw + 60), lineY = sigTop + 150;
+    font('600', 13); spaced(k.toUpperCase(), sx, sigTop + 20, muted, 'left', 2);
+    if (sig) drawSig(g, sig, sx + sw / 2, lineY - 22, sw - 40, 64);
+    else { font('italic 400', 17); text(wait, sx + sw / 2, lineY - 30, '#9aa1b0', 'center'); }
+    g.fillStyle = ink; g.fillRect(sx, lineY, sw, 1.5);
+    if (sig) {
+      font('700', 18); text(sig.printed || sig.name, sx, lineY + 30, ink);
+      font('400', 15); text([sig.grade, sig.matricule].filter(Boolean).join(' · '), sx, lineY + 54, muted);
+      if (at) text('Signé le ' + when(at), sx + sw, lineY + 30, muted, 'right');
+    }
   });
-  g.fillStyle = navy; g.fillRect(0, H - 70, W, 70);
-  font('400', 16); text('Document officiel du ' + org.name + ' · ' + r.num + ' · généré par ' + BRAND, W / 2, H - 28, '#c7cde0', 'center');
+  // pied de page
+  g.fillStyle = navy; g.fillRect(M, H - 86, W - 2 * M, 2);
+  font('600', 13); spaced('UNITED STATES MARSHALS SERVICE', M, H - 56, navy, 'left', 2);
+  font('400', 13); text(org.name + ' · document généré par le MDT', W / 2, H - 56, muted, 'center');
+  text(r.num + ' · page 1 / 1', W - M, H - 56, muted, 'right');
   return c;
 }
 

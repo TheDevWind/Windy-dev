@@ -367,3 +367,22 @@ test('code pénal et preuves : registre, chaîne de possession, sortie du regist
   assert.deepEqual(chain.map(x => x.action), ['saisie', 'transfert', 'tribunal', 'destruction']);
   assert.ok((await as('rec', "select text from public.case_log where case_id = $1 and text like 'Preuve USMS-P-0001%'", [kase])).length === 1);
 });
+
+test('signatures : choisies par l’agent, apposées à la soumission et à la validation, figées sur le rapport', async () => {
+  await fails('gino', "select public.save_signature($1, 'Gino', 'classique')", [usms], /Accès refusé/);
+  await fails('dep', "select public.save_signature($1, 'D', 'classique')", [usms], /2 à 40/);
+  await fails('dep', "select public.save_signature($1, 'Dan Moss', 'gothique')", [usms], /modèle/);
+  await one('dep', "select public.save_signature($1, 'D. Moss', 'rapide')", [usms]);
+  await one('sup', "select public.save_signature($1, 'S. Ortiz', 'paraphe')", [usms]);
+  assert.equal((await val('dep', 'select public.my_spaces()')).orgs[0].signature_style, 'rapide');
+  const r = await val('dep', "select public.save_report($1, null, 'libre', 'Note de service', null, null, now(), null, '{}', $2, '[]', false, '{}')", [usms, 'Un texte assez long pour être soumis.']);
+  await one('dep', 'select public.submit_report($1)', [r.id]);
+  await one('sup', 'select public.review_report($1, true, null)', [r.id]);
+  const sig = async () => one('rec', 'select author_signature a, reviewer_signature b, reviewer_id from public.reports where id = $1', [r.id]);
+  const s = await sig();
+  assert.deepEqual([s.a.name, s.a.style, s.a.grade, s.a.printed], ['D. Moss', 'rapide', 'Deputy', 'Dan Moss']);
+  assert.deepEqual([s.b.name, s.b.style, s.b.grade], ['S. Ortiz', 'paraphe', 'Supervisory']);
+  assert.equal(s.reviewer_id, M['sam.ortiz']);
+  await one('dep', "select public.save_signature($1, 'Daniel Moss', 'classique')", [usms]);
+  assert.equal((await sig()).a.name, 'D. Moss');
+});
