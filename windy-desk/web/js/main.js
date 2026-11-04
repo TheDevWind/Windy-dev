@@ -1,17 +1,22 @@
 // ================================================================== Windy Desk · le site
 // Adresses : /  ·  /connexion  ·  /connexion/plateforme  ·  /reclamer/<lien>  ·  /<entreprise>[/compta|/equipe|/reglages]
-//            /<entreprise>/activer/<lien>  ·  /fisc[/bareme|/<entreprise>]  ·  /editeur[/modules|/devis|/devis/<id>]
+//            /<entreprise>/activer/<lien>  ·  /fisc[/bareme|/<entreprise>]  ·  /editeur[/modules|/acces|/devis|/devis/<id>]
+//            /justice  ·  /avis/<service> (page publique des avis de recherche)
 import { $app, $tip, S, calm, arriving, h, ico, modal, toast, run, table, themeSwitch, liveDot, pill, strip, fchips, dailyBars, money, money2, initials,
   date, ago, clock, dayLabel, copyText, hideTip, slug, BRAND, butterfly, lockup, branch } from './ui.js';
-import { MODULES, moduleOf, PACKS, CAPS, CATEGORIES, DAYS, quoteTotal } from './catalog.js';
+import { MODULES, MDT_MODULES, modulesFor, moduleOf, PACKS, CAPS, capsFor, CATEGORIES, DAYS, quoteTotal } from './catalog.js';
 import { renderDoc, exportModal, quoteDoc } from './doc.js';
 import { landing } from './landing.js';
 import * as MOD from './modules.js';
+import * as MDT from './mdt.js';
 import { sb, rpc, rows, emailFor } from './sb.js';
 
 const ME = { session: null, spaces: null, quiet: false };
 const DAY = 864e5;
-const RESERVED = ['connexion', 'reclamer', 'fisc', 'editeur', 'api', 'assets'];
+const RESERVED = ['connexion', 'reclamer', 'fisc', 'editeur', 'justice', 'avis', 'api', 'assets'];
+const ROLE_HOME = { fisc: '/fisc', editeur: '/editeur', justice: '/justice' };
+const ROLE_NAME = { fisc: 'Contrôleur du fisc', editeur: 'Éditeur de ' + BRAND, justice: 'Justice' };
+const isId = v => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v || '');
 
 // ---------------------------------------------------------------- navigation
 export function go(path, replace) {
@@ -50,6 +55,8 @@ async function route() {
     if (a === 'reclamer') return claimPage(b);
     if (a === 'fisc') return await platformSpace('fisc', b);
     if (a === 'editeur') return await platformSpace('editeur', b, c);
+    if (a === 'justice') return await platformSpace('justice', b);
+    if (a === 'avis') return await avisPage(b);
     if (RESERVED.includes(a)) return message('Page introuvable', 'Cette adresse n’existe pas.', h('a', { class: 'btn', href: '/' }, 'Retour à l’accueil'));
     if (b === 'activer') return await activatePage(a, c);
     return await orgSpace(a, b || 'accueil', c);
@@ -90,7 +97,7 @@ function userBox(who) {
     ev.stopPropagation();
     if (menu) return close();
     const sp = ME.spaces || { orgs: [] };
-    const others = [sp.role === 'fisc' ? ['/fisc', 'Espace du fisc', 'balance'] : null, sp.role === 'editeur' ? ['/editeur', 'Espace éditeur', 'grille'] : null,
+    const others = [sp.role === 'fisc' ? ['/fisc', 'Espace du fisc', 'balance'] : null, sp.role === 'editeur' ? ['/editeur', 'Espace éditeur', 'grille'] : null, sp.role === 'justice' ? ['/justice', 'Espace Justice', 'marteau'] : null,
       ...sp.orgs.map(o => ['/' + o.code, o.name, 'batiment'])].filter(Boolean).filter(([p]) => !location.pathname.startsWith(p));
     menu = h('div', { class: 'menu', onclick: e2 => e2.stopPropagation() }, h('div', { class: 'mhead' }, h('span', { class: 'ava' }, initials(who.name)), h('span', { class: 'mtx' }, h('b', {}, who.name), h('small', {}, who.role))),
       others.length ? [h('div', { class: 'mlabel' }, 'Mes autres espaces'), others.map(([p, l, i]) => h('a', { href: p, onclick: close }, ico(i, 18), l))] : null,
@@ -108,11 +115,11 @@ async function signOut() {
   ME.session = null; ME.spaces = null;
   go(back && !RESERVED.includes(back) ? '/' + back : '/connexion', true);
 }
-function linkModal(title, url, who) {
+function linkModal(title, url, who, note) {
   const input = h('input', { type: 'text', value: url, readonly: true, style: 'width:100%', 'aria-label': 'Lien' });
   const copy = h('button', { class: 'btn primary' }, ico('copier', 18), 'Copier le lien');
   copy.addEventListener('click', () => { input.select(); copyText(url, 'Lien copié : envoie-le à ' + who + ' en message privé.'); });
-  const m = modal(title, h('p', { class: 'muted', style: 'margin:0' }, 'Envoie ce lien à ' + who + ' en message privé. Il est valable 48 heures et ne sert qu’une fois : la personne y choisit sa façon de se connecter (Discord ou mot de passe).'),
+  const m = modal(title, h('p', { class: 'muted', style: 'margin:0' }, note || 'Envoie ce lien à ' + who + ' en message privé. Il est valable 48 heures et ne sert qu’une fois : la personne y choisit sa façon de se connecter (Discord ou mot de passe).'),
     input, h('div', { class: 'foot' }, h('button', { class: 'btn', onclick: () => m.close() }, 'Fermer'), copy));
   input.select();
 }
@@ -146,7 +153,7 @@ function loginHome() {
       h('ul', { class: 'auth-points' }, ['Un compte par employé', 'Des accès selon le grade', 'Une adresse propre à l’entreprise'].map(t => h('li', {}, ico('coche', 18), t)))],
     h('h1', {}, 'Se connecter'), h('p', { class: 'muted' }, 'Entre l’adresse de ton entreprise.'),
     h('div', { class: 'codefield' }, h('span', {}, '/'), code, btn),
-    h('div', { class: 'auth-pro' }, h('a', { href: '/connexion/plateforme' }, ico('balance', 18), 'Fisc et éditeur')));
+    h('div', { class: 'auth-pro' }, h('a', { href: '/connexion/plateforme' }, ico('balance', 18), 'Fisc, Justice et éditeur')));
 }
 function passwordForm(space, onDone, labels) {
   const u = h('input', { type: 'text', autocomplete: 'username', autocapitalize: 'none', spellcheck: 'false', value: (labels && labels.login) || '', readonly: !!(labels && labels.login) });
@@ -177,40 +184,40 @@ function passwordForm(space, onDone, labels) {
 async function orgLogin(code) {
   const o = await rpc('org_public', { p_code: code });
   if (!o) return message('Entreprise introuvable', 'Aucune entreprise n’utilise l’adresse /' + code + '. Vérifie le lien envoyé par ton patron.', h('a', { class: 'btn', href: '/connexion' }, 'Chercher une autre entreprise'));
-  authFrame([h('b', { class: 'mk big inv' }, o.name[0].toUpperCase()), h('h2', {}, o.name), h('p', {}, o.kind + ' · espace de l’entreprise'), h('code', { class: 'auth-url' }, '/' + o.code),
+  authFrame([h('b', { class: 'mk big inv' }, o.name[0].toUpperCase()), h('h2', {}, o.name), h('p', {}, o.kind + (o.sector === 'service_public' ? ' · espace du service' : ' · espace de l’entreprise')), h('code', { class: 'auth-url' }, '/' + o.code),
       h('ul', { class: 'auth-points' }, o.modules.slice(0, 6).map(id => h('li', {}, ico(moduleOf(id).icon, 18), moduleOf(id).name)))],
-    h('h1', {}, 'Connexion'), h('p', { class: 'muted' }, 'Espace réservé à l’équipe de ' + o.name + '.'),
+    h('h1', {}, 'Connexion'), h('p', { class: 'muted' }, (o.sector === 'service_public' ? 'Espace réservé aux agents de ' : 'Espace réservé à l’équipe de ') + o.name + '.'),
     o.password_login ? passwordForm(o.code, () => route()) : null,
     o.discord_login ? (o.password_login ? h('div', { class: 'auth-or' }, h('span', {}, 'ou')) : null) : null,
     o.discord_login ? discordButton('/' + o.code) : null,
     h('p', { class: 'note' }, 'Pas encore de compte ? Ton patron t’envoie un lien d’activation depuis la page Équipe.'));
 }
 function platformLogin() {
-  authFrame([lockup('auth-lock'), h('h2', {}, 'Fisc et éditeur'), h('p', {}, 'L’espace du contrôleur du fisc (lecture seule sur toutes les entreprises) et celui de l’éditeur de ' + BRAND + '.')],
+  authFrame([lockup('auth-lock'), h('h2', {}, 'Fisc, Justice et éditeur'), h('p', {}, 'L’espace du contrôleur du fisc (lecture seule sur toutes les entreprises), celui de la Justice (signature des mandats) et celui de l’éditeur de ' + BRAND + '.')],
     h('h1', {}, 'Connexion'), h('p', { class: 'muted' }, 'Ton accès a été ouvert par un lien à usage unique.'),
-    passwordForm('plateforme', async () => { const sp = await spaces(true); go(sp.role === 'fisc' ? '/fisc' : sp.role === 'editeur' ? '/editeur' : '/connexion'); }),
+    passwordForm('plateforme', async () => { const sp = await spaces(true); go(ROLE_HOME[sp.role] || '/connexion'); }),
     h('div', { class: 'auth-or' }, h('span', {}, 'ou')), discordButton('/connexion/plateforme'));
   // déjà connecté : on file vers son espace, ou on dit clairement qu'il manque le lien d'accès
   if (ME.session) spaces().then(sp => {
     if (!sp || location.pathname !== '/connexion/plateforme') return;
-    if (sp.role) return go(sp.role === 'fisc' ? '/fisc' : '/editeur', true);
+    if (sp.role) return go(ROLE_HOME[sp.role], true);
     const u = ME.session.user, md = u.user_metadata || {};
     const who = md.full_name || md.name || md.user_name || u.email || 'ce compte';
-    message('Connecté, mais sans accès', 'Tu es connecté en tant que ' + who + ', mais ce compte n’a pas encore d’accès au fisc ni à l’éditeur. Ouvre le lien d’accès à usage unique qu’on t’a donné (il commence par /reclamer/) : il relie ce compte à son rôle.',
+    message('Connecté, mais sans accès', 'Tu es connecté en tant que ' + who + ', mais ce compte n’a pas encore d’accès au fisc, à la Justice ni à l’éditeur. Ouvre le lien d’accès à usage unique qu’on t’a donné (il commence par /reclamer/) : il relie ce compte à son rôle.',
       ...sp.orgs.map(o => h('a', { class: 'btn', href: '/' + o.code }, 'Aller à ' + o.name)),
       h('button', { class: 'btn', onclick: signOut }, 'Utiliser un autre compte'));
   }).catch(() => {});
 }
 async function claimPage(token) {
   if (!ME.session) {
-    return authFrame([lockup('auth-lock'), h('h2', {}, 'Ouvrir ton accès'), h('p', {}, 'Ce lien donne un accès au fisc ou à l’éditeur. Il ne sert qu’une fois.')],
+    return authFrame([lockup('auth-lock'), h('h2', {}, 'Ouvrir ton accès'), h('p', {}, 'Ce lien donne un accès au fisc, à la Justice ou à l’éditeur. Il ne sert qu’une fois.')],
       h('h1', {}, 'Choisis ta connexion'), h('p', { class: 'muted' }, 'Crée un identifiant, ou utilise Discord.'),
       passwordForm('plateforme', () => route(), { create: true }), h('div', { class: 'auth-or' }, h('span', {}, 'ou')), discordButton('/reclamer/' + token, 'Continuer avec Discord'));
   }
   const role = await rpc('claim_platform_role', { p_token: token });
   ME.spaces = null;
-  toast(role === 'fisc' ? 'Accès du fisc ouvert.' : 'Accès éditeur ouvert.');
-  go(role === 'fisc' ? '/fisc' : '/editeur', true);
+  toast({ fisc: 'Accès du fisc ouvert.', justice: 'Accès de la Justice ouvert.', editeur: 'Accès éditeur ouvert.' }[role]);
+  go(ROLE_HOME[role], true);
 }
 async function activatePage(code, token) {
   const inv = await rpc('invitation_info', { p_token: token || '' });
@@ -248,15 +255,28 @@ async function orgSpace(code, page, sub) {
   const MODNAV = [['caisse', 'Caisse', 'caisse', can('encaisser')], ['stock', 'Stock', 'boite', can('stock')], ['fabrication', 'Fabrication', 'fiole', can('fabriquer')],
     ['recolte', 'Récolte', 'epi', true], ['factures', 'Factures', 'facture', can('compta')], ['dons', 'Dons', 'coeur', can('stock')],
     ['vehicules', 'Véhicules', 'camion', true], ['evenements', 'Événements', 'calendrier', true]];
-  const nav = [{ page: 'accueil', href: '/' + code, label: 'Tableau de bord', short: 'Accueil', icon: 'accueil' },
+  const svc = me.sector === 'service_public';
+  const nav = svc ? [{ page: 'accueil', href: '/' + code, label: 'Tableau de bord', short: 'Accueil', icon: 'accueil' },
+    ...[['effectifs', 'Effectifs', 'badge'], ['presence', 'Présence', 'horloge'], ['dossiers', 'Dossiers', 'dossier'], ['mandats', 'Mandats', 'marteau'], ['wanted', 'Most Wanted', 'cible', 'Wanted'], ['annonces', 'Annonces', 'megaphone']]
+      .filter(([id]) => has(id)).map(([id, label, icon, short]) => ({ page: id, href: '/' + code + '/' + id, label, icon, short })),
+    can('equipe') ? { page: 'reglages', href: '/' + code + '/reglages', label: 'Réglages', icon: 'reglages' } : null].filter(Boolean)
+  : [{ page: 'accueil', href: '/' + code, label: 'Tableau de bord', short: 'Accueil', icon: 'accueil' },
     ...MODNAV.filter(([id, , , ok]) => ok && has(id)).map(([id, label, icon]) => ({ page: id, href: '/' + code + '/' + id, label, icon })),
     can('compta') || can('declarer') ? { page: 'compta', href: '/' + code + '/compta', label: 'Comptabilité', short: 'Compta', icon: 'balance' } : null,
     { page: 'equipe', href: '/' + code + '/equipe', label: me.is_association ? 'Bénévoles' : 'Équipe', icon: 'joueurs' },
     can('equipe') ? { page: 'reglages', href: '/' + code + '/reglages', label: 'Réglages', icon: 'reglages' } : null].filter(Boolean);
-  if (!nav.some(n => n.page === page)) return go('/' + code, true);
-  const ctx = { me, can, has, nav, who: { name: me.member_name, role: me.grade + ' · ' + me.name }, go, fail, reload: () => route(),
+  if (!nav.some(n => n.page === ({ individus: 'dossiers' }[page] || page))) return go('/' + code, true);
+  const ctx = { me, can, has, nav, who: { name: me.member_name, role: me.grade + ' · ' + me.name }, go, fail, reload: () => route(), linkModal, activationUrl,
     show: (current, title, sub2, right, ...content) => shell(nav, current, orgHead(ctx, title, sub2, ...[].concat(right || [])), ...content) };
   if (arriving()) rpc('touch_member', { p_org: me.id }).catch(() => {});
+  const list = '/' + code + '/' + ({ individus: 'dossiers' }[page] || page);
+  if (svc) {
+    const PAGES = { accueil: MDT.dashboard, reglages, presence: MDT.presence, mandats: MDT.mandats, wanted: MDT.wanted, annonces: MDT.annonces,
+      effectifs: sub ? (isId(sub) ? c => MDT.agent(c, sub) : () => go(list, true)) : MDT.effectifs,
+      dossiers: sub ? (isId(sub) ? c => MDT.dossier(c, sub) : () => go(list, true)) : MDT.dossiers,
+      individus: isId(sub) ? c => MDT.individu(c, sub) : () => go(list, true) };
+    return PAGES[page](ctx);
+  }
   const PAGES = { accueil: dashboard, compta, reglages, equipe: sub && has('employes') ? c => MOD.employe(c, sub) : equipe,
     caisse: MOD.caisse, stock: MOD.stock, fabrication: MOD.fabrication, recolte: MOD.recolte, factures: MOD.factures, dons: MOD.dons, vehicules: MOD.vehicules,
     evenements: sub ? c => MOD.evenement(c, sub) : MOD.evenements };
@@ -442,6 +462,7 @@ async function reglages(ctx) {
   const [grades, journal, orgRow] = await Promise.all([rows('grades', q => q.eq('org_id', me.id).order('rank', { ascending: false })), rows('journal', q => q.eq('org_id', me.id).order('at', { ascending: false }).limit(100)),
     rows('orgs', q => q.eq('id', me.id))]);
   const o = orgRow[0];
+  const svcCards = me.sector === 'service_public' ? await MDT.settingsCards(ctx, grades) : null;
   const refresh = () => reglages(ctx).catch(fail);
   const top = Math.max(...grades.map(g => g.rank));
   const box = (g, cap) => {
@@ -465,13 +486,14 @@ async function reglages(ctx) {
   shell(ctx.nav, 'reglages', orgHead(ctx, 'Réglages', me.name + ' · licence jusqu’au ' + date(new Date(me.licence_until).getTime())),
     h('section', { class: 'card' }, h('h2', {}, 'Grades et accès'), h('p', { class: 'muted', style: 'margin-top:-6px' }, 'Chaque case est enregistrée tout de suite. Le grade le plus haut a toujours tout.'),
       h('div', { class: 'scroll' }, h('table', { class: 'matrix' }, h('thead', {}, h('tr', {}, h('th', {}, 'Accès'), grades.map(g => h('th', { class: 'tick' }, g.name)))),
-        h('tbody', {}, CAPS.map(([cap, label]) => h('tr', {}, h('td', { class: 'what' }, label), grades.map(g => box(g, cap))))))),
+        h('tbody', {}, capsFor(me.sector).map(([cap, label]) => h('tr', {}, h('td', { class: 'what' }, label), grades.map(g => box(g, cap))))))),
       h('div', { class: 'row', style: 'margin-top:16px' }, h('label', { class: 'f grow' }, 'Nouveau grade', fresh), add)),
+    svcCards,
     h('section', { class: 'card' }, h('h2', {}, 'Connexion'),
       h('div', { class: 'connrow' }, h('div', {}, h('span', { class: 'muted small' }, 'Adresse de l’espace'), h('code', { class: 'auth-url' }, url)), h('button', { class: 'btn small', onclick: () => copyText(url, 'Adresse copiée.') }, ico('copier', 16), 'Copier')),
       h('div', { class: 'field' }, h('div', { class: 'lab' }, h('b', {}, 'Connexion avec Discord')), h('div', { class: 'ctl' }, disc)),
       h('div', { class: 'field' }, h('div', { class: 'lab' }, h('b', {}, 'Connexion par identifiant et mot de passe')), h('div', { class: 'ctl' }, pwd))),
-    h('section', { class: 'card' }, h('h2', {}, 'Modules de l’offre'), h('div', { class: 'modgrid' }, MODULES.map(m => h('div', { class: 'modcard' + (me.modules.includes(m.id) ? ' on' : '') },
+    h('section', { class: 'card' }, h('h2', {}, 'Modules de l’offre'), h('div', { class: 'modgrid' }, modulesFor(me.sector).map(m => h('div', { class: 'modcard' + (me.modules.includes(m.id) ? ' on' : '') },
       h('div', { class: 'mc-top' }, h('span', { class: 'mc-ic' }, ico(m.icon, 20)), me.modules.includes(m.id) ? pill('Inclus', 'ok') : pill('Non inclus')), h('b', {}, m.name), h('p', {}, m.text),
       h('div', { class: 'mc-foot' }, h('span', { class: 'muted small' }, money(m.price) + ' / semaine'))))),
       h('p', { class: 'note', style: 'margin-top:12px' }, 'Pour ajouter ou retirer un module, contacte l’éditeur de ' + BRAND + '.')),
@@ -482,14 +504,19 @@ async function reglages(ctx) {
 async function platformSpace(role, b, c) {
   if (!ME.session) return go('/connexion/plateforme', true);
   const sp = await spaces();
-  if (sp.role !== role) return message('Accès réservé', role === 'fisc' ? 'Cette page est réservée au contrôleur du fisc.' : 'Cette page est réservée à l’éditeur de ' + BRAND + '.', h('a', { class: 'btn', href: '/' }, 'Accueil'));
-  const who = { name: sp.display_name, role: role === 'fisc' ? 'Contrôleur du fisc' : 'Éditeur de ' + BRAND };
+  if (sp.role !== role) return message('Accès réservé', { fisc: 'Cette page est réservée au contrôleur du fisc.', justice: 'Cette page est réservée à la Justice.', editeur: 'Cette page est réservée à l’éditeur de ' + BRAND + '.' }[role], h('a', { class: 'btn', href: '/' }, 'Accueil'));
+  const who = { name: sp.display_name, role: ROLE_NAME[role] };
+  if (role === 'justice') {
+    const nav = [{ page: 'justice', href: '/justice', label: 'Mandats', icon: 'marteau' }];
+    return MDT.justice({ show: (current, title, sub, right, ...content) => shell(nav, current, head(title, sub, who, ...[].concat(right || [])), ...content), reload: () => route() });
+  }
   if (role === 'fisc') {
     const nav = [{ page: 'fisc', href: '/fisc', label: 'Vue d’ensemble', short: 'Accueil', icon: 'accueil' }, { page: 'bareme', href: '/fisc/bareme', label: 'Barème', icon: 'balance' }];
     return b === 'bareme' ? bareme(nav, who) : b ? fiscOrg(nav, who, b) : fiscHome(nav, who);
   }
-  const nav = [{ page: 'clients', href: '/editeur', label: 'Clients', icon: 'batiment' }, { page: 'devis', href: '/editeur/devis', label: 'Devis', icon: 'facture' }, { page: 'modules', href: '/editeur/modules', label: 'Modules', icon: 'grille' }];
-  return b === 'modules' ? modulesPage(nav, who) : b === 'devis' ? (c ? devisEdit(nav, who, c) : devisList(nav, who)) : clients(nav, who);
+  const nav = [{ page: 'clients', href: '/editeur', label: 'Clients', icon: 'batiment' }, { page: 'devis', href: '/editeur/devis', label: 'Devis', icon: 'facture' }, { page: 'modules', href: '/editeur/modules', label: 'Modules', icon: 'grille' },
+    { page: 'acces', href: '/editeur/acces', label: 'Accès', icon: 'cadenas' }];
+  return b === 'acces' ? accessPage(nav, who) : b === 'modules' ? modulesPage(nav, who) : b === 'devis' ? (c ? devisEdit(nav, who, c) : devisList(nav, who)) : clients(nav, who);
 }
 
 // ---------------------------------------------------------------- fisc
@@ -602,29 +629,49 @@ async function bareme(nav, who) {
 // ---------------------------------------------------------------- éditeur : clients, modules, devis
 function newClientModal(prefill, after) {
   const p = prefill || {};
+  let sector = 'entreprise';
   const name = h('input', { type: 'text', maxlength: 60, value: p.client || '', placeholder: 'Ex. Burger Shot' }), code = h('input', { type: 'text', maxlength: 40, value: slug(p.client || ''), autocapitalize: 'none' });
   const kind = h('input', { type: 'text', maxlength: 40, value: p.kind || '', placeholder: 'Ex. Restauration rapide' }), owner = h('input', { type: 'text', maxlength: 60, value: p.contact || '', placeholder: 'Nom RP du patron' });
   const ownerLogin = h('input', { type: 'text', maxlength: 40, value: slug(p.contact || '').replace('-', '.'), autocapitalize: 'none' });
   const assoc = h('input', { type: 'checkbox' }), weeks = h('input', { type: 'number', min: 1, max: 52, value: p.weeks || 1, class: 'short' });
+  const prefix = h('input', { type: 'text', maxlength: 8, value: 'USMS', class: 'short', autocapitalize: 'characters' });
   let codeTouched = !!p.client, loginTouched = !!p.contact;
   name.addEventListener('input', () => { if (!codeTouched) code.value = slug(name.value); }); code.addEventListener('input', () => { codeTouched = true; });
   owner.addEventListener('input', () => { if (!loginTouched) ownerLogin.value = slug(owner.value).replace('-', '.'); }); ownerLogin.addEventListener('input', () => { loginTouched = true; });
+  prefix.addEventListener('input', () => { prefix.value = prefix.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
   let mods = (p.modules || PACKS.Commerce).slice();
-  const pick = h('div', { class: 'modpick' });
-  const paint = () => pick.replaceChildren(...MODULES.map(m => h('label', { class: 'mp' + (mods.includes(m.id) ? ' on' : '') }, h('input', { type: 'checkbox', checked: mods.includes(m.id), onchange: ev => { mods = ev.target.checked ? mods.concat([m.id]) : mods.filter(x => x !== m.id); paint(); } }),
+  const pick = h('div', { class: 'modpick' }), seg = h('div', { class: 'seg full', role: 'group', 'aria-label': 'Type de client' });
+  // les libellés changent avec le type : une entreprise a un patron, un service a un Director
+  const lab = (text, ctl, cls) => { const t = h('span', {}, text); const l = h('label', { class: 'f' + (cls ? ' ' + cls : '') }, t, ctl); l.t = t; return l; };
+  const nameL = lab('Entreprise', name), kindL = lab('Activité', kind, 'grow'), ownerL = lab('Patron', owner, 'grow'), loginL = lab('Identifiant du patron', ownerLogin, 'grow'), prefixL = lab('Préfixe des matricules', prefix);
+  const assocL = h('label', { class: 'check' }, assoc, 'Association (exonérée d’impôt)');
+  const packs = h('div', { class: 'qpacks' }, h('span', { class: 'muted small' }, 'Partir d’un pack :'), fchips(Object.keys(PACKS).map(k => [k, k]), null, k => { mods = PACKS[k].slice(); paintPick(); }, 'Pack'));
+  const svcNote = h('p', { class: 'note' }, 'Grades (Director, Chief Deputy, Supervisory, Inspector, Deputy, Recrue), places par grade, unités IOD, POD, JSD, SOG et WITSEC et qualifications préremplis : tout se modifie ensuite dans les réglages du service.');
+  const paintPick = () => pick.replaceChildren(...modulesFor(sector).map(m => h('label', { class: 'mp' + (mods.includes(m.id) ? ' on' : '') }, h('input', { type: 'checkbox', checked: mods.includes(m.id), onchange: ev => { mods = ev.target.checked ? mods.concat([m.id]) : mods.filter(x => x !== m.id); paintPick(); } }),
     h('span', { class: 'mp-ic' }, ico(m.icon, 18)), h('span', { class: 'mp-name' }, m.name), h('b', {}, money(m.price)))));
-  paint();
+  const paint = () => {
+    const svc = sector === 'service_public';
+    seg.replaceChildren(...[['entreprise', 'Entreprise'], ['service_public', 'Service public (US Marshals)']].map(([k, l]) => h('button', { type: 'button', class: k === sector ? 'on' : null, 'aria-pressed': String(k === sector),
+      onclick: () => { if (k === sector) return; sector = k; mods = (k === 'service_public' ? MDT_MODULES.map(m => m.id) : PACKS.Commerce).slice(); paint(); } }, l)));
+    nameL.t.textContent = svc ? 'Service' : 'Entreprise'; name.placeholder = svc ? 'Ex. US Marshals · Los Santos' : 'Ex. Burger Shot';
+    ownerL.t.textContent = svc ? 'Director' : 'Patron'; owner.placeholder = svc ? 'Nom RP du Director' : 'Nom RP du patron';
+    loginL.t.textContent = svc ? 'Identifiant du Director' : 'Identifiant du patron';
+    kindL.hidden = svc; assocL.hidden = svc; packs.hidden = svc; prefixL.hidden = !svc; svcNote.hidden = !svc;
+    paintPick();
+  };
   const ok = h('button', { class: 'btn primary' }, 'Créer l’espace');
-  const m = modal('Nouveau client', h('label', { class: 'f' }, 'Entreprise', name), h('div', { class: 'row' }, h('label', { class: 'f grow' }, 'Adresse (/…)', code), h('label', { class: 'f grow' }, 'Activité', kind)),
-    h('div', { class: 'row' }, h('label', { class: 'f grow' }, 'Patron', owner), h('label', { class: 'f grow' }, 'Identifiant du patron', ownerLogin)),
-    h('div', { class: 'row' }, h('label', { class: 'f' }, 'Licence (semaines)', weeks), h('label', { class: 'check' }, assoc, 'Association (exonérée d’impôt)')),
-    h('div', { class: 'qpacks' }, h('span', { class: 'muted small' }, 'Partir d’un pack :'), fchips(Object.keys(PACKS).map(k => [k, k]), null, k => { mods = PACKS[k].slice(); paint(); }, 'Pack')), pick,
+  const m = modal('Nouveau client', seg, nameL, h('div', { class: 'row' }, h('label', { class: 'f grow' }, 'Adresse (/…)', code), kindL, prefixL),
+    h('div', { class: 'row' }, ownerL, loginL),
+    h('div', { class: 'row' }, h('label', { class: 'f' }, 'Licence (semaines)', weeks), assocL), svcNote, packs, pick,
     h('div', { class: 'foot' }, h('button', { class: 'btn', onclick: () => m.close() }, 'Annuler'), ok));
   m.box.classList.add('wide');
+  paint();
   ok.addEventListener('click', () => run(ok, async () => {
-    const r = await rpc('create_org', { p_code: slug(code.value), p_name: name.value.trim(), p_kind: kind.value.trim() || (assoc.checked ? 'Association' : 'Entreprise'), p_owner_name: owner.value.trim(), p_owner_login: ownerLogin.value.trim(),
-      p_is_association: assoc.checked, p_modules: mods, p_weeks: Number(weeks.value) || 1 });
-    m.close(); if (after) after(); linkModal('Espace créé', activationUrl(slug(code.value), r.token), owner.value.trim() || 'le patron');
+    const r = sector === 'service_public'
+      ? await rpc('create_service', { p_code: slug(code.value), p_name: name.value.trim(), p_owner_name: owner.value.trim(), p_owner_login: ownerLogin.value.trim(), p_prefix: prefix.value.trim() || 'USMS', p_modules: mods, p_weeks: Number(weeks.value) || 1 })
+      : await rpc('create_org', { p_code: slug(code.value), p_name: name.value.trim(), p_kind: kind.value.trim() || (assoc.checked ? 'Association' : 'Entreprise'), p_owner_name: owner.value.trim(), p_owner_login: ownerLogin.value.trim(),
+        p_is_association: assoc.checked, p_modules: mods, p_weeks: Number(weeks.value) || 1 });
+    m.close(); if (after) after(); linkModal('Espace créé', activationUrl(slug(code.value), r.token), owner.value.trim() || (sector === 'service_public' ? 'le Director' : 'le patron'));
   }));
 }
 async function clients(nav, who) {
@@ -641,7 +688,8 @@ async function clients(nav, who) {
   shell(nav, 'clients', head('Clients', 'Les entreprises qui utilisent ' + BRAND, who, h('button', { class: 'btn primary', onclick: () => newClientModal(null, refresh) }, ico('ajout', 18), 'Nouveau client')),
     h('section', { class: 'card' }, strip([['Clients', String(all.length)], ['Comptes actifs', String(all.reduce((a, o) => a + Number(o.accounts), 0))], ['Revenu par semaine', money(all.reduce((a, o) => a + Number(o.price), 0))],
       ['Licences à renouveler', String(soon.length), soon.length ? 'neg' : null]])),
-    h('section', { class: 'card' }, table([['Entreprise', o => h('span', { class: 'art' }, h('b', {}, o.name), h('small', {}, o.kind + ' · ' + o.owner_name))], ['Adresse', o => h('code', {}, '/' + o.code)],
+    h('section', { class: 'card' }, table([['Client', o => h('span', { class: 'art' }, h('b', {}, o.name), h('small', {}, o.kind + ' · ' + o.owner_name))], ['Type', o => o.sector === 'service_public' ? pill('Service public', 'info') : pill(o.is_association ? 'Association' : 'Entreprise')],
+      ['Adresse', o => h('code', {}, '/' + o.code)],
       ['Modules', o => o.modules.length ? h('span', { class: 'pills' }, o.modules.map(id => pill(moduleOf(id).name))) : h('span', { class: 'muted' }, 'Socle seul')], ['Par semaine', o => h('b', {}, money(o.price)), 'num', o => Number(o.price)],
       ['Comptes', o => o.accounts + ' actif(s)' + (Number(o.pending) ? ' · ' + o.pending + ' en attente' : ''), 'num', o => Number(o.accounts)],
       ['Licence', o => { const t = new Date(o.licence_until).getTime(); return t < Date.now() ? pill('Expirée le ' + date(t), 'bad') : t < Date.now() + 3 * DAY ? pill('Jusqu’au ' + date(t), 'warn') : h('span', {}, 'jusqu’au ' + date(t)); }, 'num', o => o.licence_until],
@@ -651,18 +699,45 @@ async function clients(nav, who) {
 }
 async function modulesPage(nav, who) {
   const all = await rpc('editor_overview');
+  // une grille par type de client : les modules d'entreprise ne s'activent pas chez un service public, et inversement
+  const grid = (orgs, list) => h('div', { class: 'scroll' }, h('table', { class: 'matrix' }, h('thead', {}, h('tr', {}, h('th', {}, 'Client'), list.map(m => h('th', { class: 'tick' }, m.name)))),
+    h('tbody', {}, orgs.map(o => h('tr', {}, h('td', { class: 'what' }, o.name), list.map(m => h('td', { class: 'tick', 'data-label': m.name }, h('div', { class: 'v' },
+      h('input', { type: 'checkbox', checked: o.modules.includes(m.id), 'aria-label': o.name + ' : ' + m.name, onchange: async ev => {
+        const cb = ev.target, next = cb.checked ? o.modules.concat([m.id]) : o.modules.filter(x => x !== m.id);
+        cb.disabled = true;
+        try { await rpc('set_org_modules', { p_org: o.id, p_modules: next }); o.modules = next; cb.closest('td').classList.add('saved'); toast(m.name + (cb.checked ? ' activé' : ' retiré') + ' pour ' + o.name + '.'); }
+        catch (e) { cb.checked = !cb.checked; fail(e); }
+        cb.disabled = false;
+      } })))))))));
+  const firms = all.filter(o => o.sector !== 'service_public'), services = all.filter(o => o.sector === 'service_public');
+  const catalog = list => h('div', { class: 'modgrid' }, list.map(m => h('div', { class: 'modcard on' }, h('div', { class: 'mc-top' }, h('span', { class: 'mc-ic' }, ico(m.icon, 20)), h('b', {}, money(m.price) + ' / sem.')),
+    h('b', {}, m.name), h('p', {}, m.text), h('div', { class: 'mc-foot' }, h('span', { class: 'muted small' }, all.filter(o => o.modules.includes(m.id)).length + ' client(s)')))));
   shell(nav, 'modules', head('Modules', 'Coche un module pour l’activer chez un client : son menu change tout de suite', who),
-    h('section', { class: 'card' }, h('div', { class: 'scroll' }, h('table', { class: 'matrix' }, h('thead', {}, h('tr', {}, h('th', {}, 'Client'), MODULES.map(m => h('th', { class: 'tick' }, m.name)))),
-      h('tbody', {}, all.map(o => h('tr', {}, h('td', { class: 'what' }, o.name), MODULES.map(m => h('td', { class: 'tick', 'data-label': m.name }, h('div', { class: 'v' },
-        h('input', { type: 'checkbox', checked: o.modules.includes(m.id), 'aria-label': o.name + ' : ' + m.name, onchange: async ev => {
-          const cb = ev.target, next = cb.checked ? o.modules.concat([m.id]) : o.modules.filter(x => x !== m.id);
-          cb.disabled = true;
-          try { await rpc('set_org_modules', { p_org: o.id, p_modules: next }); o.modules = next; cb.closest('td').classList.add('saved'); toast(m.name + (cb.checked ? ' activé' : ' retiré') + ' pour ' + o.name + '.'); }
-          catch (e) { cb.checked = !cb.checked; fail(e); }
-          cb.disabled = false;
-        } }))))))))), all.length ? null : h('div', { class: 'empty' }, 'Aucun client.')),
-    h('section', { class: 'card' }, h('h2', {}, 'Catalogue'), h('div', { class: 'modgrid' }, MODULES.map(m => h('div', { class: 'modcard on' }, h('div', { class: 'mc-top' }, h('span', { class: 'mc-ic' }, ico(m.icon, 20)), h('b', {}, money(m.price) + ' / sem.')),
-      h('b', {}, m.name), h('p', {}, m.text), h('div', { class: 'mc-foot' }, h('span', { class: 'muted small' }, all.filter(o => o.modules.includes(m.id)).length + ' client(s)')))))));
+    h('section', { class: 'card' }, h('h2', {}, 'Entreprises'), firms.length ? grid(firms, MODULES) : h('div', { class: 'empty' }, 'Aucune entreprise.')),
+    services.length ? h('section', { class: 'card' }, h('h2', {}, 'Services publics'), grid(services, MDT_MODULES)) : null,
+    h('section', { class: 'card' }, h('h2', {}, 'Catalogue des entreprises'), catalog(MODULES)),
+    h('section', { class: 'card' }, h('h2', {}, 'Catalogue des services publics'), catalog(MDT_MODULES)));
+}
+// comptes de la plateforme (fisc, Justice, éditeur) et liens d'accès à usage unique
+async function accessPage(nav, who) {
+  const a = await rpc('platform_access');
+  const refresh = () => accessPage(nav, who).catch(fail);
+  const ROLE = { editeur: ['Éditeur', 'info'], fisc: ['Fisc', 'warn'], justice: ['Justice', 'ok'] };
+  const claimUrl = t => location.origin + '/reclamer/' + t;
+  const role = h('select', { 'aria-label': 'Rôle' }, h('option', { value: 'justice' }, 'Justice (signe les mandats)'), h('option', { value: 'fisc' }, 'Fisc (contrôle les entreprises)'));
+  const name = h('input', { type: 'text', maxlength: 60, placeholder: 'Ex. Juge Hartley' }), make = h('button', { class: 'btn primary' }, 'Créer le lien');
+  make.addEventListener('click', () => run(make, async () => {
+    const tok = await rpc('create_claim', { p_role: role.value, p_name: name.value.trim() });
+    refresh(); linkModal('Lien d’accès · ' + ROLE[role.value][0], claimUrl(tok), name.value.trim(), 'Envoie ce lien à ' + name.value.trim() + ' en message privé. Il est valable 7 jours et ne sert qu’une fois : la personne y crée son identifiant ou se connecte avec Discord.');
+  }));
+  shell(nav, 'acces', head('Accès', 'Les comptes du fisc, de la Justice et de l’éditeur', who),
+    h('section', { class: 'card' }, h('h2', {}, 'Nouveau lien d’accès'), h('div', { class: 'row' }, h('label', { class: 'f grow' }, 'Rôle', role), h('label', { class: 'f grow' }, 'Nom affiché', name), make),
+      h('p', { class: 'note' }, 'La Justice voit les demandes de mandat de tous les services publics et les signe ou les refuse. Le fisc voit la comptabilité des entreprises.')),
+    h('section', { class: 'card' }, h('h2', {}, 'Comptes'), table([['Nom', x => h('b', {}, x.display_name)], ['Rôle', x => pill(...ROLE[x.role])],
+      ['', x => x.me ? h('span', { class: 'muted small' }, 'C’est toi') : h('button', { class: 'btn small', onclick: ev => run(ev.currentTarget, async () => { await rpc('revoke_platform', { p_user: x.user_id }); refresh(); return { message: 'Accès retiré à ' + x.display_name + '.' }; }) }, 'Retirer l’accès')]],
+      a.accounts, null, 'Aucun compte.')),
+    h('section', { class: 'card' }, h('h2', {}, 'Liens en attente'), table([['Pour', x => h('b', {}, x.display_name)], ['Rôle', x => pill(...ROLE[x.role])], ['Expire', x => date(new Date(x.expires_at).getTime()), 'num', x => x.expires_at],
+      ['', x => h('button', { class: 'btn small', onclick: () => copyText(claimUrl(x.token), 'Lien copié.') }, ico('copier', 16), 'Copier')]], a.claims, null, 'Aucun lien en attente.')));
 }
 const QST = { brouillon: ['Brouillon', null], envoye: ['Envoyé', 'info'], accepte: ['Accepté', 'ok'], refuse: ['Refusé', 'bad'] };
 async function devisList(nav, who) {
@@ -725,6 +800,13 @@ async function devisEdit(nav, who, id) {
         h('section', { class: 'card' }, h('h2', {}, 'Modules'), h('div', { class: 'qpacks' }, h('span', { class: 'muted small' }, 'Partir d’un pack :'), fchips(Object.keys(PACKS).map(k => [k, k]), null, k => { q.modules = PACKS[k].slice(); paintMods(); refresh(); }, 'Pack')), mods),
         h('section', { class: 'card stack' }, h('h2', {}, 'Conditions'), h('div', { class: 'row' }, h('label', { class: 'f' }, 'Durée', weeks), h('label', { class: 'f' }, 'Remise (%)', disc)), h('label', { class: 'f' }, 'Note sur le devis', note), totalBox, actions)),
       h('section', { class: 'card qpreview' }, h('h2', {}, 'Aperçu', h('span', { class: 'muted small' }, 'exactement ce qui sera exporté')), h('div', { class: 'docframe' }, img))));
+}
+
+// ================================================================== page publique des avis de recherche (sans connexion)
+async function avisPage(code) {
+  S.shown = null;
+  if (!code || !(await MDT.publicWanted(code.toLowerCase(), $app))) return message('Page introuvable', 'Aucun avis de recherche publié à cette adresse.', h('a', { class: 'btn', href: '/' }, 'Accueil'));
+  document.title = 'Avis de recherche · ' + BRAND;
 }
 
 // ================================================================== démarrage

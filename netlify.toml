@@ -14,7 +14,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://vevezyxavdfykvcbsiws.supabase.co wss://vevezyxavdfykvcbsiws.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://vevezyxavdfykvcbsiws.supabase.co; media-src 'self' blob: https://vevezyxavdfykvcbsiws.supabase.co; font-src 'self'; connect-src 'self' https://vevezyxavdfykvcbsiws.supabase.co wss://vevezyxavdfykvcbsiws.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"

@@ -81,6 +81,18 @@ de la personne a l’accès voulu (entreprise → *Réglages* → grades). La ba
 | Véhicules | Sorties, retours (carburant, état, km), plein, réparation, assurance | Véhicules |
 | Événements | Page dédiée : compte à rebours, objectif, équipe, stock réservé, tâches, bilan ; les ventes et dons pendant l’événement s’y rattachent | Événements |
 
+## Services publics (US Marshals)
+
+- **Créer le service** : *Éditeur → Clients → Nouveau client*, choisir « Service public (US Marshals) ». Grades (Director,
+  Chief Deputy, Supervisory, Inspector, Deputy, Recrue) avec leurs places, unités IOD, POD, JSD, SOG, WITSEC et qualifications
+  sont préremplis ; le lien d’activation va au Director.
+- **Compte Justice** : *Éditeur → Accès*, rôle « Justice ». Le lien (7 jours, usage unique) ouvre l’espace `/justice`,
+  où les demandes de mandat de tous les services sont signées ou refusées.
+- **Page publique** : `/avis/<adresse du service>` montre les affiches publiées et reçoit les signalements anonymes
+  (30 par heure et par service au plus).
+- **Fichiers** : deux espaces de stockage Supabase. `mdt` (privé, 50 Mo par fichier) pour les photos et pièces jointes,
+  lus par liens signés d’une heure ; `avis` (public, 5 Mo) pour les affiches. Rien ne se supprime depuis le site.
+
 ## Bon à savoir
 
 - **Mot de passe oublié** : le patron clique « Nouveau lien » sur la personne (page Équipe). Avec Discord, rien d’autre à faire.
@@ -93,7 +105,7 @@ de la personne a l’accès voulu (entreprise → *Réglages* → grades). La ba
 
 ```bash
 npm install          # PGlite pour les tests de la base
-npm test             # 10 tests de la base (Postgres en mémoire, mêmes migrations)
-npm run test:site    # scénario complet dans Chromium + revue de 80 pages (Playwright requis)
+npm test             # 30 tests de la base (Postgres en mémoire, mêmes migrations)
+npm run test:site    # scénario complet (entreprises et US Marshals) dans Chromium + revue de 196 pages (Playwright requis)
 npm run serve        # le site en local sur http://localhost:8080, branché sur le vrai Supabase
 ```

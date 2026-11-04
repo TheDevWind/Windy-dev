@@ -79,6 +79,23 @@ export async function createBackend() {
     return (await as(uid, sql, params))[0].r;
   }
 
+  // ---------------------------------------------------------------- stockage de fichiers (comme Supabase Storage)
+  const files = new Map();   // « bucket/chemin » → { type, bytes }
+  async function upload(uid, req) {
+    if (!uid) throw new Error('new row violates row-level security policy');
+    const [b] = await serial(async () => (await db.query('select * from storage.buckets where id = $1', [req.bucket])).rows);
+    if (!b) throw new Error('Bucket not found');
+    const bytes = Buffer.from(req.data, 'base64');
+    if (b.file_size_limit && bytes.length > Number(b.file_size_limit)) throw new Error('The object exceeded the maximum allowed size');
+    if (b.allowed_mime_types && !b.allowed_mime_types.includes(req.type)) throw new Error('mime type ' + req.type + ' is not supported');
+    await as(uid, 'insert into storage.objects (bucket_id, name, metadata) values ($1, $2, $3)', [req.bucket, req.path, { mimetype: req.type, size: bytes.length }]);
+    files.set(req.bucket + '/' + req.path, { type: req.type, bytes });
+  }
+  async function signed(uid, req) {
+    const seen = uid ? (await as(uid, 'select name from storage.objects where bucket_id = $1 and name = any($2)', [req.bucket, req.paths])).map(r => r.name) : [];
+    return req.paths.map(p => seen.includes(p) ? { path: p, signedUrl: '/__fake-storage/' + req.bucket + '/' + p + '?token=test', error: null } : { path: p, signedUrl: null, error: 'Object not found' });
+  }
+
   /** Point d'entrée unique : une requête JSON du navigateur, une réponse JSON { data, error }. */
   async function handle(text) {
     const req = JSON.parse(text);
@@ -92,6 +109,8 @@ export async function createBackend() {
       }
       if (req.op === 'rpc') return JSON.stringify({ data: await rpc(req.uid, req.name, req.args || {}), error: null });
       if (req.op === 'from') return JSON.stringify({ data: await from(req.uid, req.q), error: null });
+      if (req.op === 'upload') { await upload(req.uid, req); return JSON.stringify({ data: { path: req.path }, error: null }); }
+      if (req.op === 'signed') return JSON.stringify({ data: await signed(req.uid, req), error: null });
       throw new Error('Opération inconnue : ' + req.op);
     } catch (e) {
       return JSON.stringify({ data: null, error: { message: e.message } });
@@ -102,5 +121,5 @@ export async function createBackend() {
   const claim = async (role, name) => (await serial(() => db.query('insert into public.platform_claims (role, display_name) values ($1, $2) returning token', [role, name]))).rows[0].token;
   const sql = (text, params) => serial(async () => (await db.query(text, params)).rows);
 
-  return { handle, claim, sql, db };
+  return { handle, claim, sql, db, files };
 }

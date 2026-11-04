@@ -15,7 +15,8 @@ if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
 const backend = await createBackend();
 const csp = readFileSync(new URL('../../netlify.toml', import.meta.url), 'utf8').match(/Content-Security-Policy = "([^"]+)"/)[1];
-const server = await serve(PORT, { '/config.js': "window.WINDY_DESK_CONFIG = { fake: true, passwordDomain: 'comptes.windydev.fr' };" }, { 'content-security-policy': csp });
+const server = await serve(PORT, { '/config.js': "window.WINDY_DESK_CONFIG = { fake: true, passwordDomain: 'comptes.windydev.fr' };" }, { 'content-security-policy': csp },
+  path => { if (!path.startsWith('/__fake-storage/')) return null; const f = backend.files.get(path.slice('/__fake-storage/'.length)); return f ? { type: f.type, body: f.bytes } : null; });
 const browser = await chromium.launch();
 const errors = [], pages = [];
 const steps = [];
@@ -432,6 +433,256 @@ try {
     await nina.getByRole('link', { name: 'Aller à Bella Napoli' }).waitFor();
   });
 
+  // ------------------------------------------------------------ services publics : les US Marshals
+  const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+  const photo = name => ({ name, mimeType: 'image/png', buffer: PNG });
+  await step('l’éditeur crée le service US Marshals et un accès Justice', async () => {
+    await ed.goto(BASE + '/editeur'); await settle(ed, 'h1:text("Clients")');
+    await ed.getByRole('button', { name: 'Nouveau client' }).click();
+    const m = ed.locator('.modal');
+    await m.getByRole('button', { name: 'Service public (US Marshals)' }).click();
+    await m.getByLabel('Service', { exact: true }).fill('US Marshals · Los Santos');
+    await m.getByLabel('Adresse (/…)').fill('usms-ls');
+    await m.getByLabel('Director', { exact: true }).fill('Jack Reed');
+    assert.equal(await m.getByLabel('Identifiant du Director').inputValue(), 'jack.reed');
+    await m.getByRole('button', { name: 'Créer l’espace' }).click();
+    S.reedLink = await linkFromModal(ed);
+    await ed.locator('table', { hasText: 'US Marshals · Los Santos' }).waitFor();
+    const [o] = await backend.sql("select sector, modules from public.orgs where code = 'usms-ls'");
+    assert.equal(o.sector, 'service_public'); assert.equal(o.modules.length, 6);
+    await ed.getByRole('link', { name: 'Accès' }).first().click(); await settle(ed, 'h1:text("Accès")');
+    await ed.getByLabel('Nom affiché').fill('Juge Hartley');
+    await ed.getByRole('button', { name: 'Créer le lien' }).click();
+    S.judgeLink = await linkFromModal(ed);
+    assert.match(S.judgeLink, /\/reclamer\/[0-9a-f]{64}$/);
+    await ed.locator('table', { hasText: 'Juge Hartley' }).waitFor();
+  });
+  const reed = await open({ label: 'director' });
+  await step('le Director active son compte, prend son service et passe en intervention', async () => {
+    await reed.goto(S.reedLink); await settle(reed, '.auth');
+    assert.equal(await reed.getByLabel('Identifiant', { exact: true }).inputValue(), 'jack.reed');
+    await reed.getByLabel(/Choisis un mot de passe/).fill(PW);
+    await reed.getByLabel('Le même, une seconde fois').fill(PW);
+    await reed.getByRole('button', { name: 'Créer mon accès' }).click();
+    await reed.waitForURL(BASE + '/usms-ls'); await settle(reed, '.dutycard');
+    await reed.getByRole('button', { name: 'Prendre mon service' }).click();
+    await toast(reed, 'Bon service');
+    await reed.getByRole('button', { name: 'En intervention' }).click();
+    await toast(reed, 'Statut : en intervention');
+    S.reed = await session(reed);
+  });
+  await step('le Director recrute un Supervisory ; un grade plein est refusé', async () => {
+    await reed.getByRole('link', { name: 'Effectifs' }).first().click(); await settle(reed, 'h1:text("Effectifs")');
+    const m = reed.locator('.modal');
+    await reed.getByRole('button', { name: 'Recruter' }).click();
+    await m.getByLabel('Nom', { exact: true }).fill('Sam Ortiz');
+    await m.getByLabel('Grade').selectOption({ label: 'Supervisory (2 places)' });
+    await m.getByLabel('Indicatif').fill('Marshal-3');
+    await m.getByRole('button', { name: 'Recruter' }).click();
+    S.samLink = await linkFromModal(reed);
+    await reed.getByRole('button', { name: 'Recruter' }).click();
+    await m.getByLabel('Nom', { exact: true }).fill('Bob Two');
+    await m.getByLabel('Grade').selectOption({ label: 'Director (1 place)' });
+    await m.getByRole('button', { name: 'Recruter' }).click();
+    await toast(reed, 'Plus de place en Director : 1/1');
+    await reed.keyboard.press('Escape');
+    const [x] = await backend.sql("select matricule, stage, callsign from public.members where login = 'sam.ortiz'");
+    assert.deepEqual(x, { matricule: 'USMS-0002', stage: 'titulaire', callsign: 'Marshal-3' });
+  });
+  const sam = await open({ label: 'supervisory', discord: 'sam-discord' });
+  await step('le Supervisory active son compte avec Discord et recrute un Deputy', async () => {
+    await sam.goto(S.samLink); await settle(sam, '.auth');
+    await sam.getByRole('button', { name: 'Continuer avec Discord' }).click();
+    await sam.getByRole('button', { name: 'Activer avec cette session' }).click();
+    await sam.waitForURL(BASE + '/usms-ls'); await settle(sam, '.dutycard');
+    const navs = await sam.locator('nav.side .navs a').allInnerTexts();
+    assert.deepEqual(navs.map(x => x.trim()), ['Accueil', 'Effectifs', 'Présence', 'Dossiers', 'Mandats', 'Wanted', 'Annonces']);
+    await sam.goto(BASE + '/usms-ls/effectifs'); await settle(sam, 'h1:text("Effectifs")');
+    await sam.getByRole('button', { name: 'Recruter' }).click();
+    const m = sam.locator('.modal');
+    await m.getByLabel('Nom', { exact: true }).fill('Dan Moss');
+    await m.getByLabel('Grade').selectOption({ label: 'Deputy (12 places)' });
+    await m.getByLabel('Indicatif').fill('Marshal-12');
+    await m.getByRole('button', { name: 'Recruter' }).click();
+    S.danLink = await linkFromModal(sam);
+    S.sam = await session(sam);
+  });
+  const dan = await open({ label: 'deputy' });
+  await step('le Deputy active son compte, ajoute sa photo et prend son service', async () => {
+    await dan.goto(S.danLink); await settle(dan, '.auth');
+    await dan.getByLabel(/Choisis un mot de passe/).fill(PW);
+    await dan.getByLabel('Le même, une seconde fois').fill(PW);
+    await dan.getByRole('button', { name: 'Créer mon accès' }).click();
+    await dan.waitForURL(BASE + '/usms-ls'); await settle(dan, '.dutycard');
+    S.danId = (await backend.sql("select id from public.members where login = 'dan.moss'"))[0].id;
+    await dan.goto(BASE + '/usms-ls/effectifs/' + S.danId); await settle(dan, 'h1:text("Dan Moss")');
+    await dan.getByRole('button', { name: 'Modifier ma fiche' }).click();
+    const m = dan.locator('.modal');
+    await m.getByLabel('Téléphone').fill('555-0112');
+    await m.getByLabel(/^Photo/).setInputFiles(photo('dan.png'));
+    await m.getByRole('button', { name: 'Enregistrer' }).click();
+    await toast(dan, 'Fiche enregistrée');
+    await dan.locator('.idcard img.ava').waitFor();
+    await dan.goto(BASE + '/usms-ls'); await settle(dan, '.dutycard');
+    await dan.getByRole('button', { name: 'Prendre mon service' }).click();
+    await toast(dan, 'Bon service');
+    S.dan = await session(dan);
+  });
+  await step('présence : planning, inscription et absence validée par un responsable', async () => {
+    await sam.goto(BASE + '/usms-ls/presence'); await settle(sam, 'h1:text("Présence")');
+    await sam.locator('table', { hasText: 'Dan Moss' }).waitFor();
+    await sam.getByRole('button', { name: 'Planifier' }).click();
+    const m = sam.locator('.modal');
+    await m.getByLabel('Titre').fill('Patrouille Vinewood');
+    await m.getByLabel('Lieu', { exact: true }).fill('Vinewood Hills');
+    await m.getByRole('button', { name: 'Planifier' }).click();
+    await toast(sam, 'Créneau planifié');
+    await dan.goto(BASE + '/usms-ls/presence'); await settle(dan, 'h1:text("Présence")');
+    await dan.getByRole('tab', { name: /Planning/ }).click();
+    await dan.getByRole('button', { name: 'Je participe' }).click();
+    await toast(dan, 'Inscrit');
+    await dan.getByRole('button', { name: 'Déclarer une absence' }).click();
+    await dan.locator('.modal').getByLabel('Motif').fill('Vacances');
+    await dan.locator('.modal').getByRole('button', { name: 'Déclarer', exact: true }).click();
+    await toast(dan, 'Absence déclarée');
+    await sam.reload(); await settle(sam, 'h1:text("Présence")');
+    await sam.getByRole('tab', { name: /Absences/ }).click();
+    await sam.getByRole('button', { name: 'Valider', exact: true }).click();
+    await toast(sam, 'Absence validée');
+  });
+  await step('dossiers : individu avec photo, dossier numéroté, journal et pièce jointe', async () => {
+    await dan.goto(BASE + '/usms-ls/dossiers'); await settle(dan, 'h1:text("Dossiers")');
+    await dan.getByRole('button', { name: 'Nouvel individu' }).click();
+    const m = dan.locator('.modal');
+    await m.getByLabel('Prénom').fill('Tony');
+    await m.getByLabel('Nom', { exact: true }).fill('Vercetti');
+    await m.getByLabel('Surnom').fill('Le Baron');
+    await m.getByLabel('Taille').fill('182');
+    await m.getByLabel('Dangereux').check();
+    await m.getByRole('button', { name: 'Véhicule', exact: true }).click();
+    await m.getByLabel('Plaque').fill('7ABC123');
+    await m.getByLabel('Modèle').fill('Sultan');
+    await m.getByLabel('Photo', { exact: true }).setInputFiles(photo('tony.png'));
+    await m.getByRole('button', { name: 'Créer la fiche' }).click();
+    await dan.waitForURL(/\/usms-ls\/individus\/[0-9a-f-]{36}$/); await settle(dan, 'h1:text("Tony Vercetti")');
+    S.personPath = new URL(dan.url()).pathname;
+    await dan.getByText('7ABC123').waitFor();
+    await dan.locator('.idcard img.ava').waitFor();
+    await dan.getByRole('button', { name: 'Ouvrir un dossier' }).click();
+    const c = dan.locator('.modal');
+    await c.getByLabel('Titre').fill('Évasion de Bolingbroke');
+    await c.getByLabel('Priorité').selectOption('haute');
+    await c.getByRole('button', { name: 'Ouvrir le dossier' }).click();
+    await dan.waitForURL(/\/usms-ls\/dossiers\/[0-9a-f-]{36}$/); await settle(dan, 'h1:text("USMS-IOD-0001")');
+    S.casePath = new URL(dan.url()).pathname;
+    await dan.getByRole('button', { name: 'Piste', exact: true }).click();
+    await dan.getByLabel('Nouvelle entrée du journal').fill('Vu au Yellow Jack avec un complice');
+    await dan.getByRole('button', { name: 'Ajouter au journal' }).click();
+    await toast(dan, 'Ajouté au journal');
+    await dan.locator('.feed', { hasText: 'Yellow Jack' }).waitFor();
+    await dan.getByRole('button', { name: 'Pièce jointe' }).click();
+    await dan.locator('.modal').getByLabel(/Photo, vidéo/).setInputFiles(photo('camera.png'));
+    await dan.locator('.modal').getByRole('button', { name: 'Joindre' }).click();
+    await toast(dan, 'Pièce jointe ajoutée');
+    await dan.locator('.filecard img').waitFor();
+    // un agent d'un autre service ne lit pas ces fichiers
+    const [f] = await backend.sql('select path from public.case_files');
+    const r = JSON.parse(await gino.evaluate(p => window.__backend(JSON.stringify({ op: 'signed', bucket: 'mdt', paths: [p], uid: JSON.parse(sessionStorage.getItem('windydesk-test-session')).user.id })), f.path));
+    assert.equal(r.data[0].signedUrl, null);
+  });
+  let judge;
+  await step('mandat : demandé par le Supervisory, signé par la Justice, exécuté par le Deputy', async () => {
+    await sam.goto(BASE + S.casePath); await settle(sam, 'h1:text("USMS-IOD-0001")');
+    await sam.getByRole('button', { name: 'Demander un mandat' }).click();
+    const m = sam.locator('.modal');
+    await m.getByLabel('Lieu', { exact: true }).fill('Sandy Shores');
+    await m.getByLabel('Motif').fill('Évadé de Bolingbroke, armé et dangereux, localisé à Sandy Shores.');
+    await m.getByRole('button', { name: 'Envoyer à la Justice' }).click();
+    await toast(sam, 'Demande envoyée à la Justice');
+    judge = await open({ label: 'justice' });
+    await judge.goto(S.judgeLink); await settle(judge, '.auth');
+    await judge.getByLabel('Identifiant', { exact: true }).fill('hartley');
+    await judge.getByLabel(/Choisis un mot de passe/).fill(PW);
+    await judge.getByLabel('Le même, une seconde fois').fill(PW);
+    await judge.getByRole('button', { name: 'Créer mon accès' }).click();
+    await judge.waitForURL(BASE + '/justice'); await settle(judge, '.wcard');
+    await toast(judge, 'Accès de la Justice ouvert');
+    await judge.locator('.wcard', { hasText: 'Tony Vercetti' }).waitFor();
+    await judge.getByRole('button', { name: 'Signer', exact: true }).click();
+    await judge.locator('.modal').getByRole('button', { name: 'Signer le mandat' }).click();
+    await toast(judge, 'USMS-M-0001 signé');
+    S.judge = await session(judge);
+    await dan.goto(BASE + '/usms-ls/mandats'); await settle(dan, 'h1:text("Mandats")');
+    await dan.getByRole('button', { name: 'Exécuter', exact: true }).click();
+    await dan.locator('.modal').getByRole('button', { name: 'Mandat exécuté' }).click();
+    await toast(dan, 'USMS-M-0001 exécuté');
+    const [w] = await backend.sql('select status, decided_by, executed_by from public.warrants');
+    assert.deepEqual(w, { status: 'execute', decided_by: 'Juge Hartley', executed_by: 'Dan Moss' });
+  });
+  await step('Most Wanted : classement, affiche publiée, signalement anonyme reçu', async () => {
+    await sam.goto(BASE + '/usms-ls/wanted'); await settle(sam, 'h1:text("Most Wanted")');
+    await sam.getByRole('button', { name: 'Ajouter', exact: true }).click();
+    const m = sam.locator('.modal');
+    await m.getByLabel('Récompense ($)').fill('50000');
+    await m.getByLabel('Motif').fill('Évasion, vol à main armée');
+    await m.getByRole('button', { name: 'Ajouter au classement' }).click();
+    await toast(sam, 'Classement mis à jour');
+    await sam.getByRole('button', { name: 'Affiche', exact: true }).click();
+    await sam.locator('.modal img.posterimg[src^="data:image/png"]').waitFor();
+    const [png] = await Promise.all([sam.waitForEvent('download'), sam.locator('.modal').getByRole('button', { name: /Télécharger/ }).click()]);
+    assert.equal(png.suggestedFilename(), 'most-wanted-1-tony-vercetti.png');
+    await sam.locator('.modal').getByRole('button', { name: 'Publier sur la page publique' }).click();
+    await toast(sam, 'Affiche publiée');
+    const visitor = await open({ label: 'visiteur avis' });
+    await visitor.goto(BASE + '/avis/usms-ls'); await settle(visitor, '.avis');
+    await visitor.locator('.avis-card', { hasText: 'Tony Vercetti' }).locator('img').waitFor();
+    await visitor.getByLabel('Au sujet de').selectOption({ label: '1. Tony Vercetti' });
+    await visitor.getByLabel('Ce que tu as vu').fill('Je l’ai vu ce soir au Yellow Jack, en Sultan noire.');
+    await visitor.getByRole('button', { name: 'Envoyer le signalement' }).click();
+    await toast(visitor, 'Signalement envoyé');
+    await shot(visitor, 'avis-public', true);
+    await visitor.context().close();
+    await sam.reload(); await settle(sam, 'h1:text("Most Wanted")');
+    await sam.getByRole('tab', { name: /Signalements/ }).click();
+    await sam.locator('table', { hasText: 'Yellow Jack' }).waitFor();
+    await sam.getByRole('button', { name: 'Utile', exact: true }).click();
+    await toast(sam, 'Signalement mis à jour');
+  });
+  await step('annonce urgente : affichée à l’agent jusqu’à ce qu’il la lise', async () => {
+    await reed.goto(BASE + '/usms-ls/annonces'); await settle(reed, 'h1:text("Annonces")');
+    await reed.getByRole('button', { name: 'Nouvelle annonce' }).click();
+    const m = reed.locator('.modal');
+    await m.getByRole('button', { name: 'Urgent', exact: true }).click();
+    await m.getByLabel('Titre').fill('Briefing SOG');
+    await m.getByLabel('Annonce', { exact: true }).fill('Réunion de toutes les unités à 20 h au QG.');
+    await m.getByRole('button', { name: 'Publier', exact: true }).click();
+    await toast(reed, 'Annonce publiée');
+    await dan.goto(BASE + '/usms-ls'); await settle(dan, '.banner.bad');
+    await dan.locator('.banner.bad').getByRole('button', { name: 'J’ai lu' }).click();
+    await toast(dan, 'Annonce marquée comme lue');
+    await reed.reload(); await settle(reed, '.ann');
+    await reed.getByText('Lu par 2 / 3 agent(s)').waitFor();
+  });
+  await step('carrière : promotion, unités et qualification données par le Director', async () => {
+    await reed.goto(BASE + '/usms-ls/effectifs/' + S.danId); await settle(reed, 'h1:text("Dan Moss")');
+    await reed.getByRole('button', { name: 'Grade', exact: true }).click();
+    await reed.locator('.modal').getByLabel('Nouveau grade').selectOption({ label: 'Inspector (promotion)' });
+    await reed.locator('.modal').getByRole('button', { name: 'Changer de grade' }).click();
+    await toast(reed, 'Grade mis à jour');
+    await reed.getByRole('button', { name: 'Unités', exact: true }).click();
+    const m = reed.locator('.modal');
+    await m.getByLabel(/^IOD/).check();
+    await m.getByLabel('Unité principale : IOD').check();
+    await m.getByLabel(/^SOG/).check();
+    await m.getByRole('button', { name: 'Enregistrer' }).click();
+    await toast(reed, 'Unités enregistrées');
+    await reed.getByLabel('SOG', { exact: true }).check();
+    await toast(reed, 'SOG obtenue');
+    await reed.locator('.feed', { hasText: 'Deputy → Inspector' }).waitFor();
+    const units = await backend.sql("select u.code, mu.main from public.member_units mu join public.units u on u.id = mu.unit_id where mu.member_id = $1 order by u.code", [S.danId]);
+    assert.deepEqual(units, [{ code: 'IOD', main: true }, { code: 'SOG', main: false }]);
+  });
+
   // ------------------------------------------------------------ connexion ordinaire
   await step('connexion par l’adresse de l’entreprise, mauvais puis bon mot de passe', async () => {
     const p = await open({ label: 'connexion' });
@@ -459,7 +710,7 @@ try {
     await nina.goto(BASE + '/bella-napoli'); await settle(nina, '.gate');
     assert.match(await nina.locator('h1').innerText(), /Pas d’accès à Bella Napoli/);
   });
-  for (const p of [ed, gino, nina, fisc]) await p.context().close();
+  for (const p of [ed, gino, nina, fisc, reed, sam, dan, judge]) await p.context().close();
 } catch (e) {
   console.error('\n✗ échec après « ' + (steps.at(-1) || 'début') + ' »\n', e);
   for (const [tag, p] of pages) if (!p.isClosed()) await p.screenshot({ path: new URL('./echec-' + tag.replace(/\W+/g, '-') + '.png', import.meta.url).pathname }).catch(() => {});
@@ -476,7 +727,11 @@ const PAGES = {
   patron: [S.gino, ['/bella-napoli', '/bella-napoli/compta', '/bella-napoli/equipe', '/bella-napoli/reglages', '/bella-napoli/caisse', '/bella-napoli/stock', '/bella-napoli/fabrication',
     '/bella-napoli/recolte', '/bella-napoli/factures', '/bella-napoli/dons', '/bella-napoli/vehicules', '/bella-napoli/evenements', S.eventPath, '/bella-napoli/equipe/' + S.ninaId]],
   fisc: [S.fisc, ['/fisc', '/fisc/bella-napoli', '/fisc/les-restos-du-coeur', '/fisc/bareme']],
-  editeur: [S.editeur, ['/editeur', '/editeur/modules', '/editeur/devis', '/editeur/devis/' + devisId, '/editeur/devis/nouveau']],
+  editeur: [S.editeur, ['/editeur', '/editeur/modules', '/editeur/acces', '/editeur/devis', '/editeur/devis/' + devisId, '/editeur/devis/nouveau']],
+  director: [S.reed, ['/usms-ls', '/usms-ls/effectifs', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/dossiers', S.personPath, S.casePath, '/usms-ls/mandats', '/usms-ls/wanted', '/usms-ls/annonces', '/usms-ls/reglages']],
+  deputy: [S.dan, ['/usms-ls', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/mandats']],
+  justice: [S.judge, ['/justice']],
+  public: [null, ['/avis/usms-ls', '/usms-ls']],
 };
 const problems = [];
 for (const [variant, o] of [['ordi-clair', {}], ['ordi-sombre', { dark: true }], ['tel-clair', { mobile: true }], ['tel-sombre', { mobile: true, dark: true }]]) {

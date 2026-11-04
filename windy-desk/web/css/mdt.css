@@ -1,0 +1,175 @@
+/* ================================================================== Windy Desk · MDT des services publics
+   Effectifs, présence, dossiers, mandats, Most Wanted, annonces, espace Justice et page publique des avis.
+   Uniquement des jetons de couleur de windy.css : clair et sombre suivent tout seuls. */
+
+.grow { flex: 1; min-width: 0; }
+.prewrap { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+.sub-h { margin: 16px 0 8px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.stack { display: grid; gap: 24px; align-content: start; }
+.strip b.warn-t { color: var(--warn); }
+
+/* recherche et en-tête de carte */
+.cardhead { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cardhead > p { margin: 0; flex: 1 1 260px; }
+.cardhead.plain { margin: 0; justify-content: flex-start; }
+.findbar { display: flex; align-items: center; gap: 8px; flex: 1 1 280px; max-width: 520px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); color: var(--muted); }
+.findbar:focus-within { border-color: var(--accent); }
+.findbar .find-in { flex: 1; min-width: 0; border: 0; background: none; padding: 10px 0; color: var(--text); font: inherit; outline: none; }
+
+/* photos */
+.ava.lg { width: 56px; height: 56px; font-size: 20px; flex: none; }
+.ava.xl { width: 112px; height: 112px; font-size: 36px; flex: none; border-radius: var(--r); }
+img.ava { display: block; background: var(--tile); }
+
+/* insignes de grade */
+.insigne { display: inline-grid; place-items: center; min-width: 26px; padding: 1px 6px; margin-right: 6px; border-radius: var(--r-sm); background: var(--badge); color: var(--badge-text); font: 700 11px/1.6 var(--font); letter-spacing: .04em; white-space: nowrap; }
+.insigne.big { font-size: 13px; padding: 3px 8px; }
+.gradecell { display: inline-flex; align-items: center; gap: 2px; }
+
+/* prise de service */
+.dutycard { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.dutycard.on { border-left: 4px solid var(--ok-fill); }
+.dc-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.dc-ic { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); }
+.dc-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* organigramme et unités */
+.orgchart { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.og { display: grid; gap: 12px; align-content: start; }
+.og.full { border-top: 3px solid var(--warn); }
+.og-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.og-head b { font: 600 22px/1.1 var(--serif); }
+.og-seats { margin-left: auto; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.og-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.og-list a { display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: var(--r-sm); color: var(--text); text-decoration: none; }
+.og-list a:hover { background: var(--tile); }
+.og-list .free { padding: 8px; border: 1px dashed var(--line); border-radius: var(--r-sm); color: var(--muted); font-size: 13px; text-align: center; }
+.unitgrid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.unitcard { display: grid; gap: 6px; align-content: start; padding: 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--stripe); }
+.unitcard p { margin: 0; }
+.u-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.u-top b { font-size: 16px; letter-spacing: .04em; }
+.u-top .muted { margin-left: auto; }
+.unitpick { display: grid; gap: 4px; }
+.up-head, .up-row { display: grid; grid-template-columns: minmax(0, 1fr) 80px; align-items: center; gap: 8px; }
+.up-head span:last-child, .up-row > input[type=radio] { justify-self: center; }
+.up-row { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.up-row input[type=radio] { width: 18px; height: 18px; accent-color: var(--accent); }
+
+/* fiche (agent, individu) */
+.idcard { display: grid; gap: 16px; align-content: start; }
+.id-top { display: flex; gap: 16px; align-items: center; }
+.id-top .art { gap: 4px; }
+.id-name { font: 600 28px/1.1 var(--serif); color: var(--text); }
+a.id-name { text-decoration: none; }
+a.id-name:hover { text-decoration: underline; }
+.idcard .lines-dl { margin: 0; }
+.idcard .lines-dl dd { text-align: right; overflow-wrap: anywhere; }
+.quals { list-style: none; margin: 0; padding: 0; display: grid; }
+.quals li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.quals li.off { opacity: .7; }
+.quals input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+.q-ic { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--tile); color: var(--muted); }
+.quals li.got .q-ic { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
+
+/* fils d'événements (carrière, journal d'un dossier) */
+.feed.tl .ev { grid-template-columns: 82px 28px minmax(0, 1fr); }
+.feed.tl .ev-body { display: grid; gap: 2px; }
+.feed.tl .ev-body > span { overflow-wrap: anywhere; white-space: pre-wrap; }
+.logform { display: grid; gap: 8px; margin-bottom: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.logform textarea { min-height: 70px; }
+.logform .btn { justify-self: end; }
+
+/* planning */
+.agenda { list-style: none; margin: 0; padding: 0; display: grid; }
+.agenda li { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 16px; align-items: start; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.agenda li.past { opacity: .72; }
+.ag-when { display: grid; gap: 2px; font-variant-numeric: tabular-nums; }
+.ag-when span { font-size: 13px; color: var(--muted); }
+.agenda .art { gap: 4px; }
+.ag-acts { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+
+/* fiche d'un individu : véhicules et lieux */
+.linelist { display: grid; gap: 6px; margin: 6px 0; }
+.ll-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)) 40px; gap: 6px; align-items: center; }
+.ll-row input { min-width: 0; }
+
+/* pièces jointes */
+.files { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+.filecard { margin: 0; display: grid; gap: 6px; align-content: start; }
+.filecard img, .filecard video { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--r-sm); background: var(--tile); }
+.filecard figcaption { display: grid; gap: 2px; font-size: 13px; overflow-wrap: anywhere; }
+.filecard figcaption small { color: var(--muted); font-size: 12px; }
+.fileicon { display: grid; place-items: center; gap: 4px; aspect-ratio: 4 / 3; border-radius: var(--r-sm); background: var(--tile); color: var(--text); font-weight: 600; text-decoration: none; }
+
+/* Most Wanted */
+.wboard { list-style: none; margin: 0; padding: 0; display: grid; }
+.wboard li { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.wboard .art { gap: 4px; flex: 1 1 220px; }
+.wboard .art a { color: var(--text); text-decoration: none; }
+.wboard .art a:hover { text-decoration: underline; }
+.rank.big { width: 44px; height: 44px; font: 700 19px/1 var(--font); font-variant-numeric: lining-nums tabular-nums; flex: none; }
+.nowrap { white-space: nowrap; }
+.wboard li:first-child .rank { background: var(--bad); color: var(--card); }
+.weeks { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.week { padding: 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--stripe); }
+.week h3 { margin: 0 0 8px; font-size: 14px; }
+.wk-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14px; }
+.posterwrap { display: grid; place-items: center; min-height: 200px; }
+.posterimg { display: block; max-width: 100%; max-height: 64vh; border-radius: var(--r-sm); box-shadow: var(--paper-shadow); }
+.posterimg:not([src]) { display: none; }
+
+/* annonces */
+.ann { display: grid; gap: 10px; border-left: 4px solid var(--info); }
+.ann.important { border-left-color: var(--warn); }
+.ann.urgent { border-left-color: var(--bad); }
+.ann.unread { box-shadow: var(--shadow), 0 0 0 1px var(--accent-soft); }
+.ann h2 { margin: 0; }
+.ann-top, .ann-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ann-foot { justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--line); }
+.ann-foot .muted { display: inline-flex; align-items: center; gap: 4px; }
+
+/* espace Justice */
+.wcard { display: grid; gap: 12px; }
+.wcard h2 { margin: 0; }
+.wcard .lines-dl { margin: 0; }
+.wcard .lines-dl dd { text-align: right; }
+.wc-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.wc-num { font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+
+/* page publique des avis de recherche */
+.avis { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; background: var(--wash); }
+.avis-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px max(16px, calc((100% - 1100px) / 2)); border-bottom: 1px solid var(--line); background: var(--card); }
+.avis-brand { display: flex; align-items: center; gap: 12px; }
+.avis-brand b { font: 600 22px/1.1 var(--serif); }
+.avis-star { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--badge); color: var(--badge-text); }
+.avis-main { width: min(1100px, 100%); margin: 0 auto; padding: 32px 16px 48px; display: grid; gap: 20px; align-content: start; }
+.avis-main h1 { margin: 0; font: 600 44px/1.05 var(--serif); }
+.avis-main > p { margin: 0; }
+.avis-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.avis-card { display: grid; gap: 10px; align-content: start; padding: 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); }
+.avis-card img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: var(--r-sm); background: var(--tile); }
+.avis-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.avis-form { display: grid; gap: 12px; max-width: 640px; }
+.avis-form h2 { margin: 0; }
+.avis-form textarea { min-height: 110px; }
+.avis-form .sent { margin: 0; padding: 12px; border-radius: var(--r-sm); background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); font-weight: 600; }
+.avis-foot { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 20px; color: var(--muted); font-size: 13px; }
+.avis-fly { width: 40px; height: auto; }
+
+@media (max-width: 700px) {
+  .agenda li { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .ag-acts { flex-direction: row; align-items: center; justify-content: flex-start; }
+  .feed.tl .ev { grid-template-columns: 28px minmax(0, 1fr); }
+  .feed.tl .ev time { grid-column: 2; grid-row: 2; }
+  .feed.tl .ev .ev-ic { grid-column: 1; grid-row: 1 / span 2; }
+  .feed.tl .ev .ev-body { grid-column: 2; grid-row: 1; }
+  .id-top { align-items: flex-start; }
+  .ava.xl { width: 84px; height: 84px; font-size: 28px; }
+  .id-name { font-size: 24px; }
+  .wboard .acts { width: 100%; justify-content: flex-start; }
+  .avis-main h1 { font-size: 34px; }
+  .dc-acts, .dc-acts .seg { width: 100%; }
+  .dc-acts .seg button { flex: 1; }
+  .dc-acts > .btn { width: 100%; }
+}

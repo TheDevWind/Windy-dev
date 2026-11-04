@@ -57,5 +57,19 @@ export function createFake() {
     },
     rpc: (name, args) => call({ op: 'rpc', name, args }),
     from,
+    // stockage imité : les fichiers vont en mémoire côté banc d'essai, servis sous /__fake-storage/ ; les règles RLS de storage.objects s'appliquent
+    storage: {
+      from: bucket => ({
+        async upload(path, file, opts) {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          let bin = '';
+          for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+          const r = await call({ op: 'upload', bucket, path, type: (opts && opts.contentType) || file.type, data: btoa(bin) });
+          return r.error ? { data: null, error: r.error } : { data: { path }, error: null };
+        },
+        createSignedUrls: (paths) => call({ op: 'signed', bucket, paths }),
+        getPublicUrl: path => ({ data: { publicUrl: '/__fake-storage/' + bucket + '/' + path } }),
+      }),
+    },
   };
 }
