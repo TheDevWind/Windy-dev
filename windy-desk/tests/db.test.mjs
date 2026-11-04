@@ -48,7 +48,7 @@ test('le patron active son compte et voit son espace', async () => {
   assert.equal((await one('patron', 'select public.accept_invitation($1) r', [tokPatron])).r.org_code, 'bella-napoli');
   await fails('inconnu', 'select public.accept_invitation($1)', [tokPatron], /déjà servi/);
   const sp = (await one('patron', 'select public.my_spaces() r')).r;
-  assert.equal(sp.orgs.length, 1); assert.equal(sp.orgs[0].grade, 'Patron'); assert.equal(sp.orgs[0].caps.length, 16);
+  assert.equal(sp.orgs.length, 1); assert.equal(sp.orgs[0].grade, 'Patron'); assert.equal(sp.orgs[0].caps.length, 21);
 });
 
 let tokServeuse, gradeEmploye;

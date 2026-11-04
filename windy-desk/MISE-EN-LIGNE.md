@@ -95,6 +95,21 @@ de la personne a l’accès voulu (entreprise → *Réglages* → grades). La ba
   Un rapport où une arme à feu a servi ouvre un dossier Affaires internes, visible du Director (accès « Affaires internes »).
 - **Recherche** : nom, surnom, téléphone, plaque, numéro de dossier, de mandat, de rapport ou de scellé. Les véhicules et
   organisations des fiches individus alimentent tout seuls le fichier des véhicules et celui des organisations.
+- **Signatures** : à sa première connexion, chaque agent écrit son nom de signature et choisit un des 6 modèles
+  (modifiable ensuite depuis sa fiche, bouton « Ma signature »). La signature de l’auteur est apposée à la soumission,
+  celle du superviseur quand il valide : un rapport garde ses signatures même si l’agent change la sienne plus tard.
+- **Transferts (POD)** : ordres numérotés `USMS-TR-0001`, convoi alerté, itinéraires lus seulement par le convoi et
+  l’accès « Transferts ». À l’arrivée, le registre des détenus suit ; une évasion ouvre un dossier Affaires internes
+  et alerte le Director.
+- **Tribunal (JSD)** : audiences, plan de sécurité (agents alertés), magistrats protégés et menaces (accès « Tribunal ») ;
+  tout agent peut signaler une menace.
+- **WITSEC** : visible seulement de l’unité WITSEC et du Director. Témoins sous code (`WS-ALPHA-01`), vrai nom
+  révélé uniquement avec un motif ; chaque consultation et chaque révélation est journalisée et alerte le Director.
+- **SOG** : opérateurs (test de sélection, recertification tous les 60 jours), activation par l’accès « SOG »
+  (2 sorties par semaine au plus) qui alerte tous les opérateurs, briefing avec carte, retour d’expérience.
+- **Renseignement** : informateurs sous nom de code, paiements, notes classées Diffusion, Confidentiel, Secret,
+  Très secret (les deux dernières réservées à l’accès « Renseignement »), graphe des relations.
+- **Alertes** : affichées sur le tableau de bord de chaque agent (l’envoi sur Discord viendra avec l’intégration).
 - **Fichiers** : deux espaces de stockage Supabase. `mdt` (privé, 50 Mo par fichier) pour les photos et pièces jointes,
   lus par liens signés d’une heure ; `avis` (public, 5 Mo) pour les affiches. Rien ne se supprime depuis le site.
 
@@ -110,7 +125,7 @@ de la personne a l’accès voulu (entreprise → *Réglages* → grades). La ba
 
 ```bash
 npm install          # PGlite pour les tests de la base
-npm test             # 34 tests de la base (Postgres en mémoire, mêmes migrations)
-npm run test:site    # scénario complet (entreprises et US Marshals) dans Chromium + revue de 236 pages (Playwright requis)
+npm test             # 40 tests de la base (Postgres en mémoire, mêmes migrations)
+npm run test:site    # scénario complet (entreprises et US Marshals) dans Chromium + revue de 276 pages (Playwright requis)
 npm run serve        # le site en local sur http://localhost:8080, branché sur le vrai Supabase
 ```

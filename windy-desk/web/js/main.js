@@ -10,6 +10,7 @@ import { landing } from './landing.js';
 import * as MOD from './modules.js';
 import * as MDT from './mdt.js';
 import * as ENQ from './mdt-enquete.js';
+import * as OPS from './mdt-ops.js';
 import { sb, rpc, rows, emailFor } from './sb.js';
 
 const ME = { session: null, spaces: null, quiet: false };
@@ -261,8 +262,9 @@ async function orgSpace(code, page, sub) {
   const svc = me.sector === 'service_public';
   const nav = svc ? [{ page: 'accueil', href: '/' + code, label: 'Tableau de bord', short: 'Accueil', icon: 'accueil' },
     ...[['recherche', 'Recherche', 'loupe', null, 'dossiers'], ['dossiers', 'Dossiers', 'dossier'], ['rapports', 'Rapports', 'rapport'], ['mandats', 'Mandats', 'marteau'], ['preuves', 'Preuves', 'scelle'],
-      ['wanted', 'Most Wanted', 'cible', 'Wanted'], ['effectifs', 'Effectifs', 'badge'], ['presence', 'Présence', 'horloge'], ['annonces', 'Annonces', 'megaphone']]
-      .filter(([id, , , , mod]) => has(mod || id)).map(([id, label, icon, short]) => ({ page: id, href: '/' + code + '/' + id, label, icon, short: short || null })),
+      ['wanted', 'Most Wanted', 'cible', 'Wanted'], ['transferts', 'Transferts', 'camion'], ['tribunal', 'Tribunal', 'balance'], ['witsec', 'WITSEC', 'cadenas', null, null, !!me.witsec],
+      ['sog', 'SOG', 'bouclier'], ['renseignement', 'Renseignement', 'reseau', 'Rens.'], ['effectifs', 'Effectifs', 'badge'], ['presence', 'Présence', 'horloge'], ['annonces', 'Annonces', 'megaphone']]
+      .filter(([id, , , , mod, ok]) => has(mod || id) && ok !== false).map(([id, label, icon, short]) => ({ page: id, href: '/' + code + '/' + id, label, icon, short: short || null })),
     can('equipe') ? { page: 'reglages', href: '/' + code + '/reglages', label: 'Réglages', icon: 'reglages' } : null].filter(Boolean)
   : [{ page: 'accueil', href: '/' + code, label: 'Tableau de bord', short: 'Accueil', icon: 'accueil' },
     ...MODNAV.filter(([id, , , ok]) => ok && has(id)).map(([id, label, icon]) => ({ page: id, href: '/' + code + '/' + id, label, icon })),
@@ -282,7 +284,10 @@ async function orgSpace(code, page, sub) {
       individus: isId(sub) ? c => MDT.individu(c, sub) : () => go(list, true),
       recherche: ENQ.recherche, vehicules: isId(sub) ? c => ENQ.vehicule(c, sub) : () => go(list, true), organisations: isId(sub) ? c => ENQ.organisation(c, sub) : () => go(list, true),
       rapports: sub ? (isId(sub) || sub === 'nouveau' ? c => ENQ.rapport(c, sub) : () => go(list, true)) : ENQ.rapports,
-      preuves: sub ? (isId(sub) ? c => ENQ.preuve(c, sub) : () => go(list, true)) : ENQ.preuves };
+      preuves: sub ? (isId(sub) ? c => ENQ.preuve(c, sub) : () => go(list, true)) : ENQ.preuves,
+      transferts: OPS.transferts, tribunal: OPS.tribunal, renseignement: OPS.renseignement,
+      witsec: sub ? (isId(sub) ? c => OPS.temoin(c, sub) : () => go(list, true)) : OPS.witsec,
+      sog: sub ? (isId(sub) ? c => OPS.mission(c, sub) : () => go(list, true)) : OPS.sog };
     return PAGES[page](ctx);
   }
   const PAGES = { accueil: dashboard, compta, reglages, equipe: sub && has('employes') ? c => MOD.employe(c, sub) : equipe,

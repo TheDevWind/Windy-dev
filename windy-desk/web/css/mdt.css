@@ -243,3 +243,34 @@ a.id-name:hover { text-decoration: underline; }
 .signbox .wait { color: var(--muted); font-style: italic; }
 .idsig { margin-top: 4px; }
 .avis-seal { width: 48px; height: 48px; flex: none; }
+
+/* étape 3 : opérations */
+select.mini { padding: 4px 28px 4px 8px; min-height: 32px; font-size: 13px; }
+.alertcard { border-left: 4px solid var(--accent); }
+.alertcard li.al-witsec .ev-ic, .alertcard li.al-menace .ev-ic { color: var(--bad); }
+.alertcard li.al-sog .ev-ic { color: var(--warn); }
+.alertcard a { color: var(--text); }
+.wcode { font-family: var(--mono, ui-monospace, monospace); letter-spacing: .04em; }
+.masked { letter-spacing: .12em; color: var(--muted); }
+.intelcard { display: grid; gap: 10px; border-left: 4px solid var(--ok); }
+.intelcard.confidentiel { border-left-color: var(--info); }
+.intelcard.secret { border-left-color: var(--warn); }
+.intelcard.tres_secret { border-left-color: var(--bad); }
+.intelcard h2 { margin: 0; }
+.intelcard .pills a.pill { text-decoration: none; }
+.relgraph { display: block; width: 100%; min-width: 640px; height: auto; }
+.rg-edge { stroke: var(--line); stroke-width: 2; }
+.rg-edge.rg-complice, .rg-edge.rg-rival { stroke: var(--bad); opacity: .55; }
+.rg-edge.rg-gang { stroke-dasharray: 5 5; stroke: var(--muted); opacity: .6; }
+.rg-elabel { font: 600 11px var(--font); fill: var(--muted); text-anchor: middle; }
+.rg-person { fill: var(--accent); stroke: var(--card); stroke-width: 3; }
+.rg-person.rg-elevee, .rg-person.rg-extreme { fill: var(--bad); }
+.rg-gang { stroke: var(--text); stroke-width: 1.5; }
+.rg-init { font: 700 11px var(--font); fill: var(--accent-ink); text-anchor: middle; pointer-events: none; }
+.rg-label { font: 600 12px var(--font); fill: var(--text); text-anchor: middle; paint-order: stroke; stroke: var(--card); stroke-width: 4px; }
+.relgraph a:hover .rg-label { text-decoration: underline; }
+.rg-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; }
+.rg-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.rg-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); display: inline-block; }
+.rg-dot.rg-extreme { background: var(--bad); }
+.rg-sq { width: 14px; height: 10px; border-radius: 3px; border: 1.5px solid var(--text); display: inline-block; }

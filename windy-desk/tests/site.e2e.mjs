@@ -458,7 +458,7 @@ try {
     S.reedLink = await linkFromModal(ed);
     await ed.locator('table', { hasText: 'US Marshals · Los Santos' }).waitFor();
     const [o] = await backend.sql("select sector, modules from public.orgs where code = 'usms-ls'");
-    assert.equal(o.sector, 'service_public'); assert.equal(o.modules.length, 8);
+    assert.equal(o.sector, 'service_public'); assert.equal(o.modules.length, 13);
     await ed.getByRole('link', { name: 'Accès' }).first().click(); await settle(ed, 'h1:text("Accès")');
     await ed.getByLabel('Nom affiché').fill('Juge Hartley');
     await ed.getByRole('button', { name: 'Créer le lien' }).click();
@@ -505,7 +505,7 @@ try {
     await sam.getByRole('button', { name: 'Activer avec cette session' }).click();
     await sam.waitForURL(BASE + '/usms-ls'); await chooseSignature(sam, 'S. Ortiz', 'Paraphe');
     const navs = await sam.locator('nav.side .navs a').allInnerTexts();
-    assert.deepEqual(navs.map(x => x.trim()), ['Accueil', 'Recherche', 'Dossiers', 'Rapports', 'Mandats', 'Preuves', 'Wanted', 'Effectifs', 'Présence', 'Annonces']);
+    assert.deepEqual(navs.map(x => x.trim()), ['Accueil', 'Recherche', 'Dossiers', 'Rapports', 'Mandats', 'Preuves', 'Wanted', 'Transferts', 'Tribunal', 'SOG', 'Rens.', 'Effectifs', 'Présence', 'Annonces']);
     await sam.goto(BASE + '/usms-ls/effectifs'); await settle(sam, 'h1:text("Effectifs")');
     await sam.getByRole('button', { name: 'Recruter' }).click();
     const m = sam.locator('.modal');
@@ -772,6 +772,113 @@ try {
     await sam.locator('.card', { hasText: 'Membres connus' }).getByText('Tony Vercetti').waitFor();
   });
 
+  await step('transfert : ordre, convoi alerté, départ et arrivée, registre des détenus', async () => {
+    await sam.goto(BASE + '/usms-ls/transferts'); await settle(sam, 'h1:text("Transferts")');
+    await sam.getByRole('button', { name: 'Ordre de transfert' }).click();
+    const m = sam.locator('.modal');
+    await m.getByLabel('Détenu').selectOption({ label: 'Tony Vercetti « Le Baron »' });
+    await m.getByLabel('Départ', { exact: true }).fill('Mission Row');
+    await m.getByLabel('Arrivée', { exact: true }).fill('Bolingbroke');
+    await m.getByLabel('Chef de convoi').selectOption({ label: 'Marshal-12 · Dan Moss' });
+    await m.getByLabel(/Itinéraire principal/).fill('Route 68 puis Senora Freeway');
+    await m.getByRole('button', { name: 'Créer l’ordre de transfert' }).click();
+    await toast(sam, /USMS-TR-0001 planifié/);
+    await dan.goto(BASE + '/usms-ls'); await settle(dan, '.alertcard');
+    await dan.locator('.alertcard', { hasText: 'USMS-TR-0001' }).waitFor();
+    await dan.goto(BASE + '/usms-ls/transferts'); await settle(dan, 'h1:text("Transferts")');
+    await dan.getByRole('button', { name: 'Départ', exact: true }).click();
+    await toast(dan, 'USMS-TR-0001 : en route');
+    await dan.getByRole('button', { name: 'Arrivé', exact: true }).click();
+    await toast(dan, 'USMS-TR-0001 : arrivé');
+    await dan.getByRole('tab', { name: /Registre/ }).click();
+    await dan.locator('table', { hasText: 'Bolingbroke' }).waitFor();
+  });
+  await step('tribunal : audience, plan de sécurité, agent affecté prévenu', async () => {
+    await sam.goto(BASE + '/usms-ls/tribunal'); await settle(sam, 'h1:text("Tribunal")');
+    await sam.getByRole('button', { name: 'Nouvelle audience' }).click();
+    const m = sam.locator('.modal');
+    await m.getByLabel('Salle').fill('Salle 2');
+    await m.getByLabel('Accusé').selectOption({ label: 'Tony Vercetti « Le Baron »' });
+    await m.getByLabel('Juge', { exact: true }).fill('Hartley');
+    await m.getByRole('button', { name: 'Programmer' }).click();
+    await toast(sam, 'Audience programmée');
+    await sam.getByRole('button', { name: 'Plan de sécurité' }).click();
+    const p = sam.locator('.modal');
+    await p.getByLabel('Agent du poste').first().selectOption({ label: 'Marshal-12 · Dan Moss' });
+    await p.getByRole('button', { name: 'Enregistrer le plan' }).click();
+    await toast(sam, 'Plan de sécurité enregistré');
+    await dan.goto(BASE + '/usms-ls/tribunal'); await settle(dan, 'h1:text("Tribunal")');
+    await dan.locator('.banner', { hasText: 'Tu es affecté' }).waitFor();
+  });
+  await step('WITSEC : témoin sous code, vrai nom révélé avec motif, journal d’audit, menu réservé', async () => {
+    assert.ok(!(await dan.locator('nav.side .navs a').allInnerTexts()).some(x => x.includes('WITSEC')));
+    await reed.goto(BASE + '/usms-ls/witsec'); await settle(reed, 'h1:text("WITSEC")');
+    await reed.getByRole('button', { name: 'Nouveau témoin' }).click();
+    const m = reed.locator('.modal');
+    await m.getByLabel('Vrai nom').fill('Lucia Moretti');
+    await m.getByLabel('Témoigne contre').fill('Tony Vercetti');
+    await m.getByRole('button', { name: 'Placer sous protection' }).click();
+    await reed.waitForURL(/\/usms-ls\/witsec\/[0-9a-f-]{36}$/); await settle(reed, 'h1:text("WS-ALPHA-01")');
+    S.witnessPath = new URL(reed.url()).pathname;
+    assert.equal(await reed.locator('dd.masked').first().innerText(), '●●●●●● ●●●●●●');
+    await reed.getByRole('button', { name: 'Révéler le vrai nom' }).click();
+    await reed.locator('.modal').getByLabel('Motif').fill('Préparer l’escorte au tribunal');
+    await reed.locator('.modal').getByRole('button', { name: 'Révéler', exact: true }).click();
+    await reed.getByText('Lucia Moretti').waitFor();
+    await reed.goto(BASE + '/usms-ls/witsec'); await settle(reed, 'h1:text("WITSEC")');
+    await reed.getByRole('tab', { name: 'Journal d’audit' }).click();
+    await reed.locator('table', { hasText: 'Nom révélé' }).waitFor();
+  });
+  await step('SOG : opérateur, activation qui l’alerte, briefing', async () => {
+    await reed.goto(BASE + '/usms-ls/sog'); await settle(reed, 'h1:text("SOG")');
+    await reed.getByRole('tab', { name: 'Opérateurs' }).click();
+    await reed.getByRole('button', { name: 'Opérateur', exact: true }).click();
+    const m = reed.locator('.modal');
+    await m.getByLabel(/^Agent/).selectOption({ label: 'Marshal-12 · Dan Moss' });
+    await m.getByLabel('Spécialité').selectOption('Brèche');
+    await m.getByRole('button', { name: 'Enregistrer' }).click();
+    await toast(reed, 'Opérateur enregistré');
+    await reed.getByRole('button', { name: 'Activer le SOG' }).click();
+    const a = reed.locator('.modal');
+    await a.getByLabel('Opération').fill('Assaut planque Grove');
+    await a.getByRole('button', { name: 'Activer le SOG' }).click();
+    await reed.waitForURL(/\/usms-ls\/sog\/[0-9a-f-]{36}$/); await settle(reed, 'h1:text("USMS-OPS-001")');
+    S.missionPath = new URL(reed.url()).pathname;
+    await reed.getByRole('button', { name: 'Briefing', exact: true }).click();
+    const b = reed.locator('.modal');
+    await b.getByLabel('Plan', { exact: true }).fill('Entrée par l’arrière, appui sur le toit');
+    await b.getByLabel('Opérateur', { exact: true }).first().selectOption({ label: 'Marshal-12 · Dan Moss' });
+    await b.getByLabel('Rôle', { exact: true }).first().fill('Brèche');
+    await b.getByRole('button', { name: 'Enregistrer le briefing' }).click();
+    await toast(reed, 'Briefing enregistré');
+    await dan.goto(BASE + '/usms-ls'); await settle(dan, '.alertcard');
+    await dan.locator('.alertcard', { hasText: 'Activation SOG USMS-OPS-001' }).waitFor();
+  });
+  await step('renseignement : informateur, note secrète, graphe des relations', async () => {
+    await reed.goto(BASE + '/usms-ls/renseignement'); await settle(reed, 'h1:text("Renseignement")');
+    await reed.getByRole('tab', { name: 'Informateurs' }).click();
+    await reed.getByRole('button', { name: 'Informateur', exact: true }).click();
+    await reed.locator('.modal').getByLabel('Nom de code').fill('cobra');
+    await reed.locator('.modal').getByRole('button', { name: 'Enregistrer' }).click();
+    await toast(reed, 'Informateur enregistré');
+    await reed.getByRole('button', { name: 'Nouvelle note' }).click();
+    const m = reed.locator('.modal');
+    await m.getByLabel('Titre').fill('Livraison d’armes');
+    await m.getByLabel('Contenu').fill('Samedi soir au port, deux camions.');
+    await m.getByLabel('Classification').selectOption('secret');
+    await m.getByLabel('Source').selectOption({ label: 'COBRA' });
+    await m.getByRole('button', { name: 'Enregistrer la note' }).click();
+    await toast(reed, 'Note enregistrée');
+    await reed.getByRole('tab', { name: 'Notes' }).click();
+    await reed.locator('.intelcard', { hasText: 'Livraison d’armes' }).waitFor();
+    await reed.getByRole('tab', { name: 'Graphe des relations' }).click();
+    await reed.locator('svg.relgraph').waitFor();
+    await shot(reed, 'graphe', true);
+    await dan.goto(BASE + '/usms-ls/renseignement'); await settle(dan, 'h1:text("Renseignement")');
+    // promu Inspector plus haut dans le scénario, il a l'accès Renseignement : il lit la note secrète (le cas sans accès est couvert par tests/mdt.test.mjs)
+    await dan.locator('.intelcard', { hasText: 'Livraison d’armes' }).waitFor();
+  });
+
   // ------------------------------------------------------------ connexion ordinaire
   await step('connexion par l’adresse de l’entreprise, mauvais puis bon mot de passe', async () => {
     const p = await open({ label: 'connexion' });
@@ -818,8 +925,9 @@ const PAGES = {
   fisc: [S.fisc, ['/fisc', '/fisc/bella-napoli', '/fisc/les-restos-du-coeur', '/fisc/bareme']],
   editeur: [S.editeur, ['/editeur', '/editeur/modules', '/editeur/acces', '/editeur/devis', '/editeur/devis/' + devisId, '/editeur/devis/nouveau']],
   director: [S.reed, ['/usms-ls', '/usms-ls/effectifs', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/dossiers', S.personPath, S.casePath, '/usms-ls/mandats', '/usms-ls/wanted', '/usms-ls/annonces', '/usms-ls/reglages',
-    '/usms-ls/recherche', S.platePath, S.gangPath, '/usms-ls/rapports', S.reportPath, '/usms-ls/rapports/nouveau', '/usms-ls/preuves', S.evidencePath]],
-  deputy: [S.dan, ['/usms-ls', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/mandats', '/usms-ls/rapports', S.reportPath]],
+    '/usms-ls/recherche', S.platePath, S.gangPath, '/usms-ls/rapports', S.reportPath, '/usms-ls/rapports/nouveau', '/usms-ls/preuves', S.evidencePath,
+    '/usms-ls/transferts', '/usms-ls/tribunal', '/usms-ls/witsec', S.witnessPath, '/usms-ls/sog', S.missionPath, '/usms-ls/renseignement']],
+  deputy: [S.dan, ['/usms-ls', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/mandats', '/usms-ls/rapports', S.reportPath, '/usms-ls/transferts', '/usms-ls/tribunal', '/usms-ls/sog']],
   justice: [S.judge, ['/justice']],
   public: [null, ['/avis/usms-ls', '/usms-ls']],
 };

@@ -20,7 +20,12 @@ export const MDT_MODULES = [
   { id: 'wanted', name: 'Most Wanted', icon: 'cible', price: 200, text: 'Classement des plus recherchés, historique de la semaine, affiche, page publique et signalements anonymes.' },
   { id: 'annonces', name: 'Annonces', icon: 'megaphone', price: 100, text: 'Annonces du commandement avec accusé de lecture.' },
   { id: 'rapports', name: 'Rapports', icon: 'rapport', price: 250, text: 'Rapports guidés (arrestation, SOG, transfert, incident, usage de la force, audience, libre), validation, export PDF ou PNG, code pénal et calcul des peines.' },
-  { id: 'preuves', name: 'Preuves et saisies', icon: 'scelle', price: 150, text: 'Registre des scellés, chaîne de possession, statut et inventaire des saisies : armes, drogue, argent, véhicules.' }
+  { id: 'preuves', name: 'Preuves et saisies', icon: 'scelle', price: 150, text: 'Registre des scellés, chaîne de possession, statut et inventaire des saisies : armes, drogue, argent, véhicules.' },
+  { id: 'transferts', name: 'Transferts de détenus', icon: 'camion', price: 200, text: 'Ordres de transfert, convoi, itinéraires réservés au convoi, suivi en direct et registre des détenus.' },
+  { id: 'tribunal', name: 'Tribunal et protection', icon: 'balance', price: 200, text: 'Calendrier des audiences, plan de sécurité, magistrats protégés et registre des menaces.' },
+  { id: 'witsec', name: 'WITSEC', icon: 'cadenas', price: 250, text: 'Témoins protégés sous code, nom révélé seulement par action volontaire et journalisée, planques, escortes, alertes au Director.' },
+  { id: 'sog', name: 'SOG', icon: 'bouclier', price: 200, text: 'Opérateurs certifiés, activation et alerte, limite de sorties, briefing, retour d’expérience, tests et recertifications.' },
+  { id: 'renseignement', name: 'Renseignement', icon: 'reseau', price: 200, text: 'Informateurs sous nom de code, fiabilité, paiements, notes classifiées et graphe des relations.' }
 ];
 export const modulesFor = sector => sector === 'service_public' ? MDT_MODULES : MODULES;
 export const moduleOf = id => MODULES.concat(MDT_MODULES).find(m => m.id === id) || { id, name: id, icon: 'grille', price: 0, text: '' };
@@ -35,7 +40,8 @@ export const CAPS = [['encaisser', 'Encaisser'], ['stock', 'Gérer le stock'], [
   ['paie', 'Payer les salaires'], ['equipe', 'Gérer l’équipe et les réglages'], ['vehicules', 'Véhicules'], ['evenements', 'Événements']];
 /** Les accès d'un grade dans un service public. */
 export const MDT_CAPS = [['effectifs', 'Gérer les effectifs (recrutement, grades, carrière, départs)'], ['valider', 'Valider les absences et organiser le planning'], ['dossiers', 'Créer et suivre les dossiers'],
-  ['mandats', 'Demander des mandats'], ['wanted', 'Gérer le Most Wanted et les signalements'], ['annonces', 'Publier des annonces'], ['affaires', 'Affaires internes'], ['equipe', 'Réglages du service, code pénal et comptes']];
+  ['mandats', 'Demander des mandats'], ['wanted', 'Gérer le Most Wanted et les signalements'], ['annonces', 'Publier des annonces'], ['affaires', 'Affaires internes'], ['transferts', 'Planifier les transferts et tenir le registre des détenus'], ['tribunal', 'Audiences, magistrats protégés et menaces'],
+  ['witsec', 'WITSEC et son journal d’audit (en plus de l’unité WITSEC)'], ['sog', 'Activer et diriger le SOG'], ['renseignement', 'Informateurs et notes secrètes'], ['equipe', 'Réglages du service, code pénal et comptes']];
 export const capsFor = sector => sector === 'service_public' ? MDT_CAPS : CAPS;
 export const CATEGORIES = { in: ['Ventes', 'Factures', 'Dons', 'Subventions', 'Divers'], out: ['Achats', 'Salaires', 'Loyer', 'Licence', 'Entretien', 'Divers'] };
 export const DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];

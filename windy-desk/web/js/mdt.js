@@ -6,6 +6,7 @@ import { $app, S, h, ico, modal, toast, run, table, pill, strip, fchips, money, 
 import { rpc, rows, upload, signedUrls, publicUrl } from './sb.js';
 import { saveBlob } from './doc.js';
 import { KIND, DANGER, personCards, caseCards, reportAlerts } from './mdt-enquete.js';
+import { alertsCard } from './mdt-ops.js';
 
 import { DAY, HOUR, ms, iso, day, field, input, area, select, foot, fullName, today, toLocal, weekStart, hours, fmtH, tabs, search, match, STATUS, OPEN, PRIO, WKIND, WST, wStatus, DUTY, STAGE, CAREER, LOG, ANN, AGENDA, IMAGE, ANY, stamp, extOf, send, photoIn, face, personCell, feed, load, gradeOf, myRank, absentToday, stateOf, inactiveDays , SIGS, sigEl, sigPicker, seal } from './mdt-kit.js';
 
@@ -37,7 +38,7 @@ export async function dashboard(ctx) {
     has('presence') ? rows('agenda', q => q.eq('org_id', me.id).gte('ends_at', iso(Date.now())).order('starts_at').limit(5)) : [],
     has('presence') ? rows('absences', q => q.eq('org_id', me.id).eq('status', 'validee').gte('ends_on', today())) : [],
     has('wanted') && can('wanted') ? rows('tips', q => q.eq('org_id', me.id).eq('status', 'nouveau')) : []]);
-  const alerts = await reportAlerts(ctx);
+  const [alerts, alertBox] = await Promise.all([reportAlerts(ctx), alertsCard(ctx)]);
   const active = members.filter(m => m.active), meRow = members.find(m => m.id === me.member_id);
   const urls = await signedUrls(people.filter(p => wanted.some(w => w.person_id === p.id)).map(p => p.photo).concat(active.map(m => m.photo)));
   const pOf = id => people.find(p => p.id === id), mOf = id => members.find(m => m.id === id);
@@ -51,6 +52,7 @@ export async function dashboard(ctx) {
     unread.map(a => h('div', { class: 'banner' + (a.level === 'urgent' ? ' bad' : '') }, ico('megaphone', 20), h('div', {}, h('b', {}, a.title), h('span', {}, a.body.slice(0, 160) + (a.body.length > 160 ? '…' : ''))),
       h('button', { class: 'btn small', type: 'button', onclick: ev => run(ev.currentTarget, async () => { await rpc('read_announcement', { p_id: a.id }); ctx.reload(); return { message: 'Annonce marquée comme lue.' }; }) }, 'J’ai lu'))),
     alerts.banner,
+    alertBox,
     has('presence') ? dutyCard(ctx, mine, meRow) : null,
     h('section', { class: 'card' }, strip([has('presence') ? ['En service', open.length + ' / ' + active.length] : ['Effectif', String(active.length)],
       has('dossiers') ? ['Dossiers actifs', String(cases.length)] : null, has('mandats') ? ['Mandats en attente', String(pending.length), pending.length ? 'warn-t' : null] : null,

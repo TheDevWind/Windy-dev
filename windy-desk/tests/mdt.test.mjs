@@ -23,7 +23,7 @@ const one = async (who, sql, params) => (await as(who, sql, params))[0];
 const val = async (who, sql, params) => Object.values(await one(who, sql, params))[0];
 const fails = (who, sql, params, re) => assert.rejects(() => as(who, sql, params), re);
 const su = async (sql, params) => (await db.query(sql, params)).rows;
-const MDT = "array['effectifs','presence','dossiers','mandats','wanted','annonces','rapports','preuves']";
+const MDT = "array['effectifs','presence','dossiers','mandats','wanted','annonces','rapports','preuves','transferts','tribunal','witsec','sog','renseignement']";
 
 let usms, bella, G = {}, M = {}, unit = {}, qual = {};
 
@@ -385,4 +385,98 @@ test('signatures : choisies par l’agent, apposées à la soumission et à la v
   assert.equal(s.reviewer_id, M['sam.ortiz']);
   await one('dep', "select public.save_signature($1, 'Daniel Moss', 'classique')", [usms]);
   assert.equal((await sig()).a.name, 'D. Moss');
+});
+
+// ================================================================== étape 3 : transferts, tribunal, WITSEC, SOG, renseignement
+const alertsOf = who => as(who, 'select kind, text from public.alerts where read_at is null order by id');
+test('transferts : convoi, itinéraires réservés au convoi, suivi, registre des détenus, évasion', async () => {
+  const t = await val('sup', 'select public.save_transfer($1, null, $2, $3)', [usms, { person_id: person, from_place: 'Mission Row', to_place: 'Bolingbroke', depart_at: new Date().toISOString(),
+    risk: 'eleve', leader_id: M['dan.moss'], vehicles: '2 SUV, 1 fourgon', sog: true, route_main: 'Route 68 puis Senora Fwy', route_backup: 'Great Ocean Hwy', case_id: kase }, [M['ines.park']]]);
+  assert.equal(t.num, 'USMS-TR-0001');
+  assert.ok((await alertsOf('dep')).some(a => a.kind === 'transfert' && a.text.includes('USMS-TR-0001')));
+  assert.equal((await as('rec', 'select * from public.transfer_routes')).length, 0);
+  assert.equal((await one('dep', 'select main from public.transfer_routes where transfer_id = $1', [t.id])).main, 'Route 68 puis Senora Fwy');
+  assert.equal((await as('insp', 'select * from public.transfer_routes where transfer_id = $1', [t.id])).length, 1);
+  await fails('rec', "select public.transfer_status($1, 'en_route', null, false)", [t.id], /convoi/);
+  await fails('dep', "select public.save_transfer($1, $2, '{}', '{}')", [usms, t.id], /ne permet pas/);
+  await one('dep', "select public.transfer_status($1, 'en_route', null, false)", [t.id]);
+  await one('dep', "select public.transfer_status($1, 'arrive', null, false)", [t.id]);
+  const d = await one('rec', 'select place, released_at from public.detentions where person_id = $1', [person]);
+  assert.equal(d.place, 'Bolingbroke');
+  const t2 = await val('sup', 'select public.save_transfer($1, null, $2, $3)', [usms, { person_id: person, from_place: 'Bolingbroke', to_place: 'Tribunal', leader_id: M['dan.moss'] }, []]);
+  await one('dep', "select public.transfer_status($1, 'en_route', null, false)", [t2.id]);
+  await fails('dep', "select public.transfer_status($1, 'incident', 'non', false)", [t2.id], /Décris/);
+  await one('dep', "select public.transfer_status($1, 'incident', 'Le détenu a pris la fuite à Paleto Bay', true)", [t2.id]);
+  assert.ok((await as('dir', "select reason from public.ia_cases where reason like 'Évasion%'")).length === 1);
+  assert.ok((await alertsOf('dir')).some(a => a.text.includes('Évasion')));
+});
+
+test('tribunal : audience et plan de sécurité, magistrats protégés et menaces', async () => {
+  const hid = await val('chief', 'select public.save_hearing($1, null, $2)', [usms, { starts_at: new Date(Date.now() + 864e5).toISOString(), room: 'Salle 2', person_id: person, judge: 'Hartley', case_id: kase, risk: 'eleve' }]);
+  await one('chief', 'select public.set_hearing_posts($1, $2)', [hid, JSON.stringify([{ post: 'Entrée', member_id: M['dan.moss'] }, { post: 'Escorte de l’accusé', member_id: M['ines.park'] }])]);
+  assert.equal((await as('dep', 'select post from public.hearing_posts where hearing_id = $1 order by id', [hid])).length, 2);
+  assert.ok((await alertsOf('dep')).some(a => a.text.includes('Salle 2')));
+  await fails('dep', 'select public.save_hearing($1, null, $2)', [usms, { room: 'X' }], /ne permet pas/);
+  const pid = await val('sup', 'select public.save_protectee($1, null, $2)', [usms, { name: 'Juge Hartley', role: 'juge', threat: 'faible' }]);
+  assert.equal((await as('dep', 'select * from public.protectees')).length, 0);
+  await one('dep', 'select public.add_threat($1, $2)', [usms, { protectee_id: pid, person_id: person, description: 'Lettre de menaces reçue au tribunal', level: 'eleve' }]);
+  assert.equal((await one('sup', 'select threat from public.protectees where id = $1', [pid])).threat, 'eleve');
+  assert.ok((await alertsOf('chief')).some(a => a.kind === 'menace'));
+});
+
+test('WITSEC : accès réservé, code témoin, vrai nom révélé et journalisé, alerte au Director', async () => {
+  await fails('dep', 'select public.save_witness($1, null, $2)', [usms, { real_name: 'Lucia Moretti' }], /WITSEC/);
+  const w = await val('dir', 'select public.save_witness($1, null, $2)', [usms, { real_name: 'Lucia Moretti', threat: 'extreme', case_id: kase, against: 'Tony Vercetti' }]);
+  assert.equal(w.code, 'WS-ALPHA-01');
+  assert.equal((await as('dep', 'select * from public.witnesses')).length, 0);
+  await one('dir', 'select public.set_agent_units($1, $2, $3)', [M['ines.park'], [unit.WITSEC], unit.WITSEC]);
+  assert.equal((await val('insp', 'select public.my_spaces()')).orgs[0].witsec, true);
+  assert.equal((await val('dep', 'select public.my_spaces()')).orgs[0].witsec, false);
+  assert.equal((await as('insp', 'select code from public.witnesses')).length, 1);
+  await fails('insp', 'select * from public.witness_secrets', [], /permission denied/);
+  await one('insp', 'select public.open_witness($1)', [w.id]);
+  await fails('insp', "select public.reveal_witness($1, '')", [w.id], /pourquoi/);
+  const r = await val('insp', "select public.reveal_witness($1, 'Escorte vers le tribunal')", [w.id]);
+  assert.equal(r.real_name, 'Lucia Moretti');
+  const dirAlerts = (await alertsOf('dir')).filter(a => a.kind === 'witsec');
+  assert.ok(dirAlerts.some(a => a.text.includes('consultée')) && dirAlerts.some(a => a.text.includes('révélé')));
+  assert.deepEqual((await as('dir', 'select action from public.witsec_audit order by id')).map(x => x.action), ['creation', 'consultation', 'revelation']);
+  assert.equal((await as('insp', 'select * from public.witsec_audit')).length, 0);
+  await one('insp', 'select public.save_safehouse($1, null, $2)', [usms, { code: 'pl-nord', location_code: 'Secteur 7, grille K3', capacity: 2 }]);
+  const w2 = await val('insp', 'select public.save_witness($1, null, $2)', [usms, { real_name: 'Marco Bell' }]);
+  assert.equal(w2.code, 'WS-BRAVO-01');
+});
+
+test('SOG : sélection, activation qui alerte les opérateurs, limite de 2 sorties par semaine, briefing et clôture', async () => {
+  await fails('sup', 'select public.add_sog_test($1, $2, true, 80, null)', [M['dan.moss'], 'selection'], /ne permet pas/);
+  await one('chief', "select public.add_sog_test($1, 'selection', true, 82, 'Parcours réussi')", [M['dan.moss']]);
+  assert.equal((await as('rec', 'select * from public.sog_operators where member_id = $1', [M['dan.moss']])).length, 1);
+  await fails('sup', "select public.activate_sog($1, 'Assaut', null, null)", [usms], /ne permet pas/);
+  const m1 = await val('chief', "select public.activate_sog($1, 'Assaut planque Grove', 'Interpeller le fugitif', $2)", [usms, kase]);
+  assert.equal(m1.num, 'USMS-OPS-001');
+  assert.ok((await alertsOf('dep')).some(a => a.kind === 'sog' && a.text.includes('USMS-OPS-001')));
+  await val('dir', "select public.activate_sog($1, 'Deuxième sortie', null, null)", [usms]);
+  await fails('chief', "select public.activate_sog($1, 'Troisième', null, null)", [usms], /Limite atteinte/);
+  await one('dep', 'select public.set_sog_available($1, false)', [usms]);
+  await fails('rec', 'select public.set_sog_available($1, false)', [usms], /pas opérateur/);
+  await one('chief', 'select public.save_briefing($1, $2)', [m1.id, { objective: 'Interpeller', plan: 'Entrée par l’arrière, appui tireur sur le toit', roles: [{ member_id: M['dan.moss'], role: 'Brèche' }] }]);
+  await fails('chief', "select public.close_sog($1, 'terminee', 'court', null)", [m1.id], /retour d’expérience/);
+  await one('chief', "select public.close_sog($1, 'terminee', 'Interpellation réussie, aucun blessé.', null)", [m1.id]);
+  assert.equal((await one('rec', 'select status, roles from public.sog_missions where id = $1', [m1.id])).status, 'terminee');
+});
+
+test('renseignement : informateurs et paiements réservés, notes classifiées selon l’accès, alertes lues', async () => {
+  const i = await val('insp', "select public.save_informant($1, null, $2)", [usms, { code: 'cobra', real_name: 'Jimmy B.', reliability: 'B' }]);
+  await one('insp', "select public.pay_informant($1, 500, 'Tuyau sur la planque')", [i]);
+  assert.equal((await as('dep', 'select * from public.informants')).length, 0);
+  assert.equal((await as('insp', 'select code from public.informants')).map(x => x.code)[0], 'COBRA');
+  await one('dep', 'select public.add_intel($1, $2)', [usms, { title: 'Point Vagos', body: 'Réunion chaque jeudi au garage.', classification: 'confidentiel' }]);
+  await fails('dep', 'select public.add_intel($1, $2)', [usms, { title: 'Secret', body: 'Source infiltrée', classification: 'secret' }], /accès Renseignement/);
+  await one('insp', 'select public.add_intel($1, $2)', [usms, { title: 'Source COBRA', body: 'Livraison d’armes samedi', classification: 'secret', informant_id: i }]);
+  await one('insp', 'select public.add_intel($1, $2)', [usms, { title: 'Avis général', body: 'Vigilance sur Grove Street', classification: 'diffusion' }]);
+  assert.deepEqual((await as('rec', 'select title from public.intel order by at')).map(x => x.title), ['Avis général']);
+  assert.deepEqual((await as('dep', 'select classification from public.intel order by at')).map(x => x.classification).sort(), ['confidentiel', 'diffusion']);
+  assert.equal((await as('insp', 'select * from public.intel')).length, 3);
+  await one('dep', 'select public.read_alerts($1)', [usms]);
+  assert.equal((await alertsOf('dep')).length, 0);
 });
