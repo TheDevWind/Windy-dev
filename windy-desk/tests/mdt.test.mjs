@@ -679,3 +679,50 @@ test('statistiques, carte et administration : bilan, repères, modèles, logo, s
   assert.ok(ex.tables.applications.length === 1 && ex.tables.weapons.length === 2 && !('witness_secrets' in ex.tables));
   assert.ok(!JSON.stringify(ex).includes('Lucia Moretti'));
 });
+
+// ================================================================== plans d'intervention
+test('plans d’intervention : droits par type, pièce du service, photos vérifiées, lecture SOG réservée', async () => {
+  const [{ id: wid }] = await su('select id from public.warrants where org_id = $1 limit 1', [usms]);
+  const [{ id: tid }] = await su('select id from public.transfers where org_id = $1 limit 1', [usms]);
+  const [{ id: sid }] = await su('select id from public.sog_missions where org_id = $1 limit 1', [usms]);
+  const data = { v: 1, layers: [], shapes: [{ id: 'a', type: 'fleche', pts: [[100, 200], [150, 260]], team: 'A', role: 'Brèche', label: 'Entrée' }], view: { c: [0, 0], z: 3 } };
+  const save = (who, kind, ref, d = data, id = null, title = 'Plan banque') => val(who, 'select public.save_plan($1, $2, $3, $4, $5, $6)', [usms, id, title, kind, ref, d]);
+  // droits : la capacité du type de plan s'ajoute au module « carte »
+  const p1 = await save('insp', 'mandat', wid);
+  await fails('dep', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan', 'mandat', wid, data], /ne permet pas/);
+  await fails('intrus', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan', 'mandat', wid, data], /Accès refusé/);
+  await fails('insp', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan', 'sog', null, data], /ne permet pas/);
+  await fails('insp', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan', 'banque', null, data], /Type de plan/);
+  const p2 = await save('sup', 'transfert', tid), p3 = await save('chief', 'sog', sid);
+  // la pièce rattachée doit exister dans le même service et correspondre au type
+  await fails('insp', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan', 'mandat', tid, data], /Pièce rattachée/);
+  await fails('insp', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan', 'mandat', '00000000-0000-0000-0000-00000000dead', data], /Pièce rattachée/);
+  await fails('insp', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, ' x ', 'mandat', wid, data], /titre/);
+  // contenu borné et vérifié
+  await fails('insp', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan', 'mandat', wid, { ...data, shapes: [{ type: 'dragon', pts: [[1, 2]] }] }], /Forme invalide/);
+  await fails('insp', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan', 'mandat', wid, { ...data, shapes: [{ type: 'zone', pts: [['a', 2]] }] }], /Forme invalide/);
+  await fails('insp', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan', 'mandat', wid, { v: 2, layers: [], shapes: [] }], /invalide/);
+  const corners = [[0, 0], [10, 0], [10, 10], [0, 10]], path = usms + '/plans/banque.png';
+  const photo = { id: 'p', kind: 'photo', path, corners, opacity: 0.6 };
+  await fails('insp', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan', 'mandat', wid, { ...data, layers: [photo] }], /Photo introuvable/);
+  await su("insert into storage.objects (bucket_id, name) values ('mdt', $1)", [path]);
+  await save('insp', 'mandat', wid, { ...data, layers: [photo] });
+  await fails('insp', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan', 'mandat', wid, { ...data, layers: [{ ...photo, path: usms + '/autre/banque.png' }] }], /Photo introuvable/);
+  await fails('insp', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan', 'mandat', wid, { ...data, layers: [{ ...photo, opacity: 3 }] }], /Opacité/);
+  await fails('insp', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan', 'mandat', wid, { ...data, layers: [{ ...photo, corners: corners.slice(1) }] }], /Calque invalide/);
+  // écriture directe interdite, lecture : le service, sauf SOG
+  await fails('insp', "insert into public.intervention_plans (org_id, title, kind, by_name) values ($1, 'Direct', 'mandat', 'x')", [usms], /permission denied/);
+  await fails('dir', 'update public.intervention_plans set title = $1', ['Piraté'], /permission denied/);
+  assert.equal((await as('dep', 'select id from public.intervention_plans')).length, 3);   // 2 mandats + transfert ; pas le plan SOG
+  assert.equal((await as('chief', 'select id from public.intervention_plans')).length, 4);
+  assert.equal((await as('intrus', 'select id from public.intervention_plans')).length, 0);
+  assert.equal((await as('gino', 'select id from public.intervention_plans')).length, 0);   // un autre service ne voit rien
+  // modification et suppression : l'auteur ou un enquêteur
+  await save('insp', 'mandat', wid, data, p1, 'Plan banque v2');
+  await fails('dir', 'select public.save_plan($1, $2, $3, $4, $5, $6)', [usms, p1, 'Autre type', 'transfert', null, data], /type d’un plan/);
+  await fails('dep', 'select public.delete_plan($1)', [p1], /ne permet pas/);
+  await one('dir', 'select public.delete_plan($1)', [p1]);
+  await one('sup', 'select public.delete_plan($1)', [p2]);
+  assert.equal((await su('select count(*)::int n from public.intervention_plans'))[0].n, 2);
+  assert.equal((await val('chief', 'select public.save_plan($1, $2, $3, $4, $5, $6)', [usms, p3, 'Briefing banque', 'sog', sid, data])), p3);
+});
