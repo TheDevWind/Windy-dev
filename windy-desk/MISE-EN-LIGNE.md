@@ -146,3 +146,14 @@ npm test             # 45 tests de la base (Postgres en mémoire, mêmes migrati
 npm run test:site    # scénario complet (entreprises et US Marshals) dans Chromium + revue de 328 pages (Playwright requis)
 npm run serve        # le site en local sur http://localhost:8080, branché sur le vrai Supabase
 ```
+
+## Carte : tuiles de l’image satellite
+
+La page Carte utilise Leaflet (copié dans `web/vendor/leaflet/`, aucune ressource externe). Sans tuiles, elle affiche l’image envoyée dans Réglages ; avec des tuiles dans `web/tiles/gta5/`, elle les préfère.
+
+```bash
+npm install --no-save sharp
+node scripts/make-tiles.mjs assets-src/gta5-satellite.jpg --calib minX,maxX,minY,maxY
+```
+
+`--calib` donne les coordonnées de jeu (en mètres) des bords de l’image : sans lui, un étalonnage provisoire est utilisé (voir `web/js/map-geo.js`). L’image source reste dans `assets-src/`, hors de `web/`, donc non déployée.

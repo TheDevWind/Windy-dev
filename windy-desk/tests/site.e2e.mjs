@@ -1040,8 +1040,8 @@ try {
     await shot(reed, 'reglages-service', true);
     await reed.goto(BASE + '/usms-ls/carte'); await settle(reed, 'img.mapimg');
     await reed.getByRole('button', { name: 'Ajouter un repère' }).click();
-    const box = await reed.locator('.mapbox').boundingBox();
-    await reed.locator('.mapbox').click({ position: { x: box.width * 0.4, y: box.height * 0.3 } });
+    const box = await reed.locator('img.mapimg').boundingBox();   // l’image est calée dans la carte Leaflet : on clique à 40 % / 30 % de l’image
+    await reed.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.3);
     const m = reed.locator('.modal');
     await m.getByLabel('Nom du repère').fill('Vu au garage');
     await m.getByLabel('Individu').selectOption(S.personPath.split('/').pop());

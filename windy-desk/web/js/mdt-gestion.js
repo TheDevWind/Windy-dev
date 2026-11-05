@@ -5,6 +5,8 @@
 import { S, h, ico, modal, toast, run, table, pill, strip, date, ago, dailyBars, gauge, fchips } from './ui.js';
 import { rpc, rows, signedUrls, upload, publicUrl } from './sb.js';
 import { saveBlob, exportModal } from './doc.js';
+import { createMap, tilesMeta, imageVersCarte } from './map-view.js';
+import { SIDE, carteVersRepere } from './map-geo.js';
 import { DAY, ms, iso, day, field, input, area, select, foot, fullName, toLocal, tabs, search, match, load, send, face, gradeOf, OPEN, IMAGE, stamp, extOf, feed, seal } from './mdt-kit.js';
 
 const base = ctx => '/' + ctx.me.code;
@@ -659,39 +661,30 @@ function markView(ctx, mk, d) {
 
 export async function carte(ctx) {
   const { me } = ctx;
-  const [org, marks, people, gangs, cases, safe] = await Promise.all([rows('orgs', q => q.eq('id', me.id)), rows('map_marks', q => q.eq('org_id', me.id).order('at', { ascending: false })), load.people(ctx),
-    rows('gangs', q => q.eq('org_id', me.id).order('name')), rows('cases', q => q.eq('org_id', me.id).order('opened_at', { ascending: false })), me.witsec ? rows('safehouses', q => q.eq('org_id', me.id).order('code')) : []]);
-  const mapPath = org[0] && org[0].map_path, urls = mapPath ? await signedUrls([mapPath]) : {};
+  const [org, marks, people, gangs, cases, safe, meta] = await Promise.all([rows('orgs', q => q.eq('id', me.id)), rows('map_marks', q => q.eq('org_id', me.id).order('at', { ascending: false })), load.people(ctx),
+    rows('gangs', q => q.eq('org_id', me.id).order('name')), rows('cases', q => q.eq('org_id', me.id).order('opened_at', { ascending: false })), me.witsec ? rows('safehouses', q => q.eq('org_id', me.id).order('code')) : [], tilesMeta()]);
+  const mapPath = org[0] && org[0].map_path, urls = mapPath && !meta ? await signedUrls([mapPath]) : {};
   const d = { people, gangs, cases };
   const layers = S.filters.mapL || (S.filters.mapL = { position: true, interpellation: true, territoire: true, lieu: true, planque: true });
-  const zoom = [1, 1.5, 2, 3].includes(S.filters.mapZ) ? S.filters.mapZ : 1, fugitives = !!S.filters.mapF;
+  const fugitives = !!S.filters.mapF;
   const hunted = new Set(cases.filter(c => OPEN.includes(c.status)).map(c => c.person_id));
   const shown = marks.filter(m => layers[m.kind] && (!fugitives || m.kind !== 'position' || hunted.has(m.person_id)));
   let placing = null;   // 'mark' ou l'id d'une planque à placer
-  const hint = h('div', { class: 'maphint', hidden: true, role: 'status' });
-  const setPlacing = (v, text) => { placing = v; box.classList.toggle('placing', !!v); hint.hidden = !v; hint.textContent = text || ''; };
-  const pin = (x, y, cls, label, onClick, extra) => h('button', { class: 'pin ' + cls, type: 'button', style: 'left:' + (x * 100) + '%;top:' + (y * 100) + '%', title: label, 'aria-label': label,
-    onclick: ev => { ev.stopPropagation(); onClick(); } }, extra || null);
-  const box = h('div', { class: 'mapbox', style: 'width:' + (zoom * 100) + '%' },
-    mapPath && urls[mapPath] ? h('img', { class: 'mapimg', src: urls[mapPath], alt: 'Carte de la ville', draggable: false })
-      : h('div', { class: 'mapblank' }, h('span', {}, ico('localisation', 20), ' Aucune carte envoyée : le Director l’ajoute dans Réglages. Les repères se placent déjà sur cette grille.')),
-    shown.filter(m => m.kind === 'territoire').map(m => h('button', { class: 'zone', type: 'button', style: 'left:' + (m.x * 100) + '%;top:' + (m.y * 100) + '%;width:' + (Number(m.radius || 0.04) * 200) + '%', title: m.label, 'aria-label': 'Territoire : ' + m.label,
-      onclick: ev => { ev.stopPropagation(); markView(ctx, m, d); } })),
-    shown.filter(m => m.kind !== 'territoire').map(m => pin(Number(m.x), Number(m.y), 'mk-' + m.kind + (m.kind === 'position' && hunted.has(m.person_id) ? ' hunted' : ''), MARK[m.kind] + ' : ' + m.label, () => markView(ctx, m, d))),
-    layers.planque ? safe.filter(x => x.map_x !== null).map(x => pin(Number(x.map_x), Number(x.map_y), 'mk-planque', 'Planque WITSEC ' + x.code, () => {
-      const md = modal('Planque ' + x.code, h('p', {}, x.location_code), h('p', { class: 'muted small' }, 'Capacité ' + x.capacity + (x.available ? ' · disponible' : ' · occupée')),
-        h('div', { class: 'foot' }, btn('Déplacer', () => { md.close(); setPlacing(x.id, 'Clique sur la carte pour placer la planque ' + x.code + '.'); }), btn('Fermer', () => md.close()))); })) : null);
-  box.addEventListener('click', ev => {
-    if (!placing) return;
-    const r = box.getBoundingClientRect(), x = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)), y = Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height));
+  let mp = null;        // { L, map } une fois la carte montée
+  const place = (nx, ny) => {
     const what = placing; setPlacing(null);
-    if (what === 'mark') markModal(ctx, Math.round(x * 1e5) / 1e5, Math.round(y * 1e5) / 1e5, d, null);
-    else rpc('place_safehouse', { p_id: what, p_x: Math.round(x * 1e5) / 1e5, p_y: Math.round(y * 1e5) / 1e5 }).then(() => { toast('Planque placée.'); ctx.reload(); }, ctx.fail);
-  });
+    if (what === 'mark') markModal(ctx, nx, ny, d, null);
+    else rpc('place_safehouse', { p_id: what, p_x: nx, p_y: ny }).then(() => { toast('Planque placée.'); ctx.reload(); }, ctx.fail);
+  };
+  const hint = h('div', { class: 'maphint', hidden: true, role: 'status' });
+  const hintText = h('span');
+  const center = btn('Placer au centre de la vue', () => { if (placing && mp) { const c = mp.map.getCenter(); place(...carteVersRepere([c.lat, c.lng])); } });
+  hint.append(hintText, ' ', center);
+  const setPlacing = (v, text) => { placing = v; box.classList.toggle('placing', !!v); hint.hidden = !v; hintText.textContent = text || ''; };
+  const box = h('div', { class: 'mapbox', role: 'region', 'aria-label': 'Carte de la ville : glisser pour déplacer, molette ou boutons pour zoomer, flèches du clavier pour se déplacer' });
   const toggle = (k, label, n) => h('label', { class: 'check chip-check mk-' + k }, h('input', { type: 'checkbox', checked: !!layers[k], onchange: ev => { layers[k] = ev.target.checked; carte(ctx).catch(ctx.fail); } }), h('i', { class: 'dot' }), label + ' (' + n + ')');
   const unplaced = safe.filter(x => x.map_x === null);
   ctx.show('carte', 'Carte', marks.length + ' repère(s)' + (fugitives ? ' · fugitifs actifs seulement' : ''), [
-    h('div', { class: 'seg', role: 'group', 'aria-label': 'Zoom' }, [1, 1.5, 2, 3].map(z => h('button', { type: 'button', class: z === zoom ? 'on' : null, 'aria-pressed': String(z === zoom), onclick: () => { S.filters.mapZ = z; carte(ctx).catch(ctx.fail); } }, '×' + z))),
     btn('Ajouter un repère', () => setPlacing('mark', 'Clique sur la carte à l’endroit du repère. Échap pour annuler.'), 'primary', 'localisation')],
     h('div', { class: 'maplayers' }, ['position', 'interpellation', 'territoire', 'lieu'].map(k => toggle(k, MARK[k], marks.filter(m => m.kind === k).length)),
       me.witsec ? toggle('planque', MARK.planque, safe.filter(x => x.map_x !== null).length) : null,
@@ -701,6 +694,25 @@ export async function carte(ctx) {
       small('Placer', () => setPlacing(x.id, 'Clique sur la carte pour placer la planque ' + x.code + '.')))))) : null,
     card('Repères', table([['Repère', m => h('span', { class: 'art' }, h('b', {}, m.label), h('small', {}, MARK[m.kind]))], ['Lié à', m => { const p = people.find(x => x.id === m.person_id), gg = gangs.find(x => x.id === m.gang_id); return [p ? fullName(p) : null, gg ? gg.name : null].filter(Boolean).join(' · ') || '—'; }],
       ['Placé', m => when(m.at) + ' · ' + m.by_name, 'num', m => m.at]], shown, m => markView(ctx, m, d), 'Aucun repère pour l’instant.')));
+  // La carte se monte une fois la page affichée (Leaflet a besoin de la taille réelle du conteneur).
+  if (S.map) { S.map.remove(); S.map = null; }
+  mp = await createMap(box, { meta, imageUrl: mapPath && urls[mapPath], view: S.filters.mapView });
+  const { L, map } = mp; S.map = map;
+  if (mp.fond === 'aucun') box.append(h('div', { class: 'mapblank' }, h('span', {}, ico('localisation', 20), ' Aucune carte disponible : le Director envoie une image dans Réglages. Les repères se placent déjà sur cette grille.')));
+  map.on('moveend', () => { S.filters.mapView = { c: [map.getCenter().lat, map.getCenter().lng], z: map.getZoom() }; });
+  map.on('click', ev => { if (placing) place(...carteVersRepere([ev.latlng.lat, ev.latlng.lng])); });
+  const open = (el, label, fn) => { el.setAttribute('tabindex', '0'); el.setAttribute('role', 'button'); el.setAttribute('aria-label', label);
+    el.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); fn(); } }); };
+  const pin = (x, y, cls, label, fn) => L.marker(imageVersCarte([x, y]), { icon: L.divIcon({ className: 'pin ' + cls, iconSize: [18, 18] }), title: label, keyboard: true, riseOnHover: true })
+    .on('add', ev => ev.target.getElement().setAttribute('aria-label', label)).on('click', ev => { L.DomEvent.stopPropagation(ev); if (!placing) fn(); }).addTo(map);
+  shown.filter(m => m.kind === 'territoire').forEach(m => {
+    const c = L.circle(imageVersCarte([Number(m.x), Number(m.y)]), { radius: Number(m.radius || 0.04) * SIDE, className: 'zone-svg', interactive: true, bubblingMouseEvents: false }).addTo(map);
+    c.on('click', () => { if (!placing) markView(ctx, m, d); }); c.bindTooltip(m.label); open(c.getElement(), 'Territoire : ' + m.label, () => markView(ctx, m, d));
+  });
+  shown.filter(m => m.kind !== 'territoire').forEach(m => pin(Number(m.x), Number(m.y), 'mk-' + m.kind + (m.kind === 'position' && hunted.has(m.person_id) ? ' hunted' : ''), MARK[m.kind] + ' : ' + m.label, () => markView(ctx, m, d)));
+  if (layers.planque) safe.filter(x => x.map_x !== null).forEach(x => pin(Number(x.map_x), Number(x.map_y), 'mk-planque', 'Planque WITSEC ' + x.code, () => {
+    const md = modal('Planque ' + x.code, h('p', {}, x.location_code), h('p', { class: 'muted small' }, 'Capacité ' + x.capacity + (x.available ? ' · disponible' : ' · occupée')),
+      h('div', { class: 'foot' }, btn('Déplacer', () => { md.close(); setPlacing(x.id, 'Clique sur la carte pour placer la planque ' + x.code + '.'); }), btn('Fermer', () => md.close()))); }));
   const esc = ev => { if (ev.key === 'Escape' && placing) setPlacing(null); };
   document.addEventListener('keydown', esc);
   S.mapEsc && document.removeEventListener('keydown', S.mapEsc); S.mapEsc = esc;
