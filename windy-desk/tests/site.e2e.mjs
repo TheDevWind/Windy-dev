@@ -506,7 +506,7 @@ try {
     await sam.getByRole('button', { name: 'Activer avec cette session' }).click();
     await sam.waitForURL(BASE + '/usms-ls'); await chooseSignature(sam, 'S. Ortiz', 'Paraphe');
     const navs = await sam.locator('nav.side .navs a').allInnerTexts();
-    assert.deepEqual(navs.map(x => x.trim()), ['Accueil', 'Mandats', 'Most Wanted', 'Carte', 'Transferts', 'SOG', 'Recherche', 'Dossiers', 'Rapports', 'Preuves', 'Renseignement', 'Tribunal', 'Effectifs', 'Présence',
+    assert.deepEqual(navs.map(x => x.trim()), ['Accueil', 'Mandats', 'Most Wanted', 'Carte', 'Plans d’intervention', 'Transferts', 'SOG', 'Recherche', 'Dossiers', 'Rapports', 'Preuves', 'Renseignement', 'Tribunal', 'Effectifs', 'Présence',
       'Académie', 'Logistique', 'Statistiques', 'Annonces']);
     await sam.goto(BASE + '/usms-ls/effectifs'); await settle(sam, 'h1:text("Effectifs")');
     await sam.getByRole('button', { name: 'Recruter' }).click();
@@ -1074,6 +1074,35 @@ try {
   });
 
   // ------------------------------------------------------------ connexion ordinaire
+  await step('plans d’intervention : création, plan d’un mandat, export JSON, enregistrement, droits', async () => {
+    await reed.goto(BASE + '/usms-ls/plans'); await settle(reed, 'h1:text("Plans d’intervention")');
+    await reed.getByRole('button', { name: 'Nouveau plan' }).click();
+    const m = reed.locator('.modal');
+    await m.getByLabel('Titre du plan').fill('Entrée arrière de la banque');
+    await m.getByLabel('Type de plan').selectOption('mandat');
+    await m.getByLabel('Pièce rattachée').locator('option').nth(1).waitFor({ state: 'attached' });
+    await m.getByLabel('Pièce rattachée').selectOption({ index: 1 });
+    await m.getByRole('button', { name: 'Créer le plan' }).click();
+    await settle(reed, 'h1:text("Entrée arrière de la banque")'); await settle(reed, 'img.leaflet-tile-loaded');
+    const [dl] = await Promise.all([reed.waitForEvent('download'), reed.getByRole('button', { name: 'Exporter' }).click()]);
+    assert.match(dl.suggestedFilename(), /^plan-entree-arriere-de-la-banque\.json$/);
+    const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+    assert.equal(exported.format, 'windy-desk-plan'); assert.equal(exported.data.v, 1); assert.equal(exported.kind, 'mandat');
+    await reed.getByLabel('Titre du plan').fill('Banque, entrée arrière');
+    await reed.getByRole('button', { name: 'Enregistrer' }).click(); await toast(reed, 'Plan enregistré');
+    await shot(reed, 'plan', true);
+    const [pl] = await backend.sql('select title, kind, ref_id, data from public.intervention_plans');
+    assert.equal(pl.title, 'Banque, entrée arrière'); assert.ok(pl.ref_id); assert.equal(pl.data.v, 1);
+    // le bouton « Plan » d’un mandat ouvre ce plan, sans en créer un second
+    await reed.goto(BASE + '/usms-ls/mandats'); await settle(reed, 'h1:text("Mandats")');
+    await reed.getByRole('button', { name: 'Tous', exact: true }).click();
+    await reed.locator('table tbody tr').first().click();
+    await reed.locator('.modal').getByRole('button', { name: 'Plan', exact: true }).click();
+    await settle(reed, 'h1:text("Banque, entrée arrière")');
+    assert.equal((await backend.sql('select count(*)::int n from public.intervention_plans'))[0].n, 1);
+    await reed.goto(BASE + '/usms-ls/plans'); await settle(reed, 'td:text("Banque, entrée arrière"), .art b:text("Banque, entrée arrière")');
+    await reed.getByRole('button', { name: 'Supprimer' }).count();
+  });
   await step('connexion par l’adresse de l’entreprise, mauvais puis bon mot de passe', async () => {
     const p = await open({ label: 'connexion' });
     await p.goto(BASE + '/connexion'); await settle(p, '.codefield');
@@ -1121,7 +1150,7 @@ const PAGES = {
   director: [S.reed, ['/usms-ls', '/usms-ls/effectifs', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/dossiers', S.personPath, S.casePath, '/usms-ls/mandats', '/usms-ls/wanted', '/usms-ls/annonces', '/usms-ls/reglages',
     '/usms-ls/recherche', S.platePath, S.gangPath, '/usms-ls/rapports', S.reportPath, '/usms-ls/rapports/nouveau', '/usms-ls/preuves', S.evidencePath,
     '/usms-ls/transferts', '/usms-ls/tribunal', '/usms-ls/witsec', S.witnessPath, '/usms-ls/sog', S.missionPath, '/usms-ls/renseignement',
-    '/usms-ls/academie', '/usms-ls/affaires', S.iaPath, '/usms-ls/logistique', '/usms-ls/statistiques', '/usms-ls/carte', '/usms-ls/effectifs/' + S.leoId]],
+    '/usms-ls/academie', '/usms-ls/affaires', S.iaPath, '/usms-ls/logistique', '/usms-ls/statistiques', '/usms-ls/carte', '/usms-ls/plans', '/usms-ls/effectifs/' + S.leoId]],
   deputy: [S.dan, ['/usms-ls', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/mandats', '/usms-ls/rapports', S.reportPath, '/usms-ls/transferts', '/usms-ls/tribunal', '/usms-ls/sog',
     '/usms-ls/academie', '/usms-ls/logistique', '/usms-ls/statistiques', '/usms-ls/carte']],
   justice: [S.judge, ['/justice']],

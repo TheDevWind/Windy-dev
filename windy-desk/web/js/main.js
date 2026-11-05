@@ -12,6 +12,7 @@ import * as MDT from './mdt.js';
 import * as ENQ from './mdt-enquete.js';
 import * as OPS from './mdt-ops.js';
 import * as GES from './mdt-gestion.js';
+import * as PLN from './mdt-plans.js';
 import { sb, rpc, rows, emailFor } from './sb.js';
 
 const ME = { session: null, spaces: null, quiet: false };
@@ -70,7 +71,7 @@ async function route() {
 
 // ---------------------------------------------------------------- cadre des espaces connectés
 // groupes du menu : [clé, titre, pages dans l'ordre] ; l'accueil reste en tête et les réglages en pied de liste
-const NAV_SERVICE = [['ops', 'Opérations', ['mandats', 'wanted', 'carte', 'transferts', 'sog']], ['enq', 'Enquêtes', ['recherche', 'dossiers', 'rapports', 'preuves', 'renseignement']],
+const NAV_SERVICE = [['ops', 'Opérations', ['mandats', 'wanted', 'carte', 'plans', 'transferts', 'sog']], ['enq', 'Enquêtes', ['recherche', 'dossiers', 'rapports', 'preuves', 'renseignement']],
   ['jus', 'Justice', ['tribunal', 'witsec']], ['per', 'Personnel', ['effectifs', 'presence', 'academie']], ['cmd', 'Commandement', ['affaires', 'logistique', 'statistiques', 'annonces']]];
 const NAV_COMPANY = [['act', 'Activité', ['caisse', 'stock', 'fabrication', 'recolte', 'dons', 'vehicules', 'evenements']], ['ges', 'Gestion', ['factures', 'compta', 'equipe']]];
 const NAV_QUICK = ['accueil', 'recherche', 'dossiers', 'rapports'];   // onglets du mobile pour un service ; une entreprise garde ses 4 premières entrées
@@ -325,7 +326,7 @@ async function orgSpace(code, page, sub) {
   const v4 = svc && 'ia' in me;
   const nav0 = svc ? [{ page: 'accueil', href: '/' + code, label: 'Tableau de bord', short: 'Accueil', icon: 'accueil' },
     ...[['recherche', 'Recherche', 'loupe', null, 'dossiers'], ['dossiers', 'Dossiers', 'dossier'], ['rapports', 'Rapports', 'rapport'], ['mandats', 'Mandats', 'marteau'], ['preuves', 'Preuves', 'scelle'],
-      ['wanted', 'Most Wanted', 'cible', 'Wanted'], ['carte', 'Carte', 'carte', null, null, v4], ['transferts', 'Transferts', 'camion'], ['tribunal', 'Tribunal', 'balance'], ['witsec', 'WITSEC', 'cadenas', null, null, !!me.witsec],
+      ['wanted', 'Most Wanted', 'cible', 'Wanted'], ['carte', 'Carte', 'carte', null, null, v4], ['plans', 'Plans d’intervention', 'carte', 'Plans', 'carte', v4], ['transferts', 'Transferts', 'camion'], ['tribunal', 'Tribunal', 'balance'], ['witsec', 'WITSEC', 'cadenas', null, null, !!me.witsec],
       ['sog', 'SOG', 'bouclier'], ['renseignement', 'Renseignement', 'reseau', 'Rens.'], ['effectifs', 'Effectifs', 'badge'], ['presence', 'Présence', 'horloge'], ['academie', 'Académie', 'diplome', null, null, v4],
       ['logistique', 'Logistique', 'boite', null, null, v4], ['affaires', 'Affaires internes', 'oeil', 'Aff. int.', null, !!me.ia], ['statistiques', 'Statistiques', 'graph', 'Stats', null, v4], ['annonces', 'Annonces', 'megaphone']]
       .filter(([id, , , , mod, ok]) => has(mod || id) && ok !== false).map(([id, label, icon, short]) => ({ page: id, href: '/' + code + '/' + id, label, icon, short: short || null })),
@@ -355,6 +356,7 @@ async function orgSpace(code, page, sub) {
       witsec: sub ? (isId(sub) ? c => OPS.temoin(c, sub) : () => go(list, true)) : OPS.witsec,
       sog: sub ? (isId(sub) ? c => OPS.mission(c, sub) : () => go(list, true)) : OPS.sog,
       academie: GES.academie, logistique: GES.logistique, statistiques: GES.statistiques, carte: GES.carte,
+      plans: sub ? (isId(sub) ? c => PLN.plan(c, sub) : () => go(list, true)) : PLN.plans,
       affaires: sub ? (isId(sub) ? c => GES.affaire(c, sub) : () => go(list, true)) : GES.affaires };
     return PAGES[page](ctx);
   }

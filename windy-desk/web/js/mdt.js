@@ -8,6 +8,7 @@ import { saveBlob } from './doc.js';
 import { KIND, DANGER, personCards, caseCards, reportAlerts } from './mdt-enquete.js';
 import { alertsCard } from './mdt-ops.js';
 import { agentExtras, publicApply, publicComplain } from './mdt-gestion.js';
+import { planButton } from './mdt-plans.js';
 
 import { DAY, HOUR, ms, iso, day, field, input, area, select, foot, fullName, today, toLocal, weekStart, hours, fmtH, tabs, search, match, STATUS, OPEN, PRIO, WKIND, WST, wStatus, DUTY, STAGE, CAREER, LOG, ANN, AGENDA, IMAGE, ANY, stamp, extOf, send, photoIn, face, personCell, feed, load, gradeOf, myRank, absentToday, stateOf, inactiveDays , SIGS, sigEl, sigPicker, seal } from './mdt-kit.js';
 
@@ -575,7 +576,7 @@ function warrantView(ctx, w, extra) {
       w.executed_by ? [h('dt', {}, 'Exécuté'), h('dd', {}, w.executed_by + ' · ' + date(ms(w.executed_at)))] : null),
     h('h3', { class: 'sub-h' }, 'Motif'), h('p', { class: 'prewrap' }, w.reason), w.judge_note ? [h('h3', { class: 'sub-h' }, 'Note de la Justice'), h('p', { class: 'prewrap' }, w.judge_note)] : null,
     w.exec_note ? [h('h3', { class: 'sub-h' }, 'Exécution'), h('p', { class: 'prewrap' }, w.exec_note)] : null,
-    h('div', { class: 'foot' }, h('button', { class: 'btn', type: 'button', onclick: () => md.close() }, 'Fermer')));
+    h('div', { class: 'foot' }, planButton(ctx, 'mandat', w.id, w.num), h('button', { class: 'btn', type: 'button', onclick: () => md.close() }, 'Fermer')));
   return md;
 }
 function warrantActions(ctx, w) {

@@ -681,7 +681,7 @@ test('statistiques, carte et administration : bilan, repères, modèles, logo, s
 });
 
 // ================================================================== plans d'intervention
-test('plans d’intervention : droits par type, pièce du service, photos vérifiées, lecture SOG réservée', async () => {
+test('plans d’intervention : droits par type, pièce du service, photos vérifiées, lecture par tout le service, sauvegarde', async () => {
   const [{ id: wid }] = await su('select id from public.warrants where org_id = $1 limit 1', [usms]);
   const [{ id: tid }] = await su('select id from public.transfers where org_id = $1 limit 1', [usms]);
   const [{ id: sid }] = await su('select id from public.sog_missions where org_id = $1 limit 1', [usms]);
@@ -713,8 +713,7 @@ test('plans d’intervention : droits par type, pièce du service, photos vérif
   // écriture directe interdite, lecture : le service, sauf SOG
   await fails('insp', "insert into public.intervention_plans (org_id, title, kind, by_name) values ($1, 'Direct', 'mandat', 'x')", [usms], /permission denied/);
   await fails('dir', 'update public.intervention_plans set title = $1', ['Piraté'], /permission denied/);
-  assert.equal((await as('dep', 'select id from public.intervention_plans')).length, 3);   // 2 mandats + transfert ; pas le plan SOG
-  assert.equal((await as('chief', 'select id from public.intervention_plans')).length, 4);
+  assert.equal((await as('dep', 'select id from public.intervention_plans')).length, 4);   // tout le service lit, SOG compris
   assert.equal((await as('intrus', 'select id from public.intervention_plans')).length, 0);
   assert.equal((await as('gino', 'select id from public.intervention_plans')).length, 0);   // un autre service ne voit rien
   // modification et suppression : l'auteur ou un enquêteur
@@ -725,4 +724,6 @@ test('plans d’intervention : droits par type, pièce du service, photos vérif
   await one('sup', 'select public.delete_plan($1)', [p2]);
   assert.equal((await su('select count(*)::int n from public.intervention_plans'))[0].n, 2);
   assert.equal((await val('chief', 'select public.save_plan($1, $2, $3, $4, $5, $6)', [usms, p3, 'Briefing banque', 'sog', sid, data])), p3);
+  const ex = await val('dir', 'select public.export_service($1)', [usms]);
+  assert.equal(ex.tables.intervention_plans.length, 2); assert.ok(ex.tables.intervention_plans.every(p => p.data.v === 1));
 });

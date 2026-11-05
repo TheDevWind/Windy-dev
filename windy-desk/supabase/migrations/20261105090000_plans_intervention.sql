@@ -21,9 +21,8 @@ create index intervention_plans_org on public.intervention_plans (org_id, kind, 
 create index intervention_plans_by on public.intervention_plans (created_by);
 
 alter table public.intervention_plans enable row level security;
--- lecture : les membres du service ; les plans SOG seulement avec la capacité « sog » (le Director l'a toujours)
-create policy intervention_plans_read on public.intervention_plans for select to authenticated
-  using (public.is_member(org_id) and (kind <> 'sog' or public.has_cap(org_id, 'sog')));
+-- lecture : tous les membres du service, comme map_marks et sog_missions (décision du Director : les plans SOG ne sont pas masqués)
+create policy intervention_plans_read on public.intervention_plans for select to authenticated using (public.is_member(org_id));
 
 -- capacité requise pour écrire, selon le type de plan
 create or replace function public.plan_cap(k text) returns text
@@ -96,3 +95,23 @@ grant select on public.intervention_plans to authenticated;
 revoke execute on function public.plan_cap(text) from public, anon, authenticated;
 revoke execute on function public.save_plan(uuid, uuid, text, text, uuid, jsonb), public.delete_plan(uuid) from public, anon;
 grant execute on function public.save_plan(uuid, uuid, text, text, uuid, jsonb), public.delete_plan(uuid) to authenticated;
+
+-- la sauvegarde du service contient aussi les plans d'intervention
+create or replace function public.export_service(p_org uuid) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare me public.members := public.need(p_org, 'effectifs', null); t text; part jsonb; res jsonb := '{}';
+  tables text[] := array['grades', 'members', 'units', 'member_units', 'qualifications', 'member_qualifications', 'career_events', 'blacklist', 'absences', 'agenda', 'agenda_staff', 'shifts',
+    'people', 'gangs', 'person_links', 'plates', 'plate_log', 'cases', 'case_agents', 'case_log', 'case_files', 'warrants', 'wanted', 'wanted_history', 'tips', 'announcements',
+    'reports', 'penal_code', 'evidence', 'evidence_log', 'ia_cases', 'ia_log', 'complaints', 'discipline', 'transfers', 'transfer_agents', 'transfer_routes', 'detentions',
+    'hearings', 'hearing_posts', 'protectees', 'threats', 'safehouses', 'witnesses', 'witsec_events', 'witsec_audit', 'sog_operators', 'sog_tests', 'sog_missions',
+    'informants', 'informant_payments', 'intel', 'applications', 'application_notes', 'training_modules', 'training_progress', 'library_docs', 'exams', 'exam_keys', 'exam_attempts',
+    'field_evals', 'promotions', 'weapons', 'weapon_loans', 'equipment', 'equipment_moves', 'fleet', 'fleet_trips', 'fleet_damage', 'map_marks', 'intervention_plans', 'doc_templates', 'journal'];
+begin
+  if not public.is_top(p_org) then raise exception 'Seul le Director exporte les données du service.'; end if;
+  foreach t in array tables loop
+    execute format('select coalesce(jsonb_agg(to_jsonb(x)), ''[]'') from public.%I x where x.org_id = $1', t) into part using p_org;
+    res := res || jsonb_build_object(t, part);
+  end loop;
+  insert into public.journal (org_id, who, what) values (p_org, me.name, 'Export de sauvegarde des données du service');
+  return jsonb_build_object('service', (select to_jsonb(o) from public.orgs o where o.id = p_org), 'exported_at', now(), 'by', me.name, 'tables', res);
+end $$;

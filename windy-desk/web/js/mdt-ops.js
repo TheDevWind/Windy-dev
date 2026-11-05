@@ -3,6 +3,7 @@
 // Ne dépend que de mdt-kit.js (mdt.js l'utilise pour la carte des alertes du tableau de bord).
 import { S, h, s, ico, modal, toast, run, table, pill, strip, money, date, ago, initials } from './ui.js';
 import { rpc, rows, signedUrls } from './sb.js';
+import { planButton } from './mdt-plans.js';
 import { DAY, ms, iso, day, field, input, area, select, foot, fullName, toLocal, tabs, match, load, send, photoIn, face } from './mdt-kit.js';
 
 const base = ctx => '/' + ctx.me.code;
@@ -65,7 +66,7 @@ function transferView(ctx, t, d) {
       info('Agents', team.map(m => m.callsign || m.name).join(', ')), info('Véhicules', t.vehicles), info('Parti à', t.started_at ? when(t.started_at) : null), info('Arrivé à', t.arrived_at ? when(t.arrived_at) : null)),
     h('h3', { class: 'sub-h' }, 'Itinéraires'), route ? h('dl', { class: 'lines-dl rules' }, info('Principal', route.main || '—'), info('Secours', route.backup || '—'))
       : h('p', { class: 'muted' }, ico('cadenas', 14), ' Réservé au convoi et aux responsables des transferts.'),
-    t.incident ? [h('h3', { class: 'sub-h' }, 'Incident'), h('p', { class: 'prewrap' }, t.incident)] : null, h('div', { class: 'foot' }, h('button', { class: 'btn', type: 'button', onclick: () => md.close() }, 'Fermer')));
+    t.incident ? [h('h3', { class: 'sub-h' }, 'Incident'), h('p', { class: 'prewrap' }, t.incident)] : null, h('div', { class: 'foot' }, planButton(ctx, 'transfert', t.id, t.num), h('button', { class: 'btn', type: 'button', onclick: () => md.close() }, 'Fermer')));
 }
 function transferActions(ctx, t, d) {
   const mine = t.leader_id === ctx.me.member_id || d.agents.some(a => a.transfer_id === t.id && a.member_id === ctx.me.member_id);
@@ -360,7 +361,7 @@ export async function mission(ctx, id) {
     h('div', { class: 'grid cols2' },
       h('section', { class: 'card' }, h('h2', {}, 'Briefing'), h('h3', { class: 'sub-h' }, 'Objectif'), h('p', { class: 'prewrap' }, m.objective || '—'), h('h3', { class: 'sub-h' }, 'Plan'), h('p', { class: 'prewrap' }, m.plan || 'Pas encore de plan.'),
         h('h3', { class: 'sub-h' }, 'Rôles'), m.roles.length ? h('ul', { class: 'people' }, m.roles.map(r => { const x = mOf(r.member_id) || {}; return h('li', {}, h('span', { class: 'ev-ic' }, ico('bouclier', 16)), h('span', { class: 'art' }, h('b', {}, (x.callsign ? x.callsign + ' · ' : '') + (x.name || '?')), h('small', {}, r.role))); })) : h('p', { class: 'muted' }, 'Rôles à répartir.')),
-      h('section', { class: 'card' }, h('h2', {}, 'Carte annotée'), m.map_path && urls[m.map_path] ? h('a', { href: urls[m.map_path], target: '_blank', rel: 'noopener' }, h('img', { class: 'evphoto', src: urls[m.map_path], alt: 'Carte de l’opération ' + m.num })) : h('div', { class: 'empty' }, 'Aucune carte : ajoute-la au briefing.'))),
+      h('section', { class: 'card' }, h('h2', {}, 'Carte annotée'), h('p', {}, planButton(ctx, 'sog', m.id, m.num, 'primary')), m.map_path && urls[m.map_path] ? h('a', { href: urls[m.map_path], target: '_blank', rel: 'noopener' }, h('img', { class: 'evphoto', src: urls[m.map_path], alt: 'Carte de l’opération ' + m.num })) : h('div', { class: 'empty' }, 'Aucune carte : ajoute-la au briefing.'))),
     !open ? h('section', { class: 'card' }, h('h2', {}, 'Retour d’expérience'), h('p', { class: 'prewrap' }, m.debrief || '—'), rep ? h('p', {}, 'Rapport d’intervention : ', h('a', { href: base(ctx) + '/rapports/' + rep.id }, rep.num)) : null) : null);
 }
 
