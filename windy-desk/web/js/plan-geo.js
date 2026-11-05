@@ -73,3 +73,26 @@ export function checkLegend(g) {
   }
   return null;
 }
+
+// Texte court d'une forme (infobulle, étiquette 3D) : [équipe] texte ou type · rôle
+export const tipOf = (s, legend) => (s.team ? '[' + teamName(legend, s.team) + '] ' : '') + (s.label || (s.type === 'vehicule' && VEHICLES[s.vkind] ? VEHICLES[s.vkind][0] : TYPES[s.type][0])) + (s.role ? ' · ' + s.role : '');
+
+// Emprise d'un plan en coordonnées de jeu : tous ses points, ses photos, marge de 25 %, au moins `min` mètres de côté, bornée par l'étalonnage
+export function planBounds(data, calib, min = 120, pad = 0.25) {
+  const pts = [...(data.shapes || []).flatMap(s => s.pts), ...(data.layers || []).flatMap(l => l.corners || [])].filter(p => Array.isArray(p) && p.every(Number.isFinite));
+  let [x0, x1, y0, y1] = pts.length ? [Math.min(...pts.map(p => p[0])), Math.max(...pts.map(p => p[0])), Math.min(...pts.map(p => p[1])), Math.max(...pts.map(p => p[1]))] : [0, 0, 0, 0];
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, w = Math.max(min, (x1 - x0) * (1 + 2 * pad)), h = Math.max(min, (y1 - y0) * (1 + 2 * pad));
+  return { minX: Math.max(calib.minX, cx - w / 2), maxX: Math.min(calib.maxX, cx + w / 2), minY: Math.max(calib.minY, cy - h / 2), maxY: Math.min(calib.maxY, cy + h / 2) };
+}
+// Tuiles qui couvrent une emprise (jeu) : le zoom le plus fin qui reste sous `maxTiles` tuiles ; rend aussi l'emprise exacte de ces tuiles en coordonnées de jeu
+export function groundTiles(b, calib, maxZoom, maxTiles = 25) {
+  const [top, left] = jeuVersCarte([b.minX, b.maxY], calib), [bot, right] = jeuVersCarte([b.maxX, b.minY], calib);
+  for (let z = maxZoom; z >= 0; z--) {
+    const n = 2 ** z, t = SIDE / n, cl = v => Math.min(n - 1, Math.max(0, v));
+    const x0 = cl(Math.floor(left / t)), x1 = cl(Math.floor(right / t)), y0 = cl(Math.floor(-top / t)), y1 = cl(Math.floor(-bot / t));
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) <= maxTiles || z === 0) {
+      const [gx0, gy0] = carteVersJeu([-y0 * t, x0 * t], calib), [gx1, gy1] = carteVersJeu([-(y1 + 1) * t, (x1 + 1) * t], calib);
+      return { z, x0, x1, y0, y1, rect: { minX: gx0, maxX: gx1, minY: gy1, maxY: gy0 } };
+    }
+  }
+}

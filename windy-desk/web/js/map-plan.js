@@ -4,7 +4,7 @@
 import { h, ico, toast, run } from './ui.js';
 import { signedUrls } from './sb.js';
 import { send, field, input, select } from './mdt-kit.js';
-import { TEAMS, TYPES, VEHICLES, TEXT_SIZES, LIMITS, colorOf, teamColor, teamName, centre, translate, rotate, scale, angleOf, sizeOf, photoCorners, affine, resizeByCorner, metre, toGame, fromGame, checkShape, describe, newId } from './plan-geo.js';
+import { TEAMS, TYPES, VEHICLES, TEXT_SIZES, LIMITS, colorOf, teamColor, teamName, centre, translate, rotate, scale, angleOf, sizeOf, photoCorners, affine, resizeByCorner, metre, toGame, fromGame, checkShape, describe, tipOf, newId } from './plan-geo.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const ROLES = ['Chef d’équipe', 'Brèche', 'Appui', 'Couverture', 'Tireur d’élite', 'Négociateur', 'Médic', 'Périmètre', 'Chauffeur', 'Renfort'];
@@ -99,7 +99,7 @@ export async function planEditor(ctx, { L, map, calib, data, editable, onDirty }
     }
     return id;
   }
-  const tip = x => (x.team ? '[' + teamName(data.legend, x.team) + '] ' : '') + (x.label || (x.type === 'vehicule' ? VEHICLES[x.vkind][0] : TYPES[x.type][0])) + (x.role ? ' · ' + x.role : '');
+  const tip = x => tipOf(x, data.legend);
   function pick(x) { st.sel = x.id; renderShapes(); renderHandles(); refresh(); }
   const pxPerM = () => mt.lng * Math.pow(2, map.getZoom());
   function vehicleSize(x) {   // taille du symbole : proportionnelle au zoom, avec un minimum pour rester visible

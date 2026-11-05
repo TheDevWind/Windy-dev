@@ -371,3 +371,9 @@ path.plan-draftpt { fill: #fff; stroke: var(--tc); stroke-width: 3; fill-opacity
 .plan-legend svg { flex: none; }
 .plan-legend-edit { grid-column: 1 / -1; margin-top: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--card); }
 .plan-legend-edit summary { cursor: pointer; font-weight: 600; }
+
+.p3d-card { margin-top: 12px; }
+.p3d-view { width: 100%; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--tile); }
+.p3d-canvas { display: block; max-width: 100%; touch-action: none; }
+.p3d-canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.p3d-card[hidden] { display: none; }

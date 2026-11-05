@@ -8,6 +8,7 @@ import { saveBlob } from './doc.js';
 import { ms, field, input, select, foot } from './mdt-kit.js';
 import { createMap, tilesMeta } from './map-view.js';
 import { planEditor } from './map-plan.js';
+import { open3D } from './plan-3d.js';
 
 const base = ctx => '/' + ctx.me.code;
 const KINDS = { mandat: ['Mandat', 'mandats', 'marteau'], transfert: ['Transfert', 'transferts', 'camion'], sog: ['SOG', 'sog', 'bouclier'] };
@@ -84,6 +85,7 @@ export function planFile(p, refLabel) {
 
 export async function plan(ctx, id) {
   const { me } = ctx;
+  if (S.plan3d) { S.plan3d.destroy(); S.plan3d = null; }
   const [p] = await rows('intervention_plans', q => q.eq('id', id).eq('org_id', me.id));
   if (!p) { toast('Plan introuvable.'); return ctx.go(base(ctx) + '/plans', true); }
   const [all, meta] = await Promise.all([pieces(ctx, p.kind), tilesMeta()]);
@@ -106,9 +108,18 @@ export async function plan(ctx, id) {
     ok.addEventListener('click', () => run(ok, async () => { await rpc('delete_plan', { p_id: p.id }); md.close(); ctx.go(base(ctx) + '/plans', true); return { message: 'Plan supprimé.' }; }));
   } }, 'Supprimer');
   const tools = h('div', { class: 'plan-tools-host' }), panel = h('div', { class: 'plan-panel-host' });
-  ctx.show('plans', p.title, KINDS[p.kind][0] + (ref ? ' · ' + ref.label : '') + ' · modifié ' + when(p.updated_at), [h('a', { class: 'btn', href: base(ctx) + '/plans' }, 'Tous les plans'), exp],
+  // vue 3D : maquette générée à partir du plan tel qu'il est à l'écran (même non enregistré)
+  const body3d = h('div'), host3d = h('section', { class: 'card p3d-card', hidden: true }, h('div', { class: 'plan-row' }, h('h2', { class: 'grow' }, 'Vue 3D'),
+    h('button', { class: 'btn small', type: 'button', onclick: () => { if (S.plan3d) S.plan3d.destroy(); S.plan3d = null; host3d.hidden = true; } }, 'Fermer la 3D')), body3d);
+  const b3d = h('button', { class: 'btn', type: 'button', onclick: ev => run(ev.currentTarget, async () => {
+    if (S.plan3d) S.plan3d.destroy();
+    host3d.hidden = false; body3d.replaceChildren(h('p', { class: 'muted', role: 'status' }, 'Préparation de la maquette…'));
+    S.plan3d = await open3D(body3d, { data, calib: mp.calib, meta, title: title.value || p.title, legend: data.legend });
+    host3d.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }) }, ico('boite', 18), 'Vue 3D');
+  ctx.show('plans', p.title, KINDS[p.kind][0] + (ref ? ' · ' + ref.label : '') + ' · modifié ' + when(p.updated_at), [h('a', { class: 'btn', href: base(ctx) + '/plans' }, 'Tous les plans'), exp, b3d],
     h('div', { class: 'row' }, field('Titre', title, 'grow'), field('Rattaché à', sel, 'grow')),
-    tools, h('div', { class: 'mapwrap' }, box), panel,
+    tools, h('div', { class: 'mapwrap' }, box), host3d, panel,
     h('p', { class: 'muted small' }, editable ? 'La vue de la carte (position et zoom), les photos et les formes sont enregistrées avec le plan : pense à cliquer sur « Enregistrer ».' : 'Lecture seule : seul l’auteur ou un enquêteur modifie ce plan.'),
     editable ? h('div', { class: 'foot' }, mark, del, save) : null);
   if (S.map) { S.map.remove(); S.map = null; }

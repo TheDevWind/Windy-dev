@@ -157,3 +157,15 @@ node scripts/make-tiles.mjs assets-src/gta5-satellite.jpg --calib minX,maxX,minY
 ```
 
 `--calib` donne les coordonnées de jeu (en mètres) des bords de l’image : sans lui, un étalonnage provisoire est utilisé (voir `web/js/map-geo.js`). L’image source reste dans `assets-src/`, hors de `web/`, donc non déployée.
+
+## Vue 3D des plans
+
+La vue 3D utilise three.js (MIT), copié dans `web/vendor/three/three.plan.min.js` : un seul fichier de 590 Ko, chargé seulement quand on ouvre la 3D. Pour le régénérer (autre version de three.js), dans un dossier de travail :
+
+```bash
+npm install three esbuild
+cp <dépôt>/windy-desk/scripts/vendor-three.entry.js entry.js
+npx esbuild entry.js --bundle --minify --format=esm --legal-comments=none --outfile=three.plan.min.js
+```
+
+Puis copier `three.plan.min.js` et la licence (`node_modules/three/LICENSE`) dans `web/vendor/three/`. La maquette est générée à partir du plan : aucun modèle 3D à fournir.

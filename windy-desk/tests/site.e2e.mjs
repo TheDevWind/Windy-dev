@@ -1124,6 +1124,16 @@ try {
     const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
     assert.equal(exported.format, 'windy-desk-plan'); assert.equal(exported.data.v, 1); assert.equal(exported.kind, 'mandat');
     assert.deepEqual(exported.data.shapes.map(x => x.type), ['fleche', 'zone', 'etiquette', 'vehicule', 'texte']); assert.equal(exported.data.shapes[3].color, '#ff00aa'); assert.equal(exported.data.shapes[3].angle, 90); assert.equal(exported.data.legend.teams.A.name, 'Alpha'); assert.equal(exported.data.layers.length, 1); assert.equal(exported.data.shapes[0].role, 'Brèche');
+    // vue 3D : maquette générée depuis le plan, sol en tuiles, image exportée
+    await reed.getByRole('button', { name: 'Vue 3D' }).click();
+    await reed.locator('canvas.p3d-canvas[data-ready="1"]').waitFor({ timeout: 20000 });
+    const [shot3d] = await Promise.all([reed.waitForEvent('download'), reed.getByRole('button', { name: 'Enregistrer l’image' }).click()]);
+    assert.equal(shot3d.suggestedFilename(), 'plan-3d.png');
+    assert.equal(readFileSync(await shot3d.path()).subarray(1, 4).toString(), 'PNG');
+    await reed.getByRole('button', { name: 'Vue du dessus' }).click(); await reed.getByRole('button', { name: 'Zoom +' }).click();
+    await shot(reed, 'plan-3d', true);
+    await reed.getByRole('button', { name: 'Fermer la 3D' }).click();
+    await reed.locator('canvas.p3d-canvas').waitFor({ state: 'hidden' });
     await reed.getByLabel('Titre du plan').fill('Banque, entrée arrière');
     await reed.getByRole('button', { name: 'Enregistrer' }).click(); await toast(reed, 'Plan enregistré');
     await shot(reed, 'plan', true);

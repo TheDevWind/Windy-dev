@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SIDE, CALIB_DEFAUT, calibration, jeuVersImage, imageVersJeu, imageVersCarte, carteVersImage, jeuVersCarte, carteVersJeu, repereVersJeu, jeuVersRepere, carteVersRepere } from '../web/js/map-geo.js';
-import { centre, translate, rotate, scale, angleOf, sizeOf, photoCorners, affine, resizeByCorner, metre, toGame, fromGame, checkShape, checkLegend, describe, colorOf, teamColor, teamName, VEHICLES, DEFAULT_COLORS } from '../web/js/plan-geo.js';
+import { centre, translate, rotate, scale, angleOf, sizeOf, photoCorners, affine, resizeByCorner, metre, toGame, fromGame, planBounds, groundTiles, tipOf, checkShape, checkLegend, describe, colorOf, teamColor, teamName, VEHICLES, DEFAULT_COLORS } from '../web/js/plan-geo.js';
 import { planLevels, tileCount, parseArgs } from '../scripts/make-tiles.mjs';
 
 const C = { minX: -4000, maxX: 4500, minY: -4000, maxY: 8000 };
@@ -118,4 +118,21 @@ test('plans : véhicules, couleurs, texte et légende', () => {
   assert.equal(checkLegend(lg), null); assert.equal(checkLegend(undefined), null);
   assert.match(checkLegend({ teams: { Z: {} } }), /invalide/); assert.match(checkLegend({ teams: { A: { name: 'x'.repeat(31) } } }), /trop long/);
   assert.match(checkLegend({ teams: { A: { color: 'nope' } } }), /Couleur/); assert.match(checkLegend([]), /invalide/);
+});
+
+test('3D : emprise du plan et tuiles du sol', () => {
+  const data = { shapes: [{ type: 'zone', pts: [[0, 0], [40, 0], [40, 30]] }], layers: [{ corners: [[-10, -5], [30, -5], [30, 20], [-10, 20]] }] };
+  const b = planBounds(data, C);
+  assert.ok(b.maxX - b.minX >= 120 && b.maxY - b.minY >= 120);                    // jamais plus petit que 120 m
+  assert.ok(b.minX <= -10 && b.maxX >= 40 && b.minY <= -5 && b.maxY >= 30);       // contient tout le plan
+  const vide = planBounds({ shapes: [], layers: [] }, C); assert.equal(vide.maxX - vide.minX, 120);
+  const bord = planBounds({ shapes: [{ pts: [[4400, 7900], [4490, 7990]] }], layers: [] }, C); assert.ok(bord.maxX <= C.maxX && bord.maxY <= C.maxY);   // bornée par l'étalonnage
+  // tuiles : au plus 25, au zoom le plus fin possible, et le rectangle rendu contient l'emprise demandée
+  const g = groundTiles(b, C, 6);
+  assert.ok((g.x1 - g.x0 + 1) * (g.y1 - g.y0 + 1) <= 25 && g.z <= 6);
+  assert.ok(g.rect.minX <= b.minX + 1e-6 && g.rect.maxX >= b.maxX - 1e-6 && g.rect.minY <= b.minY + 1e-6 && g.rect.maxY >= b.maxY - 1e-6);
+  const large = groundTiles({ minX: -3000, maxX: 3000, minY: -3000, maxY: 3000 }, C, 6); assert.ok(large.z < g.z);
+  assert.equal(groundTiles({ minX: -3000, maxX: 3000, minY: -3000, maxY: 3000 }, C, 0).z, 0);
+  assert.equal(tipOf({ type: 'vehicule', vkind: 'moto', team: 'B', role: 'Appui' }, { teams: { B: { name: 'Bravo' } } }), '[Bravo] Moto · Appui');
+  assert.equal(tipOf({ type: 'zone', label: 'Hall' }), 'Hall');
 });
