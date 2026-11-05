@@ -15,7 +15,8 @@ if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
 const backend = await createBackend();
 const csp = readFileSync(new URL('../../netlify.toml', import.meta.url), 'utf8').match(/Content-Security-Policy = "([^"]+)"/)[1];
-const server = await serve(PORT, { '/config.js': "window.WINDY_DESK_CONFIG = { fake: true, passwordDomain: 'comptes.windydev.fr' };" }, { 'content-security-policy': csp },
+const overrides = { '/config.js': "window.WINDY_DESK_CONFIG = { fake: true, passwordDomain: 'comptes.windydev.fr' };" };
+const server = await serve(PORT, overrides, { 'content-security-policy': csp },
   path => { if (!path.startsWith('/__fake-storage/')) return null; const f = backend.files.get(path.slice('/__fake-storage/'.length)); return f ? { type: f.type, body: f.bytes } : null; });
 const browser = await chromium.launch();
 const errors = [], pages = [];
@@ -1038,6 +1039,14 @@ try {
     await reed.getByRole('button', { name: 'Envoyer la carte' }).click();
     await toast(reed, 'Carte enregistrée');
     await shot(reed, 'reglages-service', true);
+    // Fond de tuiles auto-hébergées (web/tiles/gta5) : elles se chargent, et « Placer au centre » ouvre la fiche du repère.
+    await reed.goto(BASE + '/usms-ls/carte'); await settle(reed, 'img.leaflet-tile-loaded');
+    await reed.getByRole('button', { name: 'Ajouter un repère' }).click();
+    await reed.getByRole('button', { name: 'Placer au centre de la vue' }).click();
+    await reed.locator('.modal h2, .modal h3').filter({ hasText: 'Nouveau repère' }).waitFor();
+    await reed.keyboard.press('Escape'); await reed.locator('.modal').waitFor({ state: 'detached' }).catch(() => {});
+    // Sans tuiles : repli sur l’image envoyée dans Réglages.
+    overrides['/tiles/gta5/meta.json'] = 'absent';
     await reed.goto(BASE + '/usms-ls/carte'); await settle(reed, 'img.mapimg');
     await reed.getByRole('button', { name: 'Ajouter un repère' }).click();
     const box = await reed.locator('img.mapimg').boundingBox();   // l’image est calée dans la carte Leaflet : on clique à 40 % / 30 % de l’image
@@ -1051,6 +1060,7 @@ try {
     const [mk] = await backend.sql('select x, y from public.map_marks');
     assert.ok(Math.abs(mk.x - 0.4) < 0.02 && Math.abs(mk.y - 0.3) < 0.02);
     await shot(reed, 'carte', true);
+    delete overrides['/tiles/gta5/meta.json'];
     await reed.goto(BASE + '/usms-ls/statistiques'); await settle(reed, 'h1:text("Statistiques")');
     await reed.getByRole('button', { name: 'Bilan de la semaine' }).click();
     await reed.locator('.modal img.docimg[src^="data:image/png"]').waitFor();

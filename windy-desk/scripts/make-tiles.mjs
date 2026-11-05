@@ -49,12 +49,12 @@ async function main() {
   await rm(out, { recursive: true, force: true });
   let count = 0, bytes = 0;
   for (const l of levels) {
-    const lvl = sharp(square.data, { raw: square.info }).resize(l.size, l.size, { kernel: 'lanczos3' }).raw().toBuffer({ resolveWithObject: true });
+    const lvl = sharp(square.data, { raw: square.info, limitInputPixels: false }).resize(l.size, l.size, { kernel: 'lanczos3' }).raw().toBuffer({ resolveWithObject: true });
     const { data, info } = await lvl;
     for (let x = 0; x < l.n; x++) {
       await mkdir(join(out, String(l.z), String(x)), { recursive: true });
       for (let y = 0; y < l.n; y++) {
-        const buf = await sharp(data, { raw: info }).extract({ left: x * TILE, top: y * TILE, width: TILE, height: TILE }).webp({ quality: o.quality, effort: 5 }).toBuffer();
+        const buf = await sharp(data, { raw: info, limitInputPixels: false }).extract({ left: x * TILE, top: y * TILE, width: TILE, height: TILE }).webp({ quality: o.quality, effort: 5 }).toBuffer();
         await writeFile(join(out, String(l.z), String(x), y + '.webp'), buf); count++; bytes += buf.length;
       }
     }

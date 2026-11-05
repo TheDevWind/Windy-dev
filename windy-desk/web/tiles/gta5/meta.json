@@ -1,0 +1,13 @@
+{
+ "v": 1,
+ "tile": 256,
+ "minZoom": 0,
+ "maxZoom": 6,
+ "ext": "webp",
+ "source": {
+  "width": 16384,
+  "height": 16384,
+  "side": 16384
+ },
+ "calib": null
+}
