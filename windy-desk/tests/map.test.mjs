@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SIDE, CALIB_DEFAUT, calibration, jeuVersImage, imageVersJeu, imageVersCarte, carteVersImage, jeuVersCarte, carteVersJeu, repereVersJeu, jeuVersRepere, carteVersRepere } from '../web/js/map-geo.js';
+import { centre, translate, rotate, scale, angleOf, sizeOf, photoCorners, affine, resizeByCorner, metre, toGame, fromGame, checkShape, describe } from '../web/js/plan-geo.js';
 import { planLevels, tileCount, parseArgs } from '../scripts/make-tiles.mjs';
 
 const C = { minX: -4000, maxX: 4500, minY: -4000, maxY: 8000 };
@@ -59,4 +60,40 @@ test('make-tiles : lecture des options', () => {
   assert.throws(() => parseArgs([]), /Usage/);
   assert.throws(() => parseArgs(['a.jpg', '--calib', '1,0,0,1']), /calib/);
   assert.throws(() => parseArgs(['a.jpg', '--zzz']), /inconnue/);
+});
+
+test('plans : rotation, échelle et coins d’une photo', () => {
+  const c = photoCorners([-100, 100], 40, 2);   // 40 de large, 20 de haut, centrée
+  assert.deepEqual(sizeOf(c), { w: 40, h: 20 }); near(angleOf(c), 0);
+  const r = rotate(c, centre(c), 90);   // un quart de tour à gauche : le bord haut regarde vers le haut de l'écran
+  near(angleOf(r), 90, 1e-9); near(sizeOf(r).w, 40); near(sizeOf(r).h, 20);
+  const d = scale(c, centre(c), 2); near(sizeOf(d).w, 80);
+  const t = translate(c, 5, -5); near(t[0][0], c[0][0] + 5); near(t[0][1], c[0][1] - 5);
+  // un coin tiré vers l'extérieur agrandit en gardant les proportions et le coin opposé
+  const big = resizeByCorner(c, 2, [c[2][0] - 10, c[2][1] + 20]);
+  assert.deepEqual(big[0], c[0]); near(sizeOf(big).w / sizeOf(big).h, 2, 1e-9); assert.ok(sizeOf(big).w > 40);
+  assert.ok(sizeOf(resizeByCorner(c, 2, [c[0][0], c[0][1]])).w > 0);   // jamais de taille nulle
+});
+
+test('plans : transformation CSS d’une image sur trois coins', () => {
+  assert.deepEqual(affine([10, 20], [110, 20], [10, 70], 100, 50), [1, 0, 0, 1, 10, 20]);
+  assert.deepEqual(affine([0, 0], [0, 100], [-50, 0], 100, 50), [0, 1, -1, 0, 0, 0]);   // tourné d'un quart de tour
+});
+
+test('plans : jeu ↔ carte et pas en mètres', () => {
+  const pts = [[100, 200], [-50.5, 3000.25]];
+  const back = toGame(fromGame(pts, C), C);
+  near(back[0][0], 100, 0.01); near(back[1][1], 3000.25, 0.01);
+  const m = metre(C); near(m.lng, SIDE / 8500); near(m.lat, SIDE / 12000);
+});
+
+test('plans : contrôle des formes comme save_plan', () => {
+  assert.equal(checkShape({ type: 'fleche', pts: [[0, 0], [5, 5]] }), null);
+  assert.match(checkShape({ type: 'zone', pts: [[0, 0], [5, 5]] }), /invalide/);
+  assert.match(checkShape({ type: 'dragon', pts: [[0, 0]] }), /invalide/);
+  assert.match(checkShape({ type: 'entree', pts: [[0, 0], [1, 1]] }), /invalide/);
+  assert.match(checkShape({ type: 'ligne', pts: [[0, 'a'], [1, 1]] }), /invalide/);
+  assert.match(checkShape({ type: 'etiquette', pts: [[0, 0]], label: '  ' }), /étiquette/);
+  assert.match(checkShape({ type: 'etiquette', pts: [[0, 0]], label: 'x'.repeat(81) }), /trop long/);
+  assert.equal(describe({ type: 'fleche', team: 'A', role: 'Brèche', label: 'Entrée' }), 'Flèche · équipe A · Brèche · Entrée');
 });

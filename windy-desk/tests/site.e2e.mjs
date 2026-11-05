@@ -1084,15 +1084,38 @@ try {
     await m.getByLabel('Pièce rattachée').selectOption({ index: 1 });
     await m.getByRole('button', { name: 'Créer le plan' }).click();
     await settle(reed, 'h1:text("Entrée arrière de la banque")'); await settle(reed, 'img.leaflet-tile-loaded');
+    // dessin : flèche à la souris, zone, étiquette, puis photo ; annuler et rétablir
+    const at = async (fx, fy) => { const mb = await reed.locator('.mapbox').boundingBox(); await reed.mouse.click(mb.x + mb.width * fx, mb.y + mb.height * fy); };
+    await reed.getByRole('button', { name: 'Flèche', exact: true }).click();
+    await at(0.3, 0.4); await at(0.6, 0.5); await reed.keyboard.press('Enter');
+    await reed.locator('path.plan-fleche').waitFor();
+    await reed.getByLabel('Rôle', { exact: true }).fill('Brèche'); await reed.getByLabel('Rôle', { exact: true }).press('Tab');
+    await reed.getByRole('button', { name: 'Zone', exact: true }).click();
+    await at(0.2, 0.2); await at(0.4, 0.2); await at(0.3, 0.3); await reed.getByRole('button', { name: 'Terminer' }).click();
+    await reed.locator('path.plan-zone').waitFor();
+    await reed.getByRole('button', { name: 'Étiquette', exact: true }).click();
+    await reed.getByLabel('Texte de la forme à dessiner').fill('Hall'); await at(0.75, 0.3);
+    await reed.locator('.plan-etiquette span').waitFor();
+    await reed.getByRole('button', { name: 'Supprimer la forme' }).click();
+    assert.equal(await reed.locator('.plan-etiquette span').count(), 0);
+    await reed.getByRole('button', { name: 'Annuler (Ctrl+Z)' }).click();
+    await reed.locator('.plan-etiquette span').waitFor();
+    await reed.locator('input[aria-label="Ajouter une photo au plan"]').setInputFiles(photo('carte.png'));
+    await reed.locator('img.plan-photo').waitFor();
+    await reed.getByLabel('Rotation en degrés').fill('30'); await reed.getByLabel('Rotation en degrés').press('Tab');
+    await reed.getByLabel('Opacité de la photo').fill('50');
     const [dl] = await Promise.all([reed.waitForEvent('download'), reed.getByRole('button', { name: 'Exporter' }).click()]);
     assert.match(dl.suggestedFilename(), /^plan-entree-arriere-de-la-banque\.json$/);
     const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
     assert.equal(exported.format, 'windy-desk-plan'); assert.equal(exported.data.v, 1); assert.equal(exported.kind, 'mandat');
+    assert.deepEqual(exported.data.shapes.map(x => x.type), ['fleche', 'zone', 'etiquette']); assert.equal(exported.data.layers.length, 1); assert.equal(exported.data.shapes[0].role, 'Brèche');
     await reed.getByLabel('Titre du plan').fill('Banque, entrée arrière');
     await reed.getByRole('button', { name: 'Enregistrer' }).click(); await toast(reed, 'Plan enregistré');
     await shot(reed, 'plan', true);
     const [pl] = await backend.sql('select title, kind, ref_id, data from public.intervention_plans');
     assert.equal(pl.title, 'Banque, entrée arrière'); assert.ok(pl.ref_id); assert.equal(pl.data.v, 1);
+    assert.equal(pl.data.layers[0].corners.length, 4); assert.equal(pl.data.layers[0].opacity, 0.5); assert.ok(Math.abs(pl.data.shapes[0].pts[0][0]) < 20000);
+    await reed.reload(); await settle(reed, 'path.plan-fleche'); await reed.locator('path.plan-zone').waitFor(); await reed.locator('img.plan-photo').waitFor();
     // le bouton « Plan » d’un mandat ouvre ce plan, sans en créer un second
     await reed.goto(BASE + '/usms-ls/mandats'); await settle(reed, 'h1:text("Mandats")');
     await reed.getByRole('button', { name: 'Tous', exact: true }).click();
