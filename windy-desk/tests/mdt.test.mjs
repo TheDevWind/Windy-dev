@@ -727,3 +727,24 @@ test('plans d’intervention : droits par type, pièce du service, photos vérif
   const ex = await val('dir', 'select public.export_service($1)', [usms]);
   assert.equal(ex.tables.intervention_plans.length, 2); assert.ok(ex.tables.intervention_plans.every(p => p.data.v === 1));
 });
+
+test('plans d’intervention : véhicules, texte, couleurs, hauteur et légende validés', async () => {
+  const [{ id: wid }] = await su('select id from public.warrants where org_id = $1 limit 1', [usms]);
+  const mk = shapes => ({ v: 1, layers: [], shapes, legend: { show: true, teams: { A: { name: 'Alpha', color: '#d9480f' }, B: { name: 'Bravo' } } } });
+  const save = (d, who = 'insp') => val(who, 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan options', 'mandat', wid, d]);
+  const bad = (d, re) => fails('insp', 'select public.save_plan($1, null, $2, $3, $4, $5)', [usms, 'Plan options', 'mandat', wid, d], re);
+  const ok = await save(mk([{ id: 'v', type: 'vehicule', vkind: 'suv', angle: 45, color: '#1c7ed6', pts: [[10, 10]], team: 'A', role: 'Chauffeur' },
+    { id: 't', type: 'texte', size: 24, label: 'Rendez-vous', pts: [[0, 0]] }, { id: 'z', type: 'zone', height: 3, pts: [[0, 0], [5, 0], [5, 5]] }]));
+  assert.ok(ok);
+  await bad(mk([{ type: 'vehicule', pts: [[1, 1]] }]), /Véhicule invalide/);
+  await bad(mk([{ type: 'vehicule', vkind: 'tank', pts: [[1, 1]] }]), /Véhicule invalide/);
+  await bad(mk([{ type: 'vehicule', vkind: 'suv', pts: [[1, 1], [2, 2]] }]), /Forme invalide/);
+  await bad(mk([{ type: 'zone', color: 'rouge', pts: [[0, 0], [5, 0], [5, 5]] }]), /Couleur invalide/);
+  await bad(mk([{ type: 'texte', size: 90, label: 'x', pts: [[1, 1]] }]), /Taille de texte/);
+  await bad(mk([{ type: 'zone', height: 500, pts: [[0, 0], [5, 0], [5, 5]] }]), /Hauteur invalide/);
+  await bad(mk([{ type: 'vehicule', vkind: 'suv', angle: 'nord', pts: [[1, 1]] }]), /Angle invalide/);
+  await bad({ ...mk([]), legend: { teams: { Z: { name: 'x' } } } }, /Légende invalide/);
+  await bad({ ...mk([]), legend: { teams: { A: { name: 'x'.repeat(31) } } } }, /trop long/);
+  await bad({ ...mk([]), legend: { teams: { A: { color: '#12' } } } }, /Couleur invalide/);
+  await bad({ ...mk([]), legend: [] }, /Légende invalide/);
+});

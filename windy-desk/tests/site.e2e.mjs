@@ -1085,7 +1085,7 @@ try {
     await m.getByRole('button', { name: 'Créer le plan' }).click();
     await settle(reed, 'h1:text("Entrée arrière de la banque")'); await settle(reed, 'img.leaflet-tile-loaded');
     // dessin : flèche à la souris, zone, étiquette, puis photo ; annuler et rétablir
-    const at = async (fx, fy) => { const mb = await reed.locator('.mapbox').boundingBox(); await reed.mouse.click(mb.x + mb.width * fx, mb.y + mb.height * fy); };
+    const at = async (fx, fy) => { await reed.locator('.mapbox').evaluate(e => e.scrollIntoView({ block: 'center' })); const mb = await reed.locator('.mapbox').boundingBox(); await reed.mouse.click(mb.x + mb.width * fx, mb.y + mb.height * fy); };
     await reed.getByRole('button', { name: 'Flèche', exact: true }).click();
     await at(0.3, 0.4); await at(0.6, 0.5); await reed.keyboard.press('Enter');
     await reed.locator('path.plan-fleche').waitFor();
@@ -1100,6 +1100,21 @@ try {
     assert.equal(await reed.locator('.plan-etiquette span').count(), 0);
     await reed.getByRole('button', { name: 'Annuler (Ctrl+Z)' }).click();
     await reed.locator('.plan-etiquette span').waitFor();
+    // véhicule orienté et coloré, texte libre, légende (noms et couleurs des équipes)
+    await reed.getByRole('button', { name: 'Véhicule', exact: true }).click();
+    await reed.getByLabel('Type de véhicule').selectOption('suv');
+    await at(0.3, 0.25);
+    await reed.locator('.plan-vehicule svg').waitFor();
+    await reed.getByLabel('Orientation en degrés (0 = nord, 90 = est)').fill('90'); await reed.getByLabel('Orientation en degrés (0 = nord, 90 = est)').press('Tab');
+    await reed.locator('.plan-edit').getByLabel('Couleur', { exact: true }).fill('#ff00aa');
+    await reed.locator('.plan-vehicule svg[fill="#ff00aa"]').waitFor();
+    await reed.getByRole('button', { name: 'Texte', exact: true }).click();
+    await reed.getByLabel('Texte de la forme à dessiner').fill('Point de ralliement'); await at(0.5, 0.15);
+    await reed.locator('.plan-texte span').waitFor();
+    await reed.getByText('Légende et couleurs des équipes').click();
+    await reed.getByLabel('Nom de l’équipe A').fill('Alpha'); await reed.getByLabel('Nom de l’équipe A').press('Tab');
+    await reed.locator('.plan-legend').getByText('Alpha').waitFor();
+    assert.match(await reed.locator('.plan-legend').innerText(), /Déplacement/);
     await reed.locator('input[aria-label="Ajouter une photo au plan"]').setInputFiles(photo('carte.png'));
     await reed.locator('img.plan-photo').waitFor();
     await reed.getByLabel('Rotation en degrés').fill('30'); await reed.getByLabel('Rotation en degrés').press('Tab');
@@ -1108,7 +1123,7 @@ try {
     assert.match(dl.suggestedFilename(), /^plan-entree-arriere-de-la-banque\.json$/);
     const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
     assert.equal(exported.format, 'windy-desk-plan'); assert.equal(exported.data.v, 1); assert.equal(exported.kind, 'mandat');
-    assert.deepEqual(exported.data.shapes.map(x => x.type), ['fleche', 'zone', 'etiquette']); assert.equal(exported.data.layers.length, 1); assert.equal(exported.data.shapes[0].role, 'Brèche');
+    assert.deepEqual(exported.data.shapes.map(x => x.type), ['fleche', 'zone', 'etiquette', 'vehicule', 'texte']); assert.equal(exported.data.shapes[3].color, '#ff00aa'); assert.equal(exported.data.shapes[3].angle, 90); assert.equal(exported.data.legend.teams.A.name, 'Alpha'); assert.equal(exported.data.layers.length, 1); assert.equal(exported.data.shapes[0].role, 'Brèche');
     await reed.getByLabel('Titre du plan').fill('Banque, entrée arrière');
     await reed.getByRole('button', { name: 'Enregistrer' }).click(); await toast(reed, 'Plan enregistré');
     await shot(reed, 'plan', true);

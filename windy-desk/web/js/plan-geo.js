@@ -4,7 +4,17 @@ import { SIDE, jeuVersCarte, carteVersJeu } from './map-geo.js';
 
 export const TEAMS = ['A', 'B', 'C', 'D'];
 export const TYPES = {   // type de forme → [libellé, points minimum, points maximum]
-  fleche: ['Flèche', 2, 200], zone: ['Zone', 3, 200], perimetre: ['Périmètre', 3, 200], ligne: ['Ligne', 2, 200], entree: ['Point d’entrée', 1, 1], etiquette: ['Étiquette', 1, 1] };
+  fleche: ['Flèche', 2, 200], zone: ['Zone', 3, 200], perimetre: ['Périmètre', 3, 200], ligne: ['Ligne', 2, 200], entree: ['Point d’entrée', 1, 1], etiquette: ['Étiquette', 1, 1],
+  vehicule: ['Véhicule', 1, 1], texte: ['Texte', 1, 1] };
+// véhicules : [libellé, longueur, largeur, hauteur] en mètres (maquette 3D et taille du symbole)
+export const VEHICLES = { voiture: ['Voiture', 4.5, 1.9, 1.4], suv: ['SUV', 4.9, 2.0, 1.8], camion: ['Camion ou blindé', 6.8, 2.5, 2.8], moto: ['Moto', 2.1, 0.8, 1.2], helico: ['Hélicoptère', 12, 3, 3.6], bateau: ['Bateau', 8, 2.8, 2.2] };
+export const TEXT_SIZES = [[12, 'Petit'], [16, 'Moyen'], [24, 'Grand'], [36, 'Très grand']];
+export const DEFAULT_COLORS = { '': '#495057', A: '#d9480f', B: '#1c7ed6', C: '#2f9e44', D: '#7048e8' };
+export const HEX = /^#[0-9a-fA-F]{6}$/;
+// couleur d'une forme : la sienne, sinon celle de son équipe dans la légende du plan, sinon la couleur par défaut de l'équipe
+export const teamColor = (legend, t) => { const c = legend && legend.teams && legend.teams[t || ''] && legend.teams[t || ''].color; return HEX.test(c || '') ? c : DEFAULT_COLORS[t || ''] || DEFAULT_COLORS['']; };
+export const teamName = (legend, t) => (legend && legend.teams && legend.teams[t] && String(legend.teams[t].name || '').trim()) || (t ? 'Équipe ' + t : 'Sans équipe');
+export const colorOf = (s, legend) => HEX.test(s.color || '') ? s.color : teamColor(legend, s.team);
 export const LIMITS = { layers: 30, shapes: 500 };
 
 const rad = d => d * Math.PI / 180;
@@ -41,7 +51,25 @@ export function checkShape(s) {
   if (String(s.label || '').length > 80) return 'Texte trop long (80 caractères).';
   if (String(s.role || '').length > 40) return 'Rôle trop long (40 caractères).';
   if (s.team && !TEAMS.includes(s.team)) return 'Équipe inconnue.';
+  if (s.color && !HEX.test(s.color)) return 'Couleur invalide.';
+  if (s.type === 'vehicule' && !VEHICLES[s.vkind]) return 'Choisis un type de véhicule.';
+  if (s.angle !== undefined && !Number.isFinite(s.angle)) return 'Angle invalide.';
+  if (s.size !== undefined && !(s.size >= 8 && s.size <= 48)) return 'Taille de texte invalide.';
+  if (s.height !== undefined && !(s.height >= 0 && s.height <= 60)) return 'Hauteur invalide (0 à 60 m).';
+  if (s.type === 'texte' && !String(s.label || '').trim()) return 'Écris le texte.';
   if (s.type === 'etiquette' && !String(s.label || '').trim()) return 'Écris le texte de l’étiquette.';
   return null;
 }
-export const describe = s => TYPES[s.type][0] + (s.team ? ' · équipe ' + s.team : '') + (s.role ? ' · ' + s.role : '') + (s.label ? ' · ' + s.label : '');
+export const describe = (s, legend) => (s.type === 'vehicule' && VEHICLES[s.vkind] ? VEHICLES[s.vkind][0] : TYPES[s.type][0]) + (s.team ? ' · ' + teamName(legend, s.team).replace(/^Équipe /, 'équipe ') : '') + (s.role ? ' · ' + s.role : '') + (s.label ? ' · ' + s.label : '');
+
+// Même contrôle que save_plan pour la légende : équipes A à D, nom de 30 caractères au plus, couleur #rrggbb
+export function checkLegend(g) {
+  if (g === undefined) return null;
+  if (!g || typeof g !== 'object' || Array.isArray(g)) return 'Légende invalide.';
+  for (const [t, v] of Object.entries(g.teams || {})) {
+    if (!TEAMS.includes(t) || !v || typeof v !== 'object') return 'Légende invalide.';
+    if (String(v.name || '').length > 30) return 'Nom d’équipe trop long (30 caractères).';
+    if (v.color !== undefined && !HEX.test(v.color)) return 'Couleur invalide.';
+  }
+  return null;
+}

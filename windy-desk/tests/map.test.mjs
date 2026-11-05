@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SIDE, CALIB_DEFAUT, calibration, jeuVersImage, imageVersJeu, imageVersCarte, carteVersImage, jeuVersCarte, carteVersJeu, repereVersJeu, jeuVersRepere, carteVersRepere } from '../web/js/map-geo.js';
-import { centre, translate, rotate, scale, angleOf, sizeOf, photoCorners, affine, resizeByCorner, metre, toGame, fromGame, checkShape, describe } from '../web/js/plan-geo.js';
+import { centre, translate, rotate, scale, angleOf, sizeOf, photoCorners, affine, resizeByCorner, metre, toGame, fromGame, checkShape, checkLegend, describe, colorOf, teamColor, teamName, VEHICLES, DEFAULT_COLORS } from '../web/js/plan-geo.js';
 import { planLevels, tileCount, parseArgs } from '../scripts/make-tiles.mjs';
 
 const C = { minX: -4000, maxX: 4500, minY: -4000, maxY: 8000 };
@@ -96,4 +96,26 @@ test('plans : contrôle des formes comme save_plan', () => {
   assert.match(checkShape({ type: 'etiquette', pts: [[0, 0]], label: '  ' }), /étiquette/);
   assert.match(checkShape({ type: 'etiquette', pts: [[0, 0]], label: 'x'.repeat(81) }), /trop long/);
   assert.equal(describe({ type: 'fleche', team: 'A', role: 'Brèche', label: 'Entrée' }), 'Flèche · équipe A · Brèche · Entrée');
+});
+
+test('plans : véhicules, couleurs, texte et légende', () => {
+  assert.equal(checkShape({ type: 'vehicule', vkind: 'suv', angle: 90, pts: [[0, 0]], color: '#1c7ed6' }), null);
+  assert.match(checkShape({ type: 'vehicule', pts: [[0, 0]] }), /véhicule/);
+  assert.match(checkShape({ type: 'vehicule', vkind: 'tank', pts: [[0, 0]] }), /véhicule/);
+  assert.match(checkShape({ type: 'zone', pts: [[0, 0], [1, 1], [2, 0]], color: 'rouge' }), /Couleur/);
+  assert.match(checkShape({ type: 'texte', pts: [[0, 0]], label: '' }), /texte/i);
+  assert.match(checkShape({ type: 'texte', pts: [[0, 0]], label: 'a', size: 99 }), /Taille/);
+  assert.match(checkShape({ type: 'zone', pts: [[0, 0], [1, 1], [2, 0]], height: 99 }), /Hauteur/);
+  assert.ok(Object.keys(VEHICLES).length === 6);
+  // couleur : celle de la forme, sinon celle de l'équipe dans la légende, sinon le défaut
+  const lg = { teams: { A: { name: 'Alpha', color: '#112233' }, B: { name: 'Bravo' } } };
+  assert.equal(colorOf({ team: 'A', color: '#abcdef' }, lg), '#abcdef');
+  assert.equal(colorOf({ team: 'A' }, lg), '#112233');
+  assert.equal(colorOf({ team: 'B' }, lg), DEFAULT_COLORS.B);
+  assert.equal(colorOf({ team: '' }, undefined), DEFAULT_COLORS['']);
+  assert.equal(teamName(lg, 'A'), 'Alpha'); assert.equal(teamName(lg, 'C'), 'Équipe C'); assert.equal(teamName(lg, ''), 'Sans équipe');
+  assert.equal(describe({ type: 'vehicule', vkind: 'suv', team: 'A' }, lg), 'SUV · Alpha');
+  assert.equal(checkLegend(lg), null); assert.equal(checkLegend(undefined), null);
+  assert.match(checkLegend({ teams: { Z: {} } }), /invalide/); assert.match(checkLegend({ teams: { A: { name: 'x'.repeat(31) } } }), /trop long/);
+  assert.match(checkLegend({ teams: { A: { color: 'nope' } } }), /Couleur/); assert.match(checkLegend([]), /invalide/);
 });
