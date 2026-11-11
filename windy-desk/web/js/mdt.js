@@ -41,6 +41,7 @@ export async function dashboard(ctx) {
     has('presence') ? rows('absences', q => q.eq('org_id', me.id).eq('status', 'validee').gte('ends_on', today())) : [],
     has('wanted') && can('wanted') ? rows('tips', q => q.eq('org_id', me.id).eq('status', 'nouveau')) : []]);
   const [alerts, alertBox] = await Promise.all([reportAlerts(ctx), alertsCard(ctx)]);
+  const B = '/' + me.code;
   const active = members.filter(m => m.active), meRow = members.find(m => m.id === me.member_id);
   const urls = await signedUrls(people.filter(p => wanted.some(w => w.person_id === p.id)).map(p => p.photo).concat(active.map(m => m.photo)));
   const pOf = id => people.find(p => p.id === id), mOf = id => members.find(m => m.id === id);
@@ -50,16 +51,18 @@ export async function dashboard(ctx) {
   const pending = warrants.filter(w => w.status === 'envoye'), toRun = warrants.filter(w => wStatus(w) === 'signe');
   const out = absences.filter(a => a.starts_on <= today());
   const base = '/' + me.code;
-  ctx.show('accueil', me.name, [pill(me.kind, 'info'), ' ', me.grade + ' · ' + new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })], null,
+  ctx.show('accueil', me.name, [pill(me.kind, 'info'), ' ', me.grade + ' · ' + new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })],
+    [has('rapports') ? h('a', { class: 'btn', href: B + '/rapports/nouveau' }, ico('rapport', 18), 'Nouveau rapport', h('kbd', { class: 'key', 'aria-hidden': 'true' }, 'R')) : null,
+      has('dossiers') ? h('a', { class: 'btn primary', href: B + '/dossiers' }, ico('dossier', 18), 'Dossiers', h('kbd', { class: 'key', 'aria-hidden': 'true' }, 'D')) : null],
     unread.map(a => h('div', { class: 'banner' + (a.level === 'urgent' ? ' bad' : '') }, ico('megaphone', 20), h('div', {}, h('b', {}, a.title), h('span', {}, a.body.slice(0, 160) + (a.body.length > 160 ? '…' : ''))),
       h('button', { class: 'btn small', type: 'button', onclick: ev => run(ev.currentTarget, async () => { await rpc('read_announcement', { p_id: a.id }); ctx.reload(); return { message: 'Annonce marquée comme lue.' }; }) }, 'J’ai lu'))),
     alerts.banner,
     alertBox,
     has('presence') ? dutyCard(ctx, mine, meRow) : null,
-    h('section', { class: 'card' }, strip([has('presence') ? ['En service', open.length + ' / ' + active.length] : ['Effectif', String(active.length)],
-      has('dossiers') ? ['Dossiers actifs', String(cases.length)] : null, has('mandats') ? ['Mandats en attente', String(pending.length), pending.length ? 'warn-t' : null] : null,
-      has('mandats') ? ['Mandats à exécuter', String(toRun.length)] : null, has('wanted') && can('wanted') ? ['Signalements', String(tips.length), tips.length ? 'warn-t' : null] : null,
-      alerts.pending !== null ? ['Rapports à valider', String(alerts.pending), alerts.pending ? 'warn-t' : null] : null])),
+    h('section', { class: 'card kpicard' }, strip([has('presence') ? ['En service', open.length + ' / ' + active.length, null, B + '/presence'] : ['Effectif', String(active.length), null, B + '/effectifs'],
+      has('dossiers') ? ['Dossiers actifs', String(cases.length), null, B + '/dossiers'] : null, has('mandats') ? ['Mandats en attente', String(pending.length), pending.length ? 'warn-t' : null, B + '/mandats'] : null,
+      has('mandats') ? ['Mandats à exécuter', String(toRun.length), null, B + '/mandats'] : null, has('wanted') && can('wanted') ? ['Signalements', String(tips.length), tips.length ? 'warn-t' : null, B + '/wanted'] : null,
+      alerts.pending !== null ? ['Rapports à valider', String(alerts.pending), alerts.pending ? 'warn-t' : null, B + '/rapports'] : null])),
     h('div', { class: 'dash' },
       h('div', { class: 'col' },
         has('presence') ? h('section', { class: 'card' }, h('h2', {}, 'En service maintenant', h('span', { class: 'right' }, h('a', { href: base + '/presence' }, 'Présence'))),
@@ -631,9 +634,9 @@ function wantedModal(ctx, people, cases, w, presetCase) {
 }
 // l'affiche : un PNG dessiné ici, à télécharger ou à publier sur la page publique
 async function poster(org, w, p, photoUrl) {
-  try { await Promise.all([document.fonts.load('700 40px Inter'), document.fonts.load('600 40px "Cormorant Garamond"')]); } catch (e) { /* police de secours */ }
+  try { await Promise.all([document.fonts.load('700 40px "Work Sans"'), document.fonts.load('600 40px "Fraunces"')]); } catch (e) { /* police de secours */ }
   const W = 1200, H = 1600, c = document.createElement('canvas'); c.width = W; c.height = H;
-  const x = c.getContext('2d'), serif = '"Cormorant Garamond", Georgia, serif', sans = 'Inter, "Helvetica Neue", Arial, sans-serif';
+  const x = c.getContext('2d'), serif = '"Fraunces", Georgia, serif', sans = '"Work Sans", "Helvetica Neue", Arial, sans-serif';
   const ink = '#2b2118', paper = '#f4ead8', red = '#9b1c16';
   x.fillStyle = paper; x.fillRect(0, 0, W, H);
   x.strokeStyle = ink; x.lineWidth = 6; x.strokeRect(36, 36, W - 72, H - 72); x.lineWidth = 2; x.strokeRect(52, 52, W - 104, H - 104);

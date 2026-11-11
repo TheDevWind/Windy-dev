@@ -345,7 +345,7 @@ try {
     await nina.getByRole('button', { name: 'Continuer avec Discord' }).click();
     await nina.getByRole('button', { name: 'Activer avec cette session' }).click();
     await nina.waitForURL(BASE + '/bella-napoli'); await settle(nina, '.shell');
-    const navs = await nina.locator('nav.side .navs a').allInnerTexts();
+    const navs = await nina.locator('.bar [data-nav]').allTextContents();
     // le menu suit les modules de l'offre et les accès du grade Stagiaire (encaisser, véhicules, stock)
     assert.deepEqual(navs.map(s => s.trim()), ['Accueil', 'Caisse', 'Stock', 'Récolte', 'Dons', 'Véhicules', 'Événements', 'Équipe']);
     await nina.locator('.card', { hasText: 'Bienvenue, Nina Costa' }).waitFor();
@@ -482,7 +482,7 @@ try {
     S.reed = await session(reed);
   });
   await step('le Director recrute un Supervisory ; un grade plein est refusé', async () => {
-    await reed.getByRole('link', { name: 'Effectifs' }).first().click(); await settle(reed, 'h1:text("Effectifs")');
+    await reed.locator('.bar .gp[title="Personnel"]').hover(); await reed.locator('.gmenu a', { hasText: 'Effectifs' }).click(); await settle(reed, 'h1:text("Effectifs")');
     const m = reed.locator('.modal');
     await reed.getByRole('button', { name: 'Recruter' }).click();
     await m.getByLabel('Nom', { exact: true }).fill('Sam Ortiz');
@@ -505,7 +505,7 @@ try {
     await sam.getByRole('button', { name: 'Continuer avec Discord' }).click();
     await sam.getByRole('button', { name: 'Activer avec cette session' }).click();
     await sam.waitForURL(BASE + '/usms-ls'); await chooseSignature(sam, 'S. Ortiz', 'Paraphe');
-    const navs = await sam.locator('nav.side .navs a').allInnerTexts();
+    const navs = await sam.locator('.bar [data-nav]').allTextContents();
     assert.deepEqual(navs.map(x => x.trim()), ['Accueil', 'Mandats', 'Most Wanted', 'Carte', 'Plans d’intervention', 'Transferts', 'SOG', 'Recherche', 'Dossiers', 'Rapports', 'Preuves', 'Renseignement', 'Tribunal', 'Effectifs', 'Présence',
       'Académie', 'Logistique', 'Statistiques', 'Annonces']);
     await sam.goto(BASE + '/usms-ls/effectifs'); await settle(sam, 'h1:text("Effectifs")');
@@ -813,7 +813,7 @@ try {
     await dan.locator('.banner', { hasText: 'Tu es affecté' }).waitFor();
   });
   await step('WITSEC : témoin sous code, vrai nom révélé avec motif, journal d’audit, menu réservé', async () => {
-    assert.ok(!(await dan.locator('nav.side .navs a').allInnerTexts()).some(x => x.includes('WITSEC')));
+    assert.ok(!(await dan.locator('.bar [data-nav]').allTextContents()).some(x => x.includes('WITSEC')));
     await reed.goto(BASE + '/usms-ls/witsec'); await settle(reed, 'h1:text("WITSEC")');
     await reed.getByRole('button', { name: 'Nouveau témoin' }).click();
     const m = reed.locator('.modal');
@@ -1074,6 +1074,24 @@ try {
   });
 
   // ------------------------------------------------------------ connexion ordinaire
+  await step('barre de navigation : recherche au clavier, raccourcis, menu de groupe au focus', async () => {
+    await reed.goto(BASE + '/usms-ls'); await settle(reed, 'h1:text("US Marshals")');
+    await reed.locator('#contenu').click({ position: { x: 5, y: 5 } });
+    await reed.keyboard.press('/');
+    assert.ok(await reed.locator('.bar .find input').evaluate(e => e === document.activeElement), '« / » place le curseur dans la recherche');
+    await reed.keyboard.type('Vercetti'); await reed.keyboard.press('Enter');
+    await settle(reed, 'h1:text("Recherche")');
+    await reed.locator('.results', { hasText: 'Vercetti' }).waitFor();
+    await reed.locator('.subnav a.on', { hasText: 'Recherche' }).waitFor();
+    await reed.locator('#contenu').click({ position: { x: 5, y: 5 } });
+    await reed.keyboard.press('a'); await settle(reed, 'h1:text("US Marshals")');
+    await reed.keyboard.press('r'); await reed.waitForURL('**/usms-ls/rapports/nouveau');
+    // au clavier : le focus sur une pilule ouvre son menu
+    await reed.goto(BASE + '/usms-ls'); await settle(reed, 'h1:text("US Marshals")');
+    await reed.locator('.bar .gp[title="Justice"]').focus();
+    await reed.locator('.gmenu a', { hasText: 'Tribunal' }).waitFor({ state: 'visible' });
+    await reed.locator('.strip a', { hasText: 'Dossiers actifs' }).click(); await settle(reed, 'h1:text("Dossiers")');
+  });
   await step('plans d’intervention : création, plan d’un mandat, export JSON, enregistrement, droits', async () => {
     await reed.goto(BASE + '/usms-ls/plans'); await settle(reed, 'h1:text("Plans d’intervention")');
     await reed.getByRole('button', { name: 'Nouveau plan' }).click();

@@ -579,9 +579,9 @@ export async function logistique(ctx) {
 
 // ================================================================== statistiques
 async function weekCanvas(ctx, st) {
-  try { await Promise.all(['400', '600', '700'].map(w => document.fonts.load(w + ' 24px Inter'))); } catch (e) { /* police de secours */ }
+  try { await Promise.all(['400', '600', '700'].map(w => document.fonts.load(w + ' 24px "Work Sans"'))); } catch (e) { /* police de secours */ }
   const img = await seal(), W = 1200, H = 675, c = document.createElement('canvas'); c.width = W; c.height = H;
-  const g = c.getContext('2d'), sans = 'Inter, "Helvetica Neue", Arial, sans-serif', navy = '#1b2a4e', gold = '#b08d3c', ink = '#16213a', muted = '#5d6577';
+  const g = c.getContext('2d'), sans = '"Work Sans", "Helvetica Neue", Arial, sans-serif', navy = '#1b2a4e', gold = '#b08d3c', ink = '#16213a', muted = '#5d6577';
   const last = st.series[st.series.length - 1] || {}, best = st.week_best && st.week_best.score > 0 ? st.week_best : null;
   g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
   g.fillStyle = navy; g.fillRect(0, 0, W, 132);

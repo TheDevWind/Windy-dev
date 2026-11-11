@@ -8,7 +8,7 @@ export function landing() {
   clearInterval(S.timer);
   const smooth = calm ? 'auto' : 'smooth';
   const jump = id => { closeMenu(); const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: smooth, block: 'start' }); };
-  const LINKS = [['fonctions', 'Fonctionnalités'], ['modules', 'Modules'], ['fisc', 'Fisc'], ['tarifs', 'Tarifs'], ['questions', 'Questions']];
+  const LINKS = [['fonctions', 'Fonctionnalités'], ['fisc', 'Fisc'], ['tarifs', 'Tarifs'], ['questions', 'Questions']];
 
   // ---- navigation (menu plein écran sur téléphone)
   const menu = h('div', { class: 'l-menu', hidden: true }, h('nav', {}, LINKS.map(([id, l]) => h('button', { type: 'button', onclick: () => jump(id) }, l, ico('fleche', 20)))),
@@ -117,11 +117,10 @@ export function landing() {
       h('div', { class: 'l-hero-copy' },
         h('span', { class: 'l-eyebrow l-in', style: '--i:0' }, BRAND + ' · gestion d’entreprise pour serveurs RP'),
         h('h1', {}, h('span', { class: 'l-line l-in', style: '--i:1' }, 'Ton entreprise RP'), ' ', h('span', { class: 'l-line l-in', style: '--i:2' }, 'tourne enfin'), ' ', h('span', { class: 'l-line l-in accent', style: '--i:3' }, 'comme une vraie.')),
-        h('p', { class: 'l-lead l-in', style: '--i:4' }, 'Stock, recettes, caisse, employés, véhicules, événements et comptabilité dans un seul espace, avec un compte pour chaque employé. Tu ne paies que les modules dont tu as besoin.'),
+        h('p', { class: 'l-lead l-in', style: '--i:4' }, 'Caisse, stock, paie et compta de ton entreprise sur serveur GTA RP, dans un seul espace, avec un compte pour chaque employé. Tu ne paies que les modules dont tu as besoin.'),
         h('div', { class: 'l-ctas l-in', style: '--i:5' }, h('button', { class: 'btn primary big', type: 'button', onclick: () => jump('configurateur') }, 'Composer mon offre', ico('fleche', 18)), h('a', { class: 'btn big', href: '/connexion' }, 'Se connecter')),
         h('p', { class: 'l-trust l-in', style: '--i:6' }, 'Pizzerias · fermes · bars · garages · associations · taxis')),
       h('div', { class: 'l-hero-visual l-in', style: '--i:3' }, mock))),
-    h('div', { class: 'l-marquee', 'aria-hidden': 'true' }, h('div', { class: 'l-track' }, [0, 1].map(() => h('span', {}, ['Pizzeria', 'Ferme', 'Bar', 'Garage', 'Association', 'Taxi', 'Boulangerie', 'Concession', 'Pêcherie', 'Club', 'Épicerie', 'Brasserie'].map(t => h('span', { class: 'mq' }, t, h('i', {}))))))),
     h('section', { class: 'l-sec', id: 'fonctions' }, h('div', { class: 'l-wrap' },
       h('div', { class: 'l-sec-head rv' }, h('span', { class: 'l-eyebrow' }, 'Fonctionnalités'), h('h2', {}, 'Tout ce que fait une entreprise, au même endroit.')),
       feat('f-caisse', 'Caisse et stock', 'La caisse sort les ingrédients du stock.', 'Chaque produit de la carte connaît sa recette. Une Regina vendue, c’est une pâte, une sauce et une mozzarella en moins. Essaie : vends quelques pizzas.',
@@ -141,9 +140,6 @@ export function landing() {
         ['Compte à rebours et objectif', 'Stock réservé vérifié', 'Bilan figé à la clôture'],
         h('div', { class: 'd-card' }, h('div', { class: 'd-head' }, h('b', {}, 'Soirée italienne'), pill('À venir', 'info')), h('span', { class: 'm-label' }, 'Commence dans'), cdBoxes,
           h('div', { class: 'ev-goal' }, h('div', { class: 'g-top' }, h('span', {}, 'Objectif de ventes'), h('b', {}, '3 000 $')), h('span', { class: 'meter big' }, h('i', { style: 'width:0%' })), h('div', { class: 'g-top muted small' }, h('span', {}, '3 tâches sur 5 à faire'), h('span', {}, '40 pâtons réservés')))), true))),
-    h('section', { class: 'l-sec l-alt', id: 'modules' }, h('div', { class: 'l-wrap' },
-      h('div', { class: 'l-sec-head rv' }, h('span', { class: 'l-eyebrow' }, MODULES.length + ' modules'), h('h2', {}, 'Prends ce qu’il te faut. Rien de plus.'), h('p', {}, 'Le socle est toujours inclus : tableau de bord, comptabilité, équipe, grades et journal.')),
-      h('div', { class: 'l-mods' }, MODULES.map((m, i) => h('article', { class: 'l-mod rv', style: '--i:' + (i % 4) }, h('div', { class: 'l-mod-top' }, h('span', { class: 'l-mod-ic' }, ico(m.icon, 22)), h('b', {}, m.price + ' $ / sem.')), h('h3', {}, m.name), h('p', {}, m.text)))))),
     h('section', { class: 'l-sec' }, h('div', { class: 'l-wrap' },
       h('div', { class: 'l-sec-head rv' }, h('span', { class: 'l-eyebrow' }, 'Mise en place'), h('h2', {}, 'Ouvert le jour même, en trois étapes.')),
       h('ol', { class: 'l-steps' }, [['Tu choisis tes modules', 'Un pack de départ ou à la carte. Tu reçois un devis en PNG ou en PDF, prêt à envoyer.'],

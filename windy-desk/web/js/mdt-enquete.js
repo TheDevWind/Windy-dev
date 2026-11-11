@@ -427,11 +427,11 @@ function reportView(ctx, r, d) {
 async function reportCanvas(org, r, x) {
   const author = r.author_signature || (r.status !== 'brouillon' ? { name: r.author_name, style: 'classique', printed: r.author_name } : null);
   const boss = r.status === 'valide' ? r.reviewer_signature || { name: r.reviewer, style: 'classique', printed: r.reviewer } : null;
-  try { await Promise.all(['400', '600', '700'].map(w => document.fonts.load(w + ' 24px Inter')).concat(['500', '600'].map(w => document.fonts.load(w + ' 40px "Cormorant Garamond"')))); } catch (e) { /* police de secours */ }
+  try { await Promise.all(['400', '600', '700'].map(w => document.fonts.load(w + ' 24px "Work Sans"')).concat(['500', '600'].map(w => document.fonts.load(w + ' 40px "Fraunces"')))); } catch (e) { /* police de secours */ }
   await sigFontsReady([author && author.style, boss && boss.style]);
   const img = await seal();
   const W = 1240, H = 1754, M = 96, c = document.createElement('canvas'); c.width = W; c.height = H;
-  const g = c.getContext('2d'), sans = 'Inter, "Helvetica Neue", Arial, sans-serif', serif = '"Cormorant Garamond", Georgia, serif';
+  const g = c.getContext('2d'), sans = '"Work Sans", "Helvetica Neue", Arial, sans-serif', serif = '"Fraunces", Georgia, serif';
   const ink = '#16213a', muted = '#5d6577', line = '#c9cfdb', navy = '#1b2a4e', gold = '#b08d3c', tint = '#f2f4f8';
   const font = (w, sz, f) => { g.font = w + ' ' + sz + 'px ' + (f || sans); };
   const text = (t, px, py, color, align) => { g.fillStyle = color || ink; g.textAlign = align || 'left'; g.fillText(t, px, py); };

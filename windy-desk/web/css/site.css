@@ -53,7 +53,7 @@ body.l-lock { overflow: hidden; }
 .m-bar span { margin-left: 12px; font: 500 12px var(--mono); color: var(--muted); }
 .m-body { display: grid; grid-template-columns: 48px minmax(0, 1fr); min-height: 380px; }
 .m-side { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 14px 0; border-right: 1px solid var(--line); color: var(--muted); }
-.m-side .on { color: var(--accent); }
+.m-side .on { color: var(--link); }
 .mk.sm { width: 26px; height: 26px; font-size: 14px; }
 .m-main { position: relative; padding: 18px; display: grid; gap: 14px; align-content: start; }
 .m-head { display: flex; justify-content: space-between; align-items: center; font-size: 18px; letter-spacing: -.02em; }

@@ -169,3 +169,9 @@ npx esbuild entry.js --bundle --minify --format=esm --legal-comments=none --outf
 ```
 
 Puis copier `three.plan.min.js` et la licence (`node_modules/three/LICENSE`) dans `web/vendor/three/`. La maquette est générée à partir du plan : aucun modèle 3D à fournir.
+
+## Design system (WDS) : polices et icônes
+
+- Polices : Fraunces (titres) et Work Sans (texte), licence OFL, copiées dans `web/fonts/` depuis les paquets `@fontsource/fraunces` et `@fontsource/work-sans` (fichiers `*-latin-<graisse>-normal.woff2`).
+- Icônes : Tabler Icons (MIT), contour uniquement. `web/js/icons.js` est généré : `npm install --no-save @tabler/icons` puis `node scripts/make-icons.mjs`. Pour ajouter une icône, compléter la table `MAP` du script.
+- Couleurs : variables en tête de `web/css/windy.css` (violet `#7566C2`, crème `#FDF8F2`, sauge `#C3D4A8`, lilas `#D9CEF2`, encre `#2B2640`). Le texte violet utilise `#5B4DA6` pour tenir le contraste AA.

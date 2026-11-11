@@ -9,12 +9,12 @@ const DAY = 864e5;
  */
 // couleurs de Windy Project : violet du papillon, encre ardoise, lavande, crème et sauge
 const PAPER = { W: 1240, H: 1754, M: 100, ink: '#2b2d33', muted: '#5f5b66', line: '#e4ddd1', accent: '#6458b0', ok: '#4d6a2c', bad: '#ad241d' };
-const SERIF = '"Cormorant Garamond", Georgia, serif';
+const SERIF = '"Fraunces", Georgia, serif';
 const plainMoney = n => (n < 0 ? '-' : '') + Math.abs(Math.round(n)).toLocaleString('fr-FR').replace(/\s/g, ' ') + ' $';
 const longDate = ms => new Date(ms).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
 async function fontsReady() {
-  try { await Promise.all(['400', '600', '700'].map(w => document.fonts.load(w + ' 24px Inter')).concat(['500', '600'].map(w => document.fonts.load(w + ' 40px "Cormorant Garamond"')))); } catch (e) { /* police système en secours */ }
+  try { await Promise.all(['400', '600', '700'].map(w => document.fonts.load(w + ' 24px "Work Sans"')).concat(['500', '600'].map(w => document.fonts.load(w + ' 40px "Fraunces"')))); } catch (e) { /* police système en secours */ }
 }
 function wrapText(x, text, maxW) {
   const words = String(text).split(/\s+/), lines = [];
@@ -33,7 +33,7 @@ async function renderDoc(d, level = 0) {
   const { W, H, M } = PAPER, c = document.createElement('canvas');
   c.width = W; c.height = H;
   const x = c.getContext('2d');
-  const font = (w, s) => { x.font = w + ' ' + s + 'px Inter, "Helvetica Neue", Arial, sans-serif'; };
+  const font = (w, s) => { x.font = w + ' ' + s + 'px "Work Sans", "Helvetica Neue", Arial, sans-serif'; };
   const text = (t, px, py, align, color) => { x.fillStyle = color || PAPER.ink; x.textAlign = align || 'left'; x.fillText(t, px, py); };
   const rule = (py, w, color, x0, x1) => { x.fillStyle = color || PAPER.ink; x.fillRect(x0 === undefined ? M : x0, py, (x1 === undefined ? W - M : x1) - (x0 === undefined ? M : x0), w); };
   x.fillStyle = '#ffffff'; x.fillRect(0, 0, W, H);

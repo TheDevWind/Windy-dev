@@ -1,21 +1,24 @@
 /* ================================================================== Windy Desk : direction artistique Windy Project
-   Le papillon violet en un seul trait, la serif Cormorant Garamond du logo, le dégradé lavande → crème → sauge
+   Le papillon violet en un seul trait, la serif Fraunces des titres (WDS), le dégradé lavande → crème → sauge
    et les branches de feuilles de la bannière. Chargée en dernier : elle remplace les couleurs, les polices et les
    arrondis, sans toucher à la structure des composants. Tous les contrastes de texte sont au moins à 4,5:1. */
-@font-face { font-family: "Cormorant Garamond"; src: url(/fonts/cormorant-500.woff2) format("woff2"); font-weight: 500; font-display: swap; }
-@font-face { font-family: "Cormorant Garamond"; src: url(/fonts/cormorant-600.woff2) format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Fraunces"; src: url(/fonts/fraunces-500.woff2) format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Fraunces"; src: url(/fonts/fraunces-600.woff2) format("woff2"); font-weight: 600; font-display: swap; }
 
 :root {
   color-scheme: light;
-  --serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --serif: "Fraunces", Georgia, "Times New Roman", serif;
   --r: 10px; --r-sm: 6px;
-  --wash: #fbf6f0;
-  --side: #fffcf8; --card: #fffdf9; --tile: #f4ede4; --stripe: #faf5ef; --track: #ebe3d8;
-  --badge: #2b2d33; --badge-text: #fffdf9; --toast: #2b2d33; --toast-text: #fffdf9;
-  --text: #2b2d33; --muted: #5f5b66; --chip: #efe7dd; --line: #e8dfd3; --field: #9b9389;
-  --accent: #6458b0; --accent-ink: #ffffff; --accent-soft: rgba(100, 88, 176, .10); --link: #574a9f;
-  --logo: #6458b0; --glow: none;
-  --ok: #435d25; --ok-fill: #7f9a55; --warn: #8a5100; --bad: #ad241d; --info: #574a9f;
+  /* WDS : violet #7566C2, crème #FDF8F2, sauge #C3D4A8, lilas #D9CEF2 ; encre #2B2640 (jamais de noir pur).
+     Le violet du WDS ne fait que 4,48:1 sur crème : il sert aux aplats et au focus, le texte violet passe en #5B4DA6 (6,5:1). */
+  --violet: #7566C2; --creme: #FDF8F2; --sauge: #C3D4A8; --lilas: #D9CEF2; --encre: #2B2640;
+  --wash: #FDF8F2;
+  --side: #fffdfa; --card: #fffdfa; --tile: #f6efe6; --stripe: #faf5ef; --track: #ebe3d8;
+  --badge: #2B2640; --badge-text: #FDF8F2; --toast: #2B2640; --toast-text: #FDF8F2;
+  --text: #2B2640; --muted: #5E5873; --chip: #efe7dd; --line: #E9DFD2; --field: #8F86A8;
+  --accent: #7566C2; --accent-ink: #ffffff; --accent-soft: rgba(117, 102, 194, .12); --link: #5B4DA6;
+  --logo: #7566C2; --glow: none;
+  --ok: #435d25; --ok-fill: #7f9a55; --warn: #7A4A00; --bad: #9A2B1F; --info: #5B4DA6;
   --slot: #fdf9f4; --slot-line: #e2d9cc;
   --shadow: 0 1px 2px rgba(60, 50, 90, .04), 0 8px 24px rgba(60, 50, 90, .05);
   --pop: 0 14px 36px rgba(60, 50, 90, .16);
@@ -83,7 +86,7 @@
 h1, .gate-card h1, .auth-form h1 { font-family: var(--serif); font-weight: 600; letter-spacing: -.005em; }
 /* chiffres alignés (« 2026 », numéros de devis) : les chiffres elzéviriens de la serif descendent sous la ligne */
 h1, h2, .lockup, .l-wm, .mk { font-feature-settings: "lnum" 1; }
-h1 { font-size: 38px; line-height: 1.05; }
+h1 { font-size: 30px; line-height: 1.15; }   /* Fraunces est plus large que l’ancienne serif : 30 px suffisent */
 .card > h2 { font-family: var(--serif); font-size: 22px; font-weight: 600; letter-spacing: 0; }
 .card > h2 span, .card > h2 .pill { font-family: var(--font); }
 .modal > h2 { font-family: var(--serif); font-size: 26px; font-weight: 600; letter-spacing: 0; }
@@ -125,9 +128,10 @@ h1 { font-size: 38px; line-height: 1.05; }
 /* la branche de gauche reste dans la marge, sans passer sous le titre */
 .h-leaf.one { top: -36px; width: 300px; left: max(-230px, calc((100vw - 1200px) / 2 - 290px)); color: var(--leaf-l); transform: scaleY(-1); }
 .h-leaf.two { right: -36px; bottom: -40px; color: var(--leaf-r); transform: scaleX(-1); }
-.l-hero h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(46px, 5.2vw, 78px); line-height: .98; letter-spacing: -.01em; }
+.l-hero h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(36px, 4vw, 58px); line-height: 1.05; letter-spacing: -.015em; }
 .l-hero .l-lead, .l-hero .l-trust { color: var(--strong-muted); }
-.l-sec h2, .l-cta h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -.005em; line-height: 1; }
+.l-sec h2, .l-cta h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -.005em; line-height: 1.08; font-size: clamp(28px, 3.4vw, 44px); }
+.l-cta h2 { font-size: clamp(36px, 6vw, 80px); }
 .land h3, .auth h3 { font-family: var(--serif); font-size: 26px; font-weight: 600; letter-spacing: 0; }
 .l-menu nav button { font-family: var(--serif); font-weight: 600; letter-spacing: 0; }
 .l-cta { position: relative; isolation: isolate; overflow: hidden; background: var(--grad-soft); }
@@ -150,7 +154,7 @@ h1 { font-size: 38px; line-height: 1.05; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .auth-side .auth-url { background: rgba(0, 0, 0, .3); } }
 
 @media (max-width: 860px) {
-  h1 { font-size: 32px; }
+  h1 { font-size: 26px; }
   .h-leaf { width: 180px; }
   .h-leaf.one { width: 150px; left: auto; right: -40px; top: -44px; transform: scale(-1, -1); }
   .h-leaf.two { right: -60px; bottom: -60px; }

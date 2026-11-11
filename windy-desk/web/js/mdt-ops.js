@@ -31,10 +31,13 @@ export async function alertsCard(ctx) {
   const list = await rows('alerts', q => q.eq('org_id', ctx.me.id).is('read_at', null).order('at', { ascending: false }).limit(20));
   if (!list.length) return null;
   const IC = { witsec: 'cadenas', sog: 'bouclier', transfert: 'camion', menace: 'alerte', affaires: 'oeil', academie: 'diplome', logistique: 'boite', autre: 'megaphone' };
-  return h('section', { class: 'card alertcard' }, h('h2', {}, 'Alertes', h('span', { class: 'right' }, h('button', { class: 'btn small', type: 'button',
+  // « À traiter » : chaque alerte porte son bouton d'action, une pastille marque le non-lu
+  const DO = { affaires: 'Traiter', academie: 'Ouvrir le dossier', transfert: 'Voir le transfert', sog: 'Voir la mission', witsec: 'Ouvrir', menace: 'Voir la menace', logistique: 'Voir', autre: 'Ouvrir' };
+  return h('section', { class: 'card alertcard' }, h('h2', {}, 'À traiter', h('span', { class: 'pill info', 'aria-label': list.length + ' alerte(s) non lue(s)' }, String(list.length)), h('span', { class: 'right' }, h('button', { class: 'btn small', type: 'button',
     onclick: ev => run(ev.currentTarget, async () => { await rpc('read_alerts', { p_org: ctx.me.id }); ctx.reload(); return { message: 'Alertes marquées comme lues.' }; }) }, 'Tout marquer comme lu'))),
-    h('ul', { class: 'people' }, list.map(a => h('li', { class: 'al-' + a.kind }, h('span', { class: 'ev-ic' }, ico(IC[a.kind] || 'alerte', 16)),
-      h('span', { class: 'art grow' }, a.link ? h('a', { href: base(ctx) + a.link }, h('b', {}, a.text)) : h('b', {}, a.text), h('small', {}, ago(ms(a.at))))))));
+    h('ul', { class: 'people todo-list' }, list.map(a => h('li', { class: 'al-' + a.kind }, h('span', { class: 'ev-ic' }, ico(IC[a.kind] || 'alerte', 16)),
+      h('span', { class: 'art grow' }, a.link ? h('a', { href: base(ctx) + a.link }, h('i', { class: 'unread', 'aria-label': 'Non lu' }), h('b', {}, a.text)) : h('b', {}, a.text), h('small', {}, ago(ms(a.at)))),
+      a.link ? h('a', { class: 'btn small', href: base(ctx) + a.link, 'aria-label': (DO[a.kind] || 'Ouvrir') + ' : ' + a.text }, DO[a.kind] || 'Ouvrir') : null))));
 }
 
 // ================================================================== transferts de détenus

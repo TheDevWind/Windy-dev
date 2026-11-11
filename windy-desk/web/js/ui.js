@@ -1,5 +1,6 @@
 // ================================================================== Windy Desk · boîte à outils de l'interface
 // Reprise du panneau Windy Watch : mêmes composants, mêmes animations, même respect de « moins d'animations ».
+import { ICONS } from './icons.js';
 export const $app = document.getElementById('app'), $tip = document.getElementById('tip'), $toasts = document.getElementById('toasts');
 export const S = { prev: {}, shown: null, filters: {}, timer: null };
 export const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -308,57 +309,8 @@ function slot(it, onClick, small) {
   return el;
 }
 
-const SQ2 = (x, y) => 'M' + x + ' ' + (y + 1) + 'a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1z';
-const ICONS = {
-  accueil: [SQ2(4, 4), SQ2(14, 4), SQ2(4, 14), SQ2(14, 14)],
-  joueurs: ['M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M4.5 20a7.5 7.5 0 0 1 15 0'],
-  loupe: ['M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z', 'M20 20l-4-4'],
-  soleil: ['M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M12 2v2', 'M12 20v2', 'M2 12h2', 'M20 12h2', 'M4.9 4.9l1.4 1.4', 'M17.7 17.7l1.4 1.4', 'M4.9 19.1l1.4-1.4', 'M17.7 6.3l1.4-1.4'],
-  lune: ['M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z'],
-  chevron: ['M6 9l6 6 6-6'], coche: ['M5 12.5l4.5 4.5L19 7.5'], sortie: ['M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4', 'M15 8l4 4-4 4', 'M19 12H9'],
-  plus: ['M5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z', 'M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z', 'M19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z'],
-  ajout: ['M12 5v14', 'M5 12h14'], moins: ['M5 12h14'], fleche: ['M5 12h14', 'M13 6l6 6-6 6'],
-  reglages: ['M4 6h8', 'M16 6h4', 'M4 12h2', 'M10 12h10', 'M4 18h10', 'M18 18h2', 'M14 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', 'M8 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', 'M16 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'],
-  caisse: ['M4 10h16v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z', 'M6 10V5h8v5', 'M8 7.5h4', 'M8 14h.01', 'M12 14h.01', 'M16 14h.01', 'M8 17h8'],
-  boite: ['M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5z', 'M3.5 7.5L12 12l8.5-4.5', 'M12 12v9'],
-  fiole: ['M9 3h6', 'M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3', 'M7.5 15h9'],
-  epi: ['M12 21V9', 'M12 9c-2-1-3-3-3-5.5 2 1 3 3 3 5.5z', 'M12 9c2-1 3-3 3-5.5-2 1-3 3-3 5.5z', 'M12 14c-2-1-3.5-2.5-3.5-4.5 2 .5 3.5 2.5 3.5 4.5z', 'M12 14c2-1 3.5-2.5 3.5-4.5-2 .5-3.5 2.5-3.5 4.5z', 'M12 19c-2-1-3.5-2.5-3.5-4.5 2 .5 3.5 2.5 3.5 4.5z', 'M12 19c2-1 3.5-2.5 3.5-4.5-2 .5-3.5 2.5-3.5 4.5z'],
-  facture: ['M6 3h12v18l-3-2-3 2-3-2-3 2z', 'M9 8h6', 'M9 12h6', 'M9 16h3'],
-  coeur: ['M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z'],
-  balance: ['M12 4v16', 'M8 20h8', 'M5 7h14', 'M5 7l-3 6a3 3 0 0 0 6 0z', 'M19 7l-3 6a3 3 0 0 0 6 0z'],
-  batiment: ['M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16', 'M15 10h4a1 1 0 0 1 1 1v10', 'M3 21h18', 'M8 8h3', 'M8 12h3', 'M8 16h3'],
-  grille: ['M4 4h7v7H4z', 'M13 4h7v7h-7z', 'M4 13h7v7H4z', 'M16.5 13v7', 'M13 16.5h7'],
-  graph: ['M4 20V4', 'M4 20h16', 'M8 16v-5', 'M12 16V8', 'M16 16v-3'],
-  horloge: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', 'M12 7v5l3 2'],
-  alerte: ['M12 4l9 16H3z', 'M12 10v4', 'M12 17v.01'],
-  cadenas: ['M6 11h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z', 'M8 11V8a4 4 0 0 1 8 0v3'],
-  oeil: ['M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'],
-  journal: ['M7 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z', 'M9 9h6', 'M9 13h6', 'M9 17h3']
-};
-Object.assign(ICONS, {
-  badge: ['M8 4h8v3H8z', 'M5 7h14a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z', 'M9.5 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', 'M6.5 17.5a3.2 3.2 0 0 1 6 0', 'M14.5 11h3', 'M14.5 14h3'],
-  camion: ['M3 7h11v9H3z', 'M14 10h4l3 3v3h-7z', 'M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', 'M17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'],
-  calendrier: ['M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z', 'M4 10h16', 'M8 3v4', 'M16 3v4', 'M8 14h3', 'M8 17h6'],
-  telecharger: ['M12 4v11', 'M7 11l5 5 5-5', 'M5 20h14'], copier: ['M9 9h10v11H9z', 'M5 15V4h10'],
-  carburant: ['M5 20V5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v15', 'M4 20h11', 'M7 8h5', 'M14 9l3 3v5a1.5 1.5 0 0 0 3 0V9l-3-3'],
-  cle2: ['M7.5 20a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9z', 'M10.8 12.2L20 3', 'M17 6l2.5 2.5', 'M14 9l2 2'],
-  bouclier: ['M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z', 'M9 12l2 2 4-4'],
-  diplome: ['M2 9l10-5 10 5-10 5z', 'M6 11v5c3 2.5 9 2.5 12 0v-5', 'M22 9v6'],
-  carte: ['M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z', 'M9 4v14', 'M15 6v14'],
-  reseau: ['M6 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', 'M18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', 'M8 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', 'M18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', 'M7.6 6.3l8.8 1', 'M6.5 7l1 10', 'M10 19h6', 'M17.4 9l.4 7'],
-  rapport: ['M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z', 'M14 3v5h5', 'M9 13h6', 'M9 17h4'],
-  scelle: ['M6 8h12l-1 12H7z', 'M9 8V6a3 3 0 0 1 6 0v2', 'M10 13h4', 'M12 13v4'],
-  etoile: ['M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7z'],
-  cible: ['M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z', 'M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z', 'M12 2v3', 'M12 19v3', 'M2 12h3', 'M19 12h3'],
-  dossier: ['M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M3 10h18'],
-  marteau: ['M14.5 3l6.5 6.5-3 3L11.5 6z', 'M13 9.5L4 18.5', 'M3 21h9'],
-  megaphone: ['M3 10v4a1 1 0 0 0 1 1h3l6 4V5L7 9H4a1 1 0 0 0-1 1z', 'M16.5 9a4.5 4.5 0 0 1 0 6', 'M19 6.5a8 8 0 0 1 0 11'],
-  trombone: ['M20 11.5l-8 8a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8'],
-  localisation: ['M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z', 'M12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z'],
-  discord: ['M7 7.5c3-1.3 7-1.3 10 0', 'M6 17c3.5 1.5 8.5 1.5 12 0', 'M6 17c-1.5-3-1.8-6.5-1-9.5l2-.5', 'M18 17c1.5-3 1.8-6.5 1-9.5l-2-.5', 'M9.5 13.5h.01', 'M14.5 13.5h.01']
-});
 function ico(name, size) {
-  return s('svg', { class: 'ico', viewBox: '0 0 24 24', width: size || 22, height: size || 22, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' },
+  return s('svg', { class: 'ico', viewBox: '0 0 24 24', width: size || 22, height: size || 22, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.75, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' },
     (ICONS[name] || ICONS.plus).map(d => s('path', { d })));
 }
 
@@ -366,7 +318,8 @@ export const money = n => (n < 0 ? '−' : '') + Math.abs(Math.round(n)).toLocal
 export const money2 = n => Number(n).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $';
 export const initials = n => String(n || '?').split(/\s+/).map(x => x[0]).join('').slice(0, 2).toUpperCase();
 export const pill = (text, cls) => h('span', { class: 'pill' + (cls ? ' ' + cls : '') }, text);
-export const strip = list => h('div', { class: 'strip' }, list.filter(Boolean).map(([l, v, cls]) => h('div', {}, h('b', { class: cls || null }, v), h('span', {}, l))));
+// bandeau de chiffres : [libellé, valeur, classe, lien] ; un zéro s'efface, une tuile avec lien est cliquable
+export const strip = list => h('div', { class: 'strip' }, list.filter(Boolean).map(([l, v, cls, href]) => h(href ? 'a' : 'div', { href: href || null, class: /^0(\s|$)/.test(String(v)) ? 'zero' : null }, h('b', { class: cls || null }, v), h('span', {}, l))));
 export function fchips(list, current, onPick, label) {
   return h('div', { class: 'fchips', role: 'group', 'aria-label': label || 'Filtre' }, list.map(([k, l, n]) => h('button', { type: 'button', class: 'fchip' + (k === current ? ' on' : ''), 'aria-pressed': String(k === current), onclick: () => onPick(k) },
     l, n !== undefined ? h('span', { class: 'n' }, n) : null)));

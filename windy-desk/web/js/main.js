@@ -86,7 +86,7 @@ function arrange(items, groups) {
 const NAVN = { org: null, at: 0, data: {} };
 function paintCounts() {
   const d = NAVN.data;
-  document.querySelectorAll('.side [data-badge], .tabbar [data-badge], .sheet [data-badge]').forEach(el => {
+  document.querySelectorAll('.bar [data-badge], .subnav [data-badge], .tabbar [data-badge], .sheet [data-badge]').forEach(el => {
     const pages = el.dataset.badge === '*' ? (el.dataset.pages || '').split(',') : [el.dataset.badge];
     const n = pages.reduce((t, p) => t + (d[p] || 0), 0);
     el.dataset.n = n > 99 ? '99+' : String(n); el.hidden = !n;
@@ -105,31 +105,56 @@ function refreshCounts(me, can, has) {
     n(rows('alerts', q => q.eq('org_id', me.id).is('read_at', null).limit(100)))])
     .then(([rapports, affaires, accueil]) => { if (NAVN.org === me.id) { NAVN.data = { rapports, affaires, accueil }; paintCounts(); } });
 }
-const navPref = () => { try { return localStorage.getItem('windy.nav') === 'mini'; } catch { return false; } };
 function navLink(n, current, text) {
   const on = n.page === current, label = text || n.short || n.label;
   return h('a', { class: 'nav' + (on ? ' on' : ''), href: n.href, title: n.label, 'data-label': n.label, 'aria-current': on ? 'page' : null },
     h('span', { class: 'ic' }, ico(n.icon), NAV_TIPS[n.page] ? h('span', { class: 'cnt', 'data-badge': n.page, hidden: true, 'aria-hidden': 'true' }) : null), h('span', { class: 'lbl' }, label));
 }
+// icône de chaque groupe du menu (pilules de la barre)
+const GROUP_ICON = { ops: 'bouclier', enq: 'dossier', jus: 'balance', per: 'joueurs', cmd: 'graph', act: 'caisse', ges: 'facture' };
+// raccourcis clavier : « / » recherche, puis une lettre par action fréquente (jamais pendant une saisie ni avec une touche de commande)
+let keysOn = null;
+function shortcuts(nav) {
+  if (keysOn) document.removeEventListener('keydown', keysOn);
+  const to = p => nav.find(n => n.page === p);
+  keysOn = ev => {
+    if (ev.ctrlKey || ev.metaKey || ev.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName) || ev.target.isContentEditable || document.querySelector('.modal-bg')) return;
+    const k = ev.key.toLowerCase(), q = document.querySelector('.bar .find input');
+    if (ev.key === '/' && q) { ev.preventDefault(); q.focus(); }
+    else if (k === 'r' && to('rapports')) { ev.preventDefault(); go(to('rapports').href + '/nouveau'); }
+    else if (k === 'd' && to('dossiers')) { ev.preventDefault(); go(to('dossiers').href); }
+    else if (k === 'a') { ev.preventDefault(); go(nav[0].href); }
+  };
+  document.addEventListener('keydown', keysOn);
+}
+// Cadre : barre compacte encre foncée (une pilule d'icône par groupe, ses pages dans un menu au survol ou au focus),
+// rangée d'onglets des pages du groupe courant, et barre d'onglets en bas sur téléphone.
 function shell(nav, current, ...content) {
   const full = n => n.page === 'accueil' ? 'Accueil' : n.label;
   const groups = [];
   for (const n of nav) { if (!n.group) groups.push({ items: [n] }); else if (groups.length && groups[groups.length - 1].key === n.group) groups[groups.length - 1].items.push(n); else groups.push({ key: n.group, title: n.gtitle, items: [n] }); }
-  const toggle = h('button', { class: 'fold', type: 'button', onclick: () => {
-    const mini = $shell.classList.toggle('mini');
-    toggle.setAttribute('aria-expanded', String(!mini)); toggle.title = mini ? 'Déplier le menu' : 'Réduire le menu'; toggle.setAttribute('aria-label', toggle.title);
-    try { localStorage.setItem('windy.nav', mini ? 'mini' : 'max'); } catch { /* stockage indisponible : l'état n'est juste pas mémorisé */ }
-  } }, ico('chevron', 16));
-  const mini0 = navPref(); toggle.setAttribute('aria-expanded', String(!mini0)); toggle.title = mini0 ? 'Déplier le menu' : 'Réduire le menu'; toggle.setAttribute('aria-label', toggle.title);
-  const side = h('nav', { class: 'side', 'aria-label': 'Menu principal' }, h('a', { class: 'brand', href: nav[0].href, title: BRAND, 'aria-label': BRAND }, butterfly('side-fly', 70)),
-    h('div', { class: 'navs' }, groups.map((g, i) => g.title ? h('div', { class: 'grp', role: 'group', 'aria-labelledby': 'g-' + g.key }, h('div', { class: 'gt', id: 'g-' + g.key }, g.title), g.items.map(n => navLink(n, current, full(n))))
-      : g.items.map(n => navLink(n, current, full(n))))), toggle, themeSwitch());
+  const cnt = n => NAV_TIPS[n.page] ? h('span', { class: 'cnt', 'data-badge': n.page, hidden: true, 'aria-hidden': 'true' }) : null;
+  const pill = g => {
+    if (!g.title) { const n = g.items[0], on = n.page === current;   // page seule : Accueil, Réglages, espaces sans groupes
+      return h('li', {}, h('a', { class: 'gp solo' + (on ? ' on' : ''), href: n.href, title: full(n), 'data-nav': '', 'data-label': full(n), 'aria-current': on ? 'page' : null }, h('span', { class: 'ic' }, ico(n.icon, 20), cnt(n)), h('span', { class: 'lbl' }, full(n)))); }
+    const on = g.items.some(n => n.page === current), id = 'gm-' + g.key;
+    return h('li', { class: 'gwrap' }, h('a', { class: 'gp' + (on ? ' on' : ''), href: g.items[0].href, title: g.title, 'aria-label': g.title, 'aria-haspopup': 'true', 'aria-controls': id },
+      h('span', { class: 'ic' }, ico(GROUP_ICON[g.key] || 'grille', 20), g.items.some(n => NAV_TIPS[n.page]) ? h('span', { class: 'cnt', 'data-badge': '*', 'data-pages': g.items.map(n => n.page).join(','), hidden: true, 'aria-hidden': 'true' }) : null),
+      h('span', { class: 'lbl' }, g.title)),
+      h('div', { class: 'gmenu', id, role: 'group', 'aria-label': g.title }, h('b', {}, g.title), g.items.map(n => h('a', { class: n.page === current ? 'on' : null, href: n.href, 'data-nav': '', 'data-label': n.label, 'aria-current': n.page === current ? 'page' : null }, ico(n.icon, 18), h('span', { class: 'grow' }, n.label), cnt(n)))));
+  };
+  const search = nav.find(n => n.page === 'recherche'), q = h('input', { type: 'search', placeholder: 'Individu, plaque, dossier…', autocomplete: 'off', 'aria-label': 'Rechercher un individu, une plaque, un dossier (raccourci : barre oblique)' });
+  const find = search ? h('form', { class: 'find', role: 'search', onsubmit: ev => { ev.preventDefault(); S.filters.rechQ = q.value; q.blur(); if (location.pathname === search.href) route(); else go(search.href); } }, ico('loupe', 18), q, h('kbd', { 'aria-hidden': 'true' }, '/')) : null;
+  const bar = h('header', { class: 'bar' }, h('a', { class: 'brand', href: nav[0].href, title: BRAND, 'aria-label': BRAND }, butterfly('side-fly', 70)),
+    h('nav', { class: 'gnav', 'aria-label': 'Menu principal' }, h('ul', {}, groups.map(pill))), find, themeSwitch());
+  const cur = groups.find(g => g.title && g.items.some(n => n.page === current));
+  const sub = cur ? h('nav', { class: 'subnav', 'aria-label': cur.title }, cur.items.map(n => h('a', { class: n.page === current ? 'on' : null, href: n.href, 'data-label': n.label, 'aria-current': n.page === current ? 'page' : null }, n.label, cnt(n)))) : null;
   const quick = nav.some(n => n.page === 'recherche') ? NAV_QUICK.map(p => nav.find(n => n.page === p)).filter(Boolean) : nav.slice(0, 4);
   for (const n of nav) if (quick.length < 4 && !quick.includes(n)) quick.push(n);
   const rest = nav.filter(n => !quick.includes(n));
   const sheetLink = (n, m) => h('a', { class: n.page === current ? 'on' : null, href: n.href, 'data-label': n.label, 'aria-current': n.page === current ? 'page' : null, onclick: () => m.close() },
     ico(n.icon), h('span', { class: 'grow' }, n.label), NAV_TIPS[n.page] ? h('span', { class: 'cnt', 'data-badge': n.page, hidden: true, 'aria-hidden': 'true' }) : null);
-  const bar = h('nav', { class: 'tabbar', 'aria-label': 'Menu rapide' }, quick.map(n => navLink(n, current)),
+  const tabs = h('nav', { class: 'tabbar', 'aria-label': 'Menu rapide' }, quick.map(n => navLink(n, current)),
     rest.length ? h('button', { class: 'nav' + (rest.some(n => n.page === current) ? ' on' : ''), type: 'button', 'aria-haspopup': 'dialog', 'data-label': 'Menu', onclick: () => {
       let m;
       const sections = []; let last = null;
@@ -140,9 +165,9 @@ function shell(nav, current, ...content) {
     } }, h('span', { class: 'ic' }, ico('plus'), h('span', { class: 'cnt', 'data-badge': '*', 'data-pages': rest.map(n => n.page).join(','), hidden: true, 'aria-hidden': 'true' })), h('span', { class: 'lbl' }, 'Menu')) : null);
   const fresh = arriving();
   S.shown = location.pathname;
-  const $shell = h('div', { class: 'shell' + (fresh ? ' enter' : '') + (mini0 ? ' mini' : '') }, side, h('main', { class: 'main' }, ...content), bar);
+  const $shell = h('div', { class: 'shell' + (fresh ? ' enter' : '') }, h('a', { class: 'skip', href: '#contenu' }, 'Aller au contenu'), bar, sub, h('main', { class: 'main', id: 'contenu', tabindex: -1 }, ...content), tabs);
   $app.replaceChildren($shell);
-  paintCounts();
+  paintCounts(); shortcuts(nav);
   if (fresh) window.scrollTo(0, 0);
 }
 function head(title, sub, who, ...right) {
