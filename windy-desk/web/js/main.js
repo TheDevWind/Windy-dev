@@ -184,8 +184,9 @@ function userBox(who) {
     ev.stopPropagation();
     if (menu) return close();
     const sp = ME.spaces || { orgs: [] };
-    const others = [sp.role === 'fisc' ? ['/fisc', 'Espace du fisc', 'balance'] : null, sp.role === 'editeur' ? ['/editeur', 'Espace éditeur', 'grille'] : null, sp.role === 'justice' ? ['/justice', 'Espace Justice', 'marteau'] : null,
-      ...sp.orgs.map(o => ['/' + o.code, o.name, 'batiment'])].filter(Boolean).filter(([p]) => !location.pathname.startsWith(p));
+    const ROLE_LINKS = { fisc: ['/fisc', 'Espace du fisc', 'balance'], editeur: ['/editeur', 'Espace éditeur', 'grille'], justice: ['/justice', 'Espace Justice', 'marteau'] };
+    const roles = sp.roles && sp.roles.length ? sp.roles : sp.role ? [sp.role] : [];   // un compte peut détenir plusieurs rôles de plateforme
+    const others = [...roles.map(r => ROLE_LINKS[r]), ...sp.orgs.map(o => ['/' + o.code, o.name, 'batiment'])].filter(Boolean).filter(([p]) => !location.pathname.startsWith(p));
     menu = h('div', { class: 'menu', onclick: e2 => e2.stopPropagation() }, h('div', { class: 'mhead' }, h('span', { class: 'ava' }, initials(who.name)), h('span', { class: 'mtx' }, h('b', {}, who.name), h('small', {}, who.role))),
       others.length ? [h('div', { class: 'mlabel' }, 'Mes autres espaces'), others.map(([p, l, i]) => h('a', { href: p, onclick: close }, ico(i, 18), l))] : null,
       h('hr', {}), h('div', { class: 'mrow' }, 'Mode sombre', themeSwitch()), h('button', { type: 'button', onclick: () => { close(); signOut(); } }, ico('sortie', 18), 'Se déconnecter'));
@@ -611,7 +612,8 @@ async function reglages(ctx) {
 // ================================================================== espaces de la plateforme : fisc et éditeur
 async function platformSpace(role, b, c) {
   if (!ME.session) return go('/connexion/plateforme', true);
-  const sp = await spaces();
+  let sp = await spaces();
+  if (sp.role !== role && (sp.roles || []).includes(role)) { await rpc('switch_platform_role', { p_role: role }); sp = await spaces(true); }   // le compte détient ce rôle : on le rend actif
   if (sp.role !== role) return message('Accès réservé', { fisc: 'Cette page est réservée au contrôleur du fisc.', justice: 'Cette page est réservée à la Justice.', editeur: 'Cette page est réservée à l’éditeur de ' + BRAND + '.' }[role], h('a', { class: 'btn', href: '/' }, 'Accueil'));
   const who = { name: sp.display_name, role: ROLE_NAME[role] };
   if (role === 'justice') {

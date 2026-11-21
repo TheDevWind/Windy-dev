@@ -1074,6 +1074,21 @@ try {
   });
 
   // ------------------------------------------------------------ connexion ordinaire
+  await step('un compte garde ses rôles de plateforme : éditeur et Justice ensemble, bascule par le menu', async () => {
+    const tok = await backend.claim('justice', 'Compte test');
+    await ed.goto(BASE + '/reclamer/' + tok); await ed.waitForURL(BASE + '/justice'); await settle(ed, '.wcard, h1');
+    // l'éditeur n'est plus écrasé : son espace reste dans « Mes autres espaces »
+    await ed.locator('.who').click();
+    await ed.locator('.menu a', { hasText: 'Espace éditeur' }).click();
+    await ed.waitForURL(BASE + '/editeur'); await settle(ed, 'h1');
+    await ed.locator('.who').click();
+    await ed.locator('.menu a', { hasText: 'Espace Justice' }).waitFor();
+    // ouvrir directement l'adresse d'un rôle détenu le rend actif
+    await ed.goto(BASE + '/justice'); await settle(ed, '.wcard, h1');
+    await ed.goto(BASE + '/editeur/acces'); await settle(ed, 'h1:text("Accès")');
+    const held = await backend.sql("select array_agg(role order by role) r from public.platform_grants group by user_id having 'editeur' = any (array_agg(role))");
+    assert.deepEqual(held[0].r, ['editeur', 'justice']);   // le compte éditeur détient bien les deux rôles
+  });
   await step('barre de navigation : recherche au clavier, raccourcis, menu de groupe au focus', async () => {
     await reed.goto(BASE + '/usms-ls'); await settle(reed, 'h1:text("US Marshals")');
     await reed.locator('#contenu').click({ position: { x: 5, y: 5 } });

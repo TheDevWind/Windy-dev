@@ -748,3 +748,22 @@ test('plans d’intervention : véhicules, texte, couleurs, hauteur et légende 
   await bad({ ...mk([]), legend: { teams: { A: { color: '#12' } } } }, /Couleur invalide/);
   await bad({ ...mk([]), legend: [] }, /Légende invalide/);
 });
+
+test('rôles de plateforme multiples : un lien Justice n’écrase plus le rôle éditeur', async () => {
+  const sp0 = await val('editeur', 'select public.my_spaces()');
+  assert.equal(sp0.role, 'editeur'); assert.deepEqual(sp0.roles, ['editeur']);
+  const [{ token }] = await su("insert into public.platform_claims (role, display_name) values ('justice', 'Compte test') returning token");
+  assert.equal(await val('editeur', 'select public.claim_platform_role($1)', [token]), 'justice');
+  const sp1 = await val('editeur', 'select public.my_spaces()');
+  assert.equal(sp1.role, 'justice'); assert.deepEqual(sp1.roles, ['editeur', 'justice']);   // le rôle éditeur est gardé
+  await fails('editeur', 'select public.platform_access()', [], /Réservé à l’éditeur/);        // tant que Justice est actif
+  assert.equal(await val('editeur', "select public.switch_platform_role('editeur')"), 'editeur');
+  assert.ok((await val('editeur', 'select public.platform_access()')).accounts.length >= 2);
+  await fails('editeur', "select public.switch_platform_role('fisc')", [], /pas accès/);
+  await fails('dir', "select public.switch_platform_role('editeur')", [], /pas accès/);
+  await fails(null, "select public.switch_platform_role('editeur')", [], /Connexion requise|permission denied/);
+  // retirer un compte retire tous ses rôles
+  await one('editeur', 'select public.revoke_platform($1)', [U.juge]);
+  assert.equal((await val('juge', 'select public.my_spaces()')).role, null);
+  assert.deepEqual((await val('juge', 'select public.my_spaces()')).roles, []);
+});
