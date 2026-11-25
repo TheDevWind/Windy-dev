@@ -1147,6 +1147,9 @@ try {
     await tab.locator('#n-new').click(); await tab.keyboard.type('Briefing du matin\nVérifier le convoi.');
     await tab.waitForTimeout(400); await tab.locator('.homebar').click(); await tab.waitForTimeout(700);
     assert.match(await tab.locator('#wn-title').innerText(), /Briefing du matin/);
+    // régression : après la barre du bas, l'accueil n'est ni flou ni estompé, même avec des ouvertures et fermetures rapprochées
+    const homeOk = () => tab.evaluate(() => { const c = getComputedStyle(document.querySelector('.home')), d = getComputedStyle(document.querySelector('.dock')); return c.opacity === '1' && c.filter === 'none' && c.transform === 'none' && d.opacity === '1' && !document.querySelector('.screen').classList.contains('in-app'); });
+    for (const wait of [700, 120, 30]) { await tab.locator('.dock .appicon[data-app="notes"]').click(); await tab.waitForTimeout(wait); await tab.locator('.homebar').click(); await tab.waitForTimeout(800); assert.equal(await homeOk(), true, 'accueil normal après ' + wait + ' ms'); }
     await shot(tab, 'tablette-accueil');
     // calculatrice : 12 + 34 = 46, avec historique
     await tab.locator('.dock .appicon[data-app="calculator"]').click();

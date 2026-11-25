@@ -5,11 +5,12 @@ import { APPS, GRID, DOCK } from './apps/index.js';
 
 const RES = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'usms-tablet';
 const nui = (name, data = {}) => fetch('https://' + RES + '/' + name, { method: 'POST', headers: { 'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(data) }).then(r => r.json()).catch(() => null);
-const WALLPAPERS = { marine: 'dark', graphite: 'dark', aurore: 'dark', dune: 'light' };
+const WALLPAPERS = { marine: 'dark', graphite: 'dark', ardoise: 'dark', sable: 'light' };
 const WEATHER = { EXTRASUNNY: ['Grand soleil', 'sun'], CLEAR: ['Dégagé', 'sun'], CLOUDS: ['Nuageux', 'cloud'], OVERCAST: ['Couvert', 'cloud'], RAIN: ['Pluie', 'cloud-rain'], CLEARING: ['Éclaircies', 'cloud'],
   THUNDER: ['Orage', 'cloud-storm'], SMOG: ['Smog', 'mist'], FOGGY: ['Brouillard', 'mist'], SNOW: ['Neige', 'cloud-snow'], BLIZZARD: ['Tempête de neige', 'cloud-snow'], SNOWLIGHT: ['Neige légère', 'cloud-snow'],
   XMAS: ['Neige', 'cloud-snow'], NEUTRAL: ['Variable', 'cloud'] };
 const pad = n => String(n).padStart(2, '0');
+const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
 
 const root = document.getElementById('root'), viewfinder = document.getElementById('viewfinder');
 const bus = new EventTarget();
@@ -37,14 +38,14 @@ const ctx = { nui, bus, settings, world, store, toast, glyph, close: requestClos
 // ---------------------------------------------------------------- construction
 function iconHtml(id, cls) {
   const a = APPS[id];
-  return `<button class="appicon" type="button" data-app="${id}" aria-label="${a.name}"><span class="ico" style="background:linear-gradient(160deg,${a.grad[0]},${a.grad[1]})">${a.image ? `<img src="${a.image}" alt="">` : glyph(a.icon, 38, 1.6)}</span><span class="lbl">${a.name}</span></button>`;
+  return `<button class="appicon" type="button" data-app="${id}" aria-label="${a.name}"><span class="ico" style="background:linear-gradient(165deg,${a.grad[0]},${a.grad[1]});color:${a.ink || '#fff'}">${a.image ? `<img src="${a.image}" alt="">` : glyph(a.icon, 34, 1.6)}</span><span class="lbl">${a.name}</span></button>`;
 }
 function build() {
   root.replaceChildren(h(`<div class="stage"><div class="device"><i class="cam"></i>
     <div class="screen" data-theme="dark" data-tone="dark">
       <div class="wallpaper"></div>
-      <header class="status"><span id="sb-time"></span><span id="sb-date" style="font-weight:500;opacity:.8"></span><span class="sp"></span>
-        ${glyph('antenna-bars-5', 17)}${glyph('wifi', 17)}<span style="display:flex;align-items:center;gap:4px">100 %${glyph('battery-4', 21)}</span>
+      <header class="status"><span id="sb-time"></span><span id="sb-date" class="dt"></span><span class="sp"></span>
+        ${glyph('wifi', 16)}${glyph('battery-4', 20)}
         <button class="pwr" type="button" aria-label="Ranger la tablette" title="Ranger la tablette">${glyph('power', 16)}</button></header>
       <div class="home">
         <div class="widgets">
@@ -86,7 +87,7 @@ function tick() {
   $('#sb-time').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
   $('#sb-date').textContent = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
   $('#wc-time').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
-  $('#wc-date').textContent = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('#wc-date').textContent = cap(d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }));
 }
 function paintWorld() {
   if (!screenEl) return;
@@ -126,28 +127,26 @@ async function openApp(id, fromEl) {
     cleanup = def.mount($('.win-body', win), ctx) || null;
   } else { windowsEl.append(win); win.hidden = false; def.show && def.show(ctx); }
   current = { id, def, win, cleanup, from: fromEl || null };
-  screenEl.classList.add('in-app'); screenEl.dataset.bar = def.bar || 'auto';
-  const t = calm() ? 1 : 520;
-  win.animate(flipFrames(fromEl, true), { duration: t, easing: EASE, fill: 'both' });
-  homeEl.animate([{ transform: 'none', filter: 'blur(0px)', opacity: 1 }, { transform: 'scale(.9)', filter: 'blur(10px)', opacity: .3 }], { duration: t, easing: EASE, fill: 'forwards' });
-  dockEl.animate([{ transform: 'translateX(-50%)', opacity: 1 }, { transform: 'translateX(-50%) translateY(60px)', opacity: 0 }], { duration: t, easing: EASE, fill: 'forwards' });
-  setTimeout(() => win.classList.add('shown'), calm() ? 0 : 90);
+  screenEl.dataset.bar = def.bar || 'auto'; screenEl.classList.add('in-app');   // l'accueil s'estompe (transition CSS)
+  win.getAnimations().forEach(a => a.cancel());
+  win.animate(flipFrames(fromEl, true), { duration: calm() ? 1 : 460, easing: EASE, fill: 'both' });
+  setTimeout(() => win.classList.add('shown'), calm() ? 0 : 80);
 }
 function closeApp(instant = false) {
   if (!current) return;
   const { id, def, win, cleanup, from } = current; current = null;
   const target = from && from.isConnected ? from : $(`.grid [data-app="${id}"] .ico, .dock [data-app="${id}"] .ico`);
-  const done = () => {
+  let finished = false;
+  const done = () => {   // appelée une seule fois, à la fin de l'animation ou, au pire, par la minuterie de secours
+    if (finished) return; finished = true;
     win.classList.remove('shown');
     if (def.persistent) { win.hidden = true; def.hide && def.hide(ctx); } else { cleanup && cleanup(); win.remove(); }
-    screenEl.classList.remove('in-app'); delete screenEl.dataset.bar;
   };
-  const t = instant || calm() ? 1 : 400;
+  const t = instant || calm() ? 1 : 340;
+  screenEl.classList.remove('in-app'); delete screenEl.dataset.bar;   // l'accueil revient tout de suite : rien ne peut rester grisé
+  win.getAnimations().forEach(a => a.cancel());
   win.animate(flipFrames(target, false), { duration: t, easing: EASE, fill: 'forwards' }).onfinish = done;
-  homeEl.getAnimations().forEach(a => a.cancel()); dockEl.getAnimations().forEach(a => a.cancel());
-  homeEl.animate([{ transform: 'scale(.9)', filter: 'blur(10px)', opacity: .3 }, { transform: 'none', filter: 'blur(0px)', opacity: 1 }], { duration: t, easing: EASE });
-  dockEl.animate([{ transform: 'translateX(-50%) translateY(60px)', opacity: 0 }, { transform: 'translateX(-50%)', opacity: 1 }], { duration: t, easing: EASE });
-  screenEl.classList.remove('in-app'); delete screenEl.dataset.bar;
+  setTimeout(done, t + 80);
 }
 
 // ---------------------------------------------------------------- affichage de la tablette

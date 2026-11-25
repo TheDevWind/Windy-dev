@@ -46,3 +46,15 @@ test('calculatrice : affichage à la française', () => {
   assert.equal(pretty('0.3333'), '0,3333');
   assert.equal(pretty('Erreur'), 'Erreur');
 });
+
+// Le navigateur intégré de FiveM est un Chromium ancien : certaines fonctions CSS récentes y sont ignorées, la couleur disparaît (pastilles sans fond, barre d'accueil invisible…).
+import { readFileSync, readdirSync } from 'node:fs';
+const css = dir => readdirSync(new URL(dir, import.meta.url)).filter(f => f.endsWith('.css')).map(f => [dir + f, readFileSync(new URL(dir + f, import.meta.url), 'utf8')]);
+test('compatibilité FiveM : pas de CSS trop récent dans la tablette ni dans le site', () => {
+  const BAD = [/color-mix\(\s*in/, /@container/, /@layer\b/, /@property\b/];   // ignorées sans repli = couleur ou mise en page perdue (dvh et text-wrap ont un repli ou sont décoratifs)
+  for (const [f, s] of [...css('../fivem/usms-tablet/ui/css/'), ...css('../web/css/')]) {
+    const code = s.replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const re of BAD) assert.ok(!re.test(code), f + ' : ' + re);
+  }
+  for (const [f, s] of css('../fivem/usms-tablet/ui/css/')) assert.ok(!/:has\(/.test(s.replace(/\/\*[\s\S]*?\*\//g, '')), f + ' : :has()');
+});

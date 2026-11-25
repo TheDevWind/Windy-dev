@@ -18,7 +18,7 @@
   --text: #2B2640; --muted: #5E5873; --chip: #efe7dd; --line: #E9DFD2; --field: #8F86A8;
   --accent: #7566C2; --accent-ink: #ffffff; --accent-soft: rgba(117, 102, 194, .12); --link: #5B4DA6;
   --logo: #7566C2; --glow: none;
-  --ok: #435d25; --ok-fill: #7f9a55; --warn: #7A4A00; --bad: #9A2B1F; --info: #5B4DA6;
+  --ok: #435d25; --ok-fill: #7f9a55; --warn: #7A4A00; --bad: #9A2B1F; --info: #5B4DA6; --ok-soft: rgba(67, 93, 37, .11); --warn-soft: rgba(122, 74, 0, .11); --bad-soft: rgba(154, 43, 31, .11); --info-soft: rgba(91, 77, 166, .11);
   --slot: #fdf9f4; --slot-line: #e2d9cc;
   --shadow: 0 1px 2px rgba(60, 50, 90, .04), 0 8px 24px rgba(60, 50, 90, .05);
   --pop: 0 14px 36px rgba(60, 50, 90, .16);
@@ -42,7 +42,7 @@
     --text: #f3eef7; --muted: #b4abc2; --chip: #2c2737; --line: #2f2a3a; --field: #77708a;
     --accent: #b6a6f5; --accent-ink: #15131b; --accent-soft: rgba(182, 166, 245, .14); --link: #c4b7fa;
     --logo: #c4b7fa;
-    --ok: #a9c98a; --ok-fill: #87a868; --warn: #f0b45a; --bad: #ff8a80; --info: #c4b7fa;
+    --ok: #a9c98a; --ok-fill: #87a868; --warn: #f0b45a; --bad: #ff8a80; --info: #c4b7fa; --ok-soft: rgba(169, 201, 138, .11); --warn-soft: rgba(240, 180, 90, .11); --bad-soft: rgba(255, 138, 128, .11); --info-soft: rgba(196, 183, 250, .11);
     --slot: #18161f; --slot-line: #2f2a3a;
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
     --pop: 0 14px 36px rgba(0, 0, 0, .55);
@@ -66,7 +66,7 @@
   --text: #f3eef7; --muted: #b4abc2; --chip: #2c2737; --line: #2f2a3a; --field: #77708a;
   --accent: #b6a6f5; --accent-ink: #15131b; --accent-soft: rgba(182, 166, 245, .14); --link: #c4b7fa;
   --logo: #c4b7fa;
-  --ok: #a9c98a; --ok-fill: #87a868; --warn: #f0b45a; --bad: #ff8a80; --info: #c4b7fa;
+  --ok: #a9c98a; --ok-fill: #87a868; --warn: #f0b45a; --bad: #ff8a80; --info: #c4b7fa; --ok-soft: rgba(169, 201, 138, .11); --warn-soft: rgba(240, 180, 90, .11); --bad-soft: rgba(255, 138, 128, .11); --info-soft: rgba(196, 183, 250, .11);
   --slot: #18161f; --slot-line: #2f2a3a;
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
   --pop: 0 14px 36px rgba(0, 0, 0, .55);

@@ -5,7 +5,7 @@ import { photos } from '../store.js';
 let viewing = false;   // la visionneuse est ouverte : Échap la ferme avant de quitter l'application
 
 export default {
-  id: 'photos', name: 'Photos', icon: 'photo', grad: ['#ff9a8b', '#6a5be2'], bar: 'auto',
+  id: 'photos', name: 'Photos', icon: 'photo', grad: ['#9aa0ad', '#636977'], ink: '#fff', bar: 'auto',
   escape() { return viewing ? (document.dispatchEvent(new CustomEvent('photos:close')), false) : true; },
   mount(el, ctx) {
     const { glyph } = ctx; let items = [], urls = [], idx = -1;

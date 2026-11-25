@@ -2,7 +2,7 @@
 import { html, esc, uid } from './kit.js';
 
 export default {
-  id: 'reminders', name: 'Rappels', icon: 'checklist', grad: ['#5ac8fa', '#1f7be0'], bar: 'auto',
+  id: 'reminders', name: 'Rappels', icon: 'checklist', grad: ['#5b82b3', '#355680'], ink: '#fff', bar: 'auto',
   mount(el, ctx) {
     const { store, glyph } = ctx;
     let items = store.get('reminders', []);

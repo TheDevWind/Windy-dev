@@ -2,7 +2,7 @@
 import { html, esc, uid, when, debounce } from './kit.js';
 
 export default {
-  id: 'notes', name: 'Notes', icon: 'notes', grad: ['#ffd85c', '#f0a500'], bar: 'auto',
+  id: 'notes', name: 'Notes', icon: 'notes', grad: ['#e6c473', '#c19a40'], ink: '#2a1f08', bar: 'auto',
   mount(el, ctx) {
     const { store, glyph, bus } = ctx;
     let notes = store.get('notes', []), sel = store.get('notes.sel', null), q = '';

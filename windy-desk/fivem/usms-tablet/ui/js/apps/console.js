@@ -2,7 +2,7 @@
 import { html } from './kit.js';
 
 export default {
-  id: 'console', name: 'Console', image: 'img/seal.webp', icon: 'shield-check', grad: ['#27468f', '#0f1c3d'], bar: 'light', bg: '#14213D', persistent: true,
+  id: 'console', name: 'Console', image: 'img/seal.webp', icon: 'shield-check', grad: ['#2c4d94', '#14234d'], ink: '#fff', bar: 'light', bg: '#14213D', persistent: true,
   mount(el, ctx) {
     el.innerHTML = '<iframe title="Console du service" allow="clipboard-read; clipboard-write"></iframe>' +
       '<div class="c-load"><div class="spin" aria-hidden="true"></div><p id="c-msg">Connexion à la console…</p><button id="c-retry" type="button" class="pill-btn" hidden>Réessayer</button></div><pre class="c-dbg" hidden></pre>';

@@ -12,7 +12,7 @@ function beep() {
 const mmss = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); };
 
 export default {
-  id: 'clock', name: 'Horloge', icon: 'clock', grad: ['#3a3f4b', '#14171d'], bar: 'light', bg: '#0b0d12',
+  id: 'clock', name: 'Horloge', icon: 'clock', grad: ['#4c5767', '#2b323e'], ink: '#fff', bar: 'light', bg: '#0b0d12',
   mount(el, ctx) {
     const { glyph, world } = ctx; ctxRef = ctx;
     let tab = 'heure', raf = 0, chrono = { run: false, t0: 0, acc: 0, laps: [] };
@@ -53,7 +53,7 @@ export default {
       const d = new Date(), ms = d.getMilliseconds(), s = d.getSeconds() + ms / 1000, m = d.getMinutes() + s / 60, hh = d.getHours() % 12 + m / 60;
       hands.s.setAttribute('transform', `rotate(${s * 6} 150 150)`); hands.m.setAttribute('transform', `rotate(${m * 6} 150 150)`); hands.h.setAttribute('transform', `rotate(${hh * 30} 150 150)`);
       $('#h-d').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
-      $('#h-date').textContent = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+      const dt = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); $('#h-date').textContent = dt.charAt(0).toUpperCase() + dt.slice(1);
       $('#h-game').textContent = 'Heure du jeu : ' + (world.hour === null ? '—' : pad(world.hour) + ':' + pad(world.minute));
       const left = tState(), total = timer ? timer.total : setMs;
       $('#t-time').textContent = mmss(left); $('#t-ring').style.strokeDashoffset = String(100 - (timer ? left / total * 100 : 100));

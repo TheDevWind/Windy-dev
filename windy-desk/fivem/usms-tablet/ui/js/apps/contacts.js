@@ -2,7 +2,7 @@
 import { html, esc, uid, debounce } from './kit.js';
 
 export default {
-  id: 'contacts', name: 'Contacts', icon: 'id', grad: ['#9aa3b5', '#5b6579'], bar: 'auto',
+  id: 'contacts', name: 'Contacts', icon: 'id', grad: ['#8a93a5', '#59627a'], ink: '#fff', bar: 'auto',
   mount(el, ctx) {
     const { store, glyph } = ctx;
     let list = store.get('contacts', []), sel = null, q = '';

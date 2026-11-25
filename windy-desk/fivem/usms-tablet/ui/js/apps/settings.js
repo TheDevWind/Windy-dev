@@ -2,10 +2,10 @@
 import { html } from './kit.js';
 import { photos } from '../store.js';
 
-const WP = [['marine', 'Marine'], ['graphite', 'Graphite'], ['aurore', 'Aurore'], ['dune', 'Dune']];
+const WP = [['marine', 'Marine'], ['graphite', 'Graphite'], ['ardoise', 'Ardoise'], ['sable', 'Sable']];
 
 export default {
-  id: 'settings', name: 'Réglages', icon: 'settings', grad: ['#a3a8b5', '#5a606e'], bar: 'auto',
+  id: 'settings', name: 'Réglages', icon: 'settings', grad: ['#7b8392', '#4a505d'], ink: '#fff', bar: 'auto',
   mount(el, ctx) {
     const { settings, glyph, store } = ctx;
     el.append(html(`<div class="single narrow"><header class="ph big"><div><h1>Réglages</h1><p class="sub">Tablette du U.S. Marshals Service</p></div></header>

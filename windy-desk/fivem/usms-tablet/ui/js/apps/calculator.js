@@ -6,7 +6,7 @@ const KEYS = [['C', 'fn'], ['±', 'fn'], ['%', 'fn'], ['÷', 'op'], ['7'], ['8']
 const LABEL = { '.': ',', C: 'AC' };
 
 export default {
-  id: 'calculator', name: 'Calculatrice', icon: 'calculator', grad: ['#ffb43d', '#f06a00'], bar: 'light', bg: '#101216',
+  id: 'calculator', name: 'Calculatrice', icon: 'calculator', grad: ['#2d313d', '#171a22'], ink: '#d6b469', bar: 'light', bg: '#101216',
   mount(el, ctx) {
     const { store, glyph } = ctx, calc = createCalc();
     let hist = store.get('calc.history', []);

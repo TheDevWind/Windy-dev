@@ -10,7 +10,7 @@ async function shrink(dataUri) {
 }
 
 export default {
-  id: 'camera', name: 'Appareil photo', icon: 'camera', grad: ['#8e96a6', '#3b4150'], bar: 'light', bg: '#000',
+  id: 'camera', name: 'Appareil photo', icon: 'camera', grad: ['#626b7c', '#343a47'], ink: '#fff', bar: 'light', bg: '#000',
   mount(el, ctx) {
     const { bus, nui, glyph } = ctx; let active = false;
     el.innerHTML = `<div class="cam-wait">${glyph('camera', 64, 1.2)}<p>Ouverture de l’appareil photo…</p></div>`;

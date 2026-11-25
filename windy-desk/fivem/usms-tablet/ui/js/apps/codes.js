@@ -8,7 +8,7 @@ const CODES = [['10-1', 'Mauvaise réception'], ['10-2', 'Bonne réception'], ['
   ['Code 2', 'Intervention urgente, sans sirène'], ['Code 3', 'Gyrophares et sirène'], ['Code 4', 'Situation sous contrôle']];
 
 export default {
-  id: 'codes', name: 'Codes radio', icon: 'antenna-bars-5', grad: ['#ff6b6b', '#c92a3a'], bar: 'auto',
+  id: 'codes', name: 'Codes radio', icon: 'antenna-bars-5', grad: ['#93524f', '#5f3030'], ink: '#fff', bar: 'auto',
   mount(el, ctx) {
     const { glyph } = ctx;
     el.append(html(`<div class="single"><header class="ph big"><div><h1>Codes radio</h1><p class="sub">Toucher une ligne copie le code</p></div></header>

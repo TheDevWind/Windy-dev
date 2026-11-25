@@ -5,7 +5,7 @@ const CARD = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
 const fix = (v, n = 2) => typeof v === 'number' ? v.toFixed(n) : '—';
 
 export default {
-  id: 'location', name: 'Localisation', icon: 'map-pin', grad: ['#4ade80', '#10975a'], bar: 'auto',
+  id: 'location', name: 'Localisation', icon: 'map-pin', grad: ['#3f8070', '#265747'], ink: '#fff', bar: 'auto',
   mount(el, ctx) {
     const { glyph, bus, nui } = ctx; let pos = null;
     const ticks = Array.from({ length: 72 }, (_, i) => `<line x1="160" y1="${i % 9 ? 10 : 6}" x2="160" y2="${i % 9 ? 17 : 24}" transform="rotate(${i * 5} 160 160)" class="${i % 9 ? 't' : 'T'}"/>`).join('');

@@ -134,8 +134,8 @@
 /* ---- service : bouton en service / hors service */
 .duty { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--card); color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
 .duty i { width: 8px; height: 8px; border-radius: 50%; background: var(--field); }
-.duty.on { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
-.duty.on i { background: var(--ok-fill); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok-fill) 25%, transparent); }
+.duty.on { color: var(--ok); border-color: var(--ok); }
+.duty.on i { background: var(--ok-fill); box-shadow: 0 0 0 3px var(--ok-soft); }
 .duty:hover { border-color: var(--text); }
 
 /* ---- déclaration */
