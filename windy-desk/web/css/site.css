@@ -308,7 +308,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .card.stack { display: grid; gap: 16px; }
 .card.stack > h2 { margin-bottom: 0; }
 .card.stack .row > .f { flex: 1; }
-.people li > span:nth-child(2) { display: grid; line-height: 1.25; min-width: 0; flex: 1; }
+.people li > span:nth-child(2):not(.pill) { display: grid; line-height: 1.25; min-width: 0; flex: 1; }
 .people li > .live { margin-left: auto; font-size: 13px; }
 
 /* ---------------------------------------------------------------- écrans moyens et téléphone */

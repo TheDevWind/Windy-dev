@@ -20,7 +20,10 @@ Config.Prop = { enabled = true, model = 'prop_cs_tablet', bone = 60309, pos = ve
 Config.Anim = { dict = 'amb@code_human_in_bus_passenger_idles@female@tablet@base', name = 'base' }
 
 -- Diagnostic : affiche en bas de la tablette l'origine de la page, ses ancêtres et si le site est joignable. À couper une fois que tout marche.
-Config.Debug = true
+Config.Debug = false
+
+-- Appareil photo : demande la ressource gratuite « screenshot-basic » (https://github.com/citizenfx/screenshot-basic). Sans elle, l'application s'ouvre puis se referme avec un message.
+Config.Camera = { quality = 0.85 }
 
 Config.Messages = {
   denied = 'Cette tablette est réservée au personnel du service.',

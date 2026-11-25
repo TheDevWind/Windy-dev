@@ -38,6 +38,9 @@ if (brand.title) {
 
 // Dans la tablette (page affichée dans un cadre) : Échap, quand rien d'autre n'est ouvert, demande à la tablette de se ranger.
 if (brand.kiosk && window.parent !== window) {
+  // la tablette impose son thème clair ou sombre à la console (et le redemande à chaque chargement)
+  window.addEventListener('message', ev => { if (ev.source === window.parent && ev.data && ev.data.type === 'theme' && (ev.data.theme === 'dark' || ev.data.theme === 'light')) document.documentElement.setAttribute('data-theme', ev.data.theme); });
+  window.parent.postMessage({ type: 'tablet-ready' }, '*');
   document.addEventListener('keydown', ev => {
     if (ev.key === 'Escape' && !ev.defaultPrevented && !document.querySelector('.modal-bg, .menu')) window.parent.postMessage({ type: 'tablet-close' }, '*');
   });

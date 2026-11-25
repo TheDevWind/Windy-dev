@@ -20,7 +20,7 @@ const overrides = { '/config.js': "window.WINDY_DESK_CONFIG = { fake: true, pass
 const server = await serve(PORT, overrides, { 'content-security-policy': csp },
   path => {
     if (path.startsWith('/__tablet/')) {   // la page de la tablette en jeu (ressource FiveM), servie ici pour tester l'enchaînement
-      const f = path.slice('/__tablet/'.length) || 'index.html', types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
+      const f = path.slice('/__tablet/'.length) || 'index.html', types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.woff2': 'font/woff2', '.webp': 'image/webp' };
       try { return { type: types[extname(f)] || 'text/plain', body: readFileSync(new URL('../fivem/usms-tablet/ui/' + f, import.meta.url)) }; } catch { return null; }
     }
     if (!path.startsWith('/__fake-storage/')) return null; const f = backend.files.get(path.slice('/__fake-storage/'.length)); return f ? { type: f.type, body: f.bytes } : null; });
@@ -1116,29 +1116,63 @@ try {
     await reed.evaluate(() => sessionStorage.removeItem('windy.brand')); await reed.goto(BASE + '/usms-ls'); await settle(reed, 'h1:text("US Marshals")');
     assert.equal(await reed.evaluate(() => document.documentElement.dataset.brand), 'windy');
   });
-  await step('tablette en jeu : la console s’ouvre dans la tablette, Échap la range, la console ne peut rien demander d’autre', async () => {
+  await step('tablette en jeu : accueil, console, notes, calculatrice, appareil photo et galerie, fermeture', async () => {
     assert.match(csp, /frame-ancestors 'self' https:\/\/cfx-nui-usms-tablet nui:(;|$)/, 'le site ne peut être affiché que par la tablette');
     const tab = await open({ label: 'tablette nui' });
-    await tab.addInitScript(() => { window.GetParentResourceName = () => 'usms-tablet'; window.__calls = []; window.fetch = u => { window.__calls.push(String(u)); return Promise.resolve({}); }; });
+    await tab.addInitScript(() => { window.GetParentResourceName = () => 'usms-tablet'; window.__nui = []; window.fetch = (u, o) => { window.__nui.push(String(u).split('/').pop()); return Promise.resolve({ json: () => Promise.resolve({ ok: true }) }); }; });
+    const send = d => tab.evaluate(x => window.postMessage(x, '*'), d);
     await tab.goto(BASE + '/__tablet/index.html');
     assert.equal(await tab.locator('#root').isHidden(), true, 'la tablette est rangée au départ');
-    await tab.evaluate(url => window.postMessage({ action: 'open', url }, '*'), BASE + '/?marque=usms&service=usms-ls');
-    await tab.locator('#root:not([hidden])').waitFor();
-    const inner = tab.frameLocator('#app');
+    await send({ action: 'open', url: BASE + '/?marque=usms&service=usms-ls' });
+    await send({ action: 'world', hour: 14, minute: 5, weather: 'RAIN' });
+    await tab.locator('.dock .appicon[data-app="console"]').waitFor();
+    assert.match(await tab.locator('#ww-cond').innerText(), /Pluie/); assert.match(await tab.locator('#ww-sub').innerText(), /14:05/);
+    // console : s'ouvre dans la tablette, Échap dans la console revient à l'accueil, la console ne peut rien demander d'autre
+    await tab.locator('.dock .appicon[data-app="console"]').click();
+    const inner = tab.frameLocator('.win[data-app="console"] iframe');
     await inner.locator('h1:text("Connexion")').waitFor();
-    assert.equal(await tab.locator('#overlay').isHidden(), true, 'le message de chargement disparaît');
     assert.equal(await inner.locator('html').getAttribute('data-brand'), 'usms');
-    await shot(tab, 'tablette-nui');
-    // Échap dans la console : elle demande la fermeture à la tablette, qui la demande au jeu
-    await inner.locator('body').click({ position: { x: 5, y: 5 } }); await tab.keyboard.press('Escape');
-    await tab.waitForFunction(() => window.__calls.some(u => u === 'https://usms-tablet/close'));
-    // la console ne peut pas faire ouvrir une autre adresse
+    await tab.waitForFunction(() => { const f = document.querySelector('.win[data-app="console"] iframe'); try { return f && f.contentDocument.documentElement.getAttribute('data-theme') === 'dark'; } catch { return false; } });   // thème de la tablette repris par la console
+    await shot(tab, 'tablette-console');
     const frame = tab.frames().find(f => f !== tab.mainFrame());
+    await frame.evaluate(() => parent.postMessage({ action: 'close' }, '*'));   // une demande de fermeture de la tablette venant de la console est ignorée
     await frame.evaluate(() => parent.postMessage({ action: 'open', url: 'https://example.invalid/' }, '*'));
-    await tab.waitForTimeout(300);
-    assert.match(await tab.locator('#app').getAttribute('src'), /marque=usms/);
-    await tab.evaluate(() => window.postMessage({ action: 'close' }, '*'));
-    await tab.locator('#root').waitFor({ state: 'hidden' });
+    await tab.waitForTimeout(250);
+    assert.equal(await tab.locator('#root').isVisible(), true);
+    assert.equal(await tab.locator('.win[data-app="console"] iframe').getAttribute('src').then(v => v.includes('marque=usms')), true);
+    await inner.locator('body').click({ position: { x: 5, y: 5 } }); await tab.keyboard.press('Escape');
+    await tab.locator('.win[data-app="console"]').waitFor({ state: 'hidden' });
+    // notes : écrites puis retrouvées après rechargement de la tablette
+    await tab.locator('.dock .appicon[data-app="notes"]').click();
+    await tab.locator('#n-new').click(); await tab.keyboard.type('Briefing du matin\nVérifier le convoi.');
+    await tab.waitForTimeout(400); await tab.locator('.homebar').click(); await tab.waitForTimeout(700);
+    assert.match(await tab.locator('#wn-title').innerText(), /Briefing du matin/);
+    await shot(tab, 'tablette-accueil');
+    // calculatrice : 12 + 34 = 46, avec historique
+    await tab.locator('.dock .appicon[data-app="calculator"]').click();
+    for (const k of ['1', '2', '+', '3', '4', '=']) await tab.locator('.ck[data-k="' + k + '"]').click();
+    assert.equal((await tab.locator('#c-disp').innerText()).trim(), '46'); assert.match(await tab.locator('#c-list').innerText(), /12 \+ 34/);
+    await tab.keyboard.press('Escape'); await tab.waitForTimeout(600);
+    // appareil photo : viseur, photo reçue du jeu, galerie
+    await tab.locator('.dock .appicon[data-app="camera"]').click();
+    await tab.waitForFunction(() => window.__nui.includes('camera'));
+    await send({ action: 'camera', state: 'on' });
+    assert.equal(await tab.locator('#viewfinder').isVisible(), true, 'le viseur est affiché');
+    const photo = await tab.evaluate(() => { const c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d'); g.fillStyle = '#3a6ea5'; g.fillRect(0, 0, 640, 360); return c.toDataURL('image/jpeg'); });
+    await send({ action: 'photo', data: photo });
+    await send({ action: 'camera', state: 'off' });
+    await tab.locator('.win[data-app="camera"]').waitFor({ state: 'detached' });
+    await tab.locator('.dock .appicon[data-app="photos"]').click();
+    await tab.locator('.th').waitFor(); assert.equal(await tab.locator('.th').count(), 1);
+    await shot(tab, 'tablette-photos');
+    await tab.keyboard.press('Escape'); await tab.waitForTimeout(600);
+    // rechargement : notes et photo sont gardées sur ce poste
+    await tab.reload(); await send({ action: 'open', url: BASE + '/?marque=usms&service=usms-ls' });
+    await tab.locator('#wn-title').waitFor(); assert.match(await tab.locator('#wn-title').innerText(), /Briefing du matin/);
+    // Échap sur l'accueil demande la fermeture au jeu
+    await tab.keyboard.press('Escape');
+    await tab.waitForFunction(() => window.__nui.includes('close'));
+    await send({ action: 'close' }); await tab.locator('#root').waitFor({ state: 'hidden' });
     await tab.context().close();
   });
   await step('barre de navigation : recherche au clavier, raccourcis, menu de groupe au focus', async () => {

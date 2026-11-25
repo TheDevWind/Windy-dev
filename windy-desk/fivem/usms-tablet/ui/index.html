@@ -4,26 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tablette</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/apps.css">
 </head>
 <body>
-<div id="root" hidden>
-  <div class="device" role="dialog" aria-modal="true" aria-label="Tablette du U.S. Marshals Service">
-    <div class="bar">
-      <span class="brand">U.S. Marshals Service</span>
-      <span class="clock" id="clock" aria-hidden="true"></span>
-      <button id="close" type="button" aria-label="Ranger la tablette" title="Ranger la tablette (Échap)">✕</button>
-    </div>
-    <div class="screen">
-      <iframe id="app" title="Console du service" allow="clipboard-read; clipboard-write"></iframe>
-      <pre id="debug" hidden></pre>
-      <div id="overlay" role="status">
-        <p id="msg">Connexion à la console…</p>
-        <button id="retry" type="button" hidden>Réessayer</button>
-      </div>
-    </div>
-  </div>
+<div id="root" hidden></div>
+<div id="viewfinder" hidden aria-hidden="true">
+  <i class="vf-grid"></i><i class="vf-ring"></i>
+  <p class="vf-help"><kbd>Entrée</kbd> prendre la photo &nbsp;·&nbsp; <kbd>Retour arrière</kbd> quitter</p>
+  <i class="vf-flash"></i>
 </div>
-<script src="app.js"></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
