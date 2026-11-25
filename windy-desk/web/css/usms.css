@@ -1,0 +1,38 @@
+/* ================================================================== Habillage « U.S. Marshals Service » (tablette en jeu)
+   Chargé seulement avec ?marque=usms (voir js/brand.js). Bleu marine et or, sans rien du violet du logiciel d'origine.
+   Les contrastes de texte restent au moins à 4,5:1 (contrôlés par le scénario de site, en clair et en sombre). */
+:root[data-brand="usms"] {
+  --encre: #14213D; --violet: #1B2A4E;
+  --wash: #F6F4EE; --side: #FFFEFB; --card: #FFFEFB; --tile: #EFECE4; --stripe: #F9F7F2; --track: #E4E0D5; --line: #E3DFD3; --field: #7C8499;
+  --text: #14213D; --muted: #566075; --chip: #E9E5DA; --badge: #14213D; --toast: #14213D;
+  --accent: #1B2A4E; --accent-ink: #FFFFFF; --accent-soft: rgba(27, 42, 78, .09); --link: #1B2A4E; --logo: #1B2A4E; --info: #1B2A4E;
+  --ok: #2E5E2A; --warn: #7A4A00; --bad: #9A2B1F; --strong-muted: #3A4560;
+  --band: #14213D; --band-fg: #F6F4EE; --band-muted: #C3CAD9; --band-line: #2A3858;
+}
+:root[data-brand="usms"] .bar { --bar-soft: #E6D5A8; border-bottom: 2px solid #B08D3C; }
+:root[data-brand="usms"] .gp.on, :root[data-brand="usms"] .gwrap:focus-within > .gp.on { color: #14213D; }
+:root[data-brand="usms"] .find input { background: #1F2E52; border-color: #55648A; }
+:root[data-brand="usms"] .bar > .switch { background: #1F2E52; border-color: #55648A; }
+@media (prefers-color-scheme: dark) {
+  :root[data-brand="usms"]:not([data-theme="light"]) {
+    --wash: #0F1522; --side: #161D2D; --card: #161D2D; --tile: #1E2638; --stripe: #1A2133; --track: #283147; --line: #283147; --field: #6F7A96;
+    --text: #EEF1F7; --muted: #A9B3C8; --chip: #263048; --badge: #EEF1F7; --badge-text: #0F1522; --toast: #EEF1F7; --toast-text: #0F1522;
+    --accent: #9DB4E8; --accent-ink: #0F1522; --accent-soft: rgba(157, 180, 232, .14); --link: #B3C6F0; --logo: #E6D5A8; --info: #B3C6F0;
+    --ok: #9CCB92; --warn: #F0B45A; --bad: #FF8A80; --strong-muted: #C3CAD9;
+    --band: #E9ECF4; --band-fg: #14213D; --band-muted: #4A5570; --band-line: #CBD2E2;
+  }
+}
+:root[data-brand="usms"][data-theme="dark"] {
+  --wash: #0F1522; --side: #161D2D; --card: #161D2D; --tile: #1E2638; --stripe: #1A2133; --track: #283147; --line: #283147; --field: #6F7A96;
+  --text: #EEF1F7; --muted: #A9B3C8; --chip: #263048; --badge: #EEF1F7; --badge-text: #0F1522; --toast: #EEF1F7; --toast-text: #0F1522;
+  --accent: #9DB4E8; --accent-ink: #0F1522; --accent-soft: rgba(157, 180, 232, .14); --link: #B3C6F0; --logo: #E6D5A8; --info: #B3C6F0;
+  --ok: #9CCB92; --warn: #F0B45A; --bad: #FF8A80; --strong-muted: #C3CAD9;
+  --band: #E9ECF4; --band-fg: #14213D; --band-muted: #4A5570; --band-line: #CBD2E2;
+}
+/* le sceau remplace le papillon */
+.seal { display: block; width: 38px; height: 38px; object-fit: contain; flex: none; }
+.bar .brand .seal { width: 38px; }
+.gate-card .seal { width: 96px; height: 96px; margin: 0 auto 8px; }
+.lockup .seal { width: 44px; height: 44px; }
+.avis-foot .seal { width: 28px; height: 28px; }
+:root[data-brand="usms"] .a-leaf, :root[data-brand="usms"] .h-leaf { display: none; }

@@ -3,7 +3,8 @@
 //            /<entreprise>/activer/<lien>  ·  /fisc[/bareme|/<entreprise>]  ·  /editeur[/modules|/acces|/devis|/devis/<id>]
 //            /justice  ·  /avis/<service> (page publique des avis de recherche)
 import { $app, $tip, S, calm, arriving, h, ico, modal, toast, run, table, themeSwitch, liveDot, pill, strip, fchips, dailyBars, money, money2, initials,
-  date, ago, clock, dayLabel, copyText, hideTip, slug, BRAND, butterfly, lockup, branch } from './ui.js';
+  date, ago, clock, dayLabel, copyText, hideTip, slug, BRAND, butterfly, mark, lockup, branch } from './ui.js';
+import { brand, t } from './brand.js';
 import { MODULES, MDT_MODULES, modulesFor, moduleOf, PACKS, CAPS, capsFor, CATEGORIES, DAYS, quoteTotal } from './catalog.js';
 import { renderDoc, exportModal, quoteDoc } from './doc.js';
 import { landing } from './landing.js';
@@ -45,17 +46,27 @@ async function spaces(force) {
 function fail(e) { toast(e.message || String(e), true); }
 function message(title, text, ...actions) {
   S.shown = null;
-  $app.replaceChildren(h('div', { class: 'gate' }, themeSwitch(), h('div', { class: 'gate-card' }, butterfly('gate-fly'), h('h1', {}, title), h('p', {}, text), ...actions)));
+  $app.replaceChildren(h('div', { class: 'gate' }, themeSwitch(), h('div', { class: 'gate-card' }, mark('gate-fly'), h('h1', {}, title), h('p', {}, text), ...actions)));
 }
 
+// Habillage tablette : on ouvre directement le service (adresse ?service=…, ou l'unique service du compte connecté)
+async function kioskHome() {
+  if (ME.session) {
+    const sp = await spaces(), mine = sp.orgs.find(o => o.code === brand.service) || (sp.orgs.length === 1 ? sp.orgs[0] : null);
+    if (mine) return go('/' + mine.code, true);
+    if (sp.orgs.length) return message('Choisis un service', 'Ce compte appartient à plusieurs services.', ...sp.orgs.map(o => h('a', { class: 'btn', href: '/' + o.code }, o.name)));
+  }
+  if (brand.service) return go('/' + brand.service, true);
+  message('Service non configuré', 'La tablette doit préciser le service à ouvrir (paramètre « service » de l’adresse).');
+}
 async function route() {
   clearInterval(S.timer);
   hideTip();
   const parts = location.pathname.split('/').filter(Boolean).map(decodeURIComponent);
   const [a, b, c] = parts;
   try {
-    if (!a) return landing();
-    if (a === 'connexion') return b === 'plateforme' ? platformLogin() : loginHome();
+    if (!a) return brand.kiosk ? await kioskHome() : landing();
+    if (a === 'connexion') return b === 'plateforme' ? platformLogin() : brand.kiosk ? await kioskHome() : loginHome();
     if (a === 'reclamer') return claimPage(b);
     if (a === 'fisc') return await platformSpace('fisc', b);
     if (a === 'editeur') return await platformSpace('editeur', b, c);
@@ -145,7 +156,7 @@ function shell(nav, current, ...content) {
   };
   const search = nav.find(n => n.page === 'recherche'), q = h('input', { type: 'search', placeholder: 'Individu, plaque, dossier…', autocomplete: 'off', 'aria-label': 'Rechercher un individu, une plaque, un dossier (raccourci : barre oblique)' });
   const find = search ? h('form', { class: 'find', role: 'search', onsubmit: ev => { ev.preventDefault(); S.filters.rechQ = q.value; q.blur(); if (location.pathname === search.href) route(); else go(search.href); } }, ico('loupe', 18), q, h('kbd', { 'aria-hidden': 'true' }, '/')) : null;
-  const bar = h('header', { class: 'bar' }, h('a', { class: 'brand', href: nav[0].href, title: BRAND, 'aria-label': BRAND }, butterfly('side-fly', 70)),
+  const bar = h('header', { class: 'bar' }, h('a', { class: 'brand', href: nav[0].href, title: BRAND, 'aria-label': BRAND }, mark('side-fly', 70)),
     h('nav', { class: 'gnav', 'aria-label': 'Menu principal' }, h('ul', {}, groups.map(pill))), find, themeSwitch());
   const cur = groups.find(g => g.title && g.items.some(n => n.page === current));
   const sub = cur ? h('nav', { class: 'subnav', 'aria-label': cur.title }, cur.items.map(n => h('a', { class: n.page === current ? 'on' : null, href: n.href, 'data-label': n.label, 'aria-current': n.page === current ? 'page' : null }, n.label, cnt(n)))) : null;
@@ -217,7 +228,7 @@ const activationUrl = (code, token) => location.origin + '/' + code + '/activer/
 function authFrame(side, ...form) {
   S.shown = null;
   $app.replaceChildren(h('div', { class: 'auth' }, h('aside', { class: 'auth-side' }, branch('a-leaf one'), branch('a-leaf two'), side), h('main', { class: 'auth-main' },
-    h('div', { class: 'auth-top' }, h('a', { class: 'auth-back', href: '/' }, ico('fleche', 16), 'Retour au site'), themeSwitch()), h('div', { class: 'auth-form' }, ...form))));
+    h('div', { class: 'auth-top' }, brand.kiosk ? h('span') : h('a', { class: 'auth-back', href: '/' }, ico('fleche', 16), 'Retour au site'), themeSwitch()), h('div', { class: 'auth-form' }, ...form))));
   window.scrollTo(0, 0);
 }
 function discordButton(redirectPath, label) {
@@ -272,13 +283,13 @@ function passwordForm(space, onDone, labels) {
 async function orgLogin(code) {
   const o = await rpc('org_public', { p_code: code });
   if (!o) return message('Entreprise introuvable', 'Aucune entreprise n’utilise l’adresse /' + code + '. Vérifie le lien envoyé par ton patron.', h('a', { class: 'btn', href: '/connexion' }, 'Chercher une autre entreprise'));
-  authFrame([h('b', { class: 'mk big inv' }, o.name[0].toUpperCase()), h('h2', {}, o.name), h('p', {}, o.kind + (o.sector === 'service_public' ? ' · espace du service' : ' · espace de l’entreprise')), h('code', { class: 'auth-url' }, '/' + o.code),
+  authFrame([h('b', { class: 'mk big inv' }, o.name[0].toUpperCase()), h('h2', {}, o.name), h('p', {}, t('kind', o.kind) + (o.sector === 'service_public' ? ' · espace du service' : ' · espace de l’entreprise')), h('code', { class: 'auth-url' }, '/' + o.code),
       h('ul', { class: 'auth-points' }, o.modules.slice(0, 6).map(id => h('li', {}, ico(moduleOf(id).icon, 18), moduleOf(id).name)))],
     h('h1', {}, 'Connexion'), h('p', { class: 'muted' }, (o.sector === 'service_public' ? 'Espace réservé aux agents de ' : 'Espace réservé à l’équipe de ') + o.name + '.'),
     o.password_login ? passwordForm(o.code, () => route()) : null,
-    o.discord_login ? (o.password_login ? h('div', { class: 'auth-or' }, h('span', {}, 'ou')) : null) : null,
-    o.discord_login ? discordButton('/' + o.code) : null,
-    h('p', { class: 'note' }, 'Pas encore de compte ? Ton patron t’envoie un lien d’activation depuis la page Équipe.'));
+    o.discord_login && !brand.kiosk ? (o.password_login ? h('div', { class: 'auth-or' }, h('span', {}, 'ou')) : null) : null,
+    o.discord_login && !brand.kiosk ? discordButton('/' + o.code) : null,
+    h('p', { class: 'note' }, t('noAccount', 'Pas encore de compte ? Ton patron t’envoie un lien d’activation depuis la page Équipe.')));
 }
 function platformLogin() {
   authFrame([lockup('auth-lock'), h('h2', {}, 'Fisc, Justice et éditeur'), h('p', {}, 'L’espace du contrôleur du fisc (lecture seule sur toutes les entreprises), celui de la Justice (signature des mandats) et celui de l’éditeur de ' + BRAND + '.')],
@@ -600,7 +611,7 @@ async function reglages(ctx) {
     svcCards,
     h('section', { class: 'card' }, h('h2', {}, 'Connexion'),
       h('div', { class: 'connrow' }, h('div', {}, h('span', { class: 'muted small' }, 'Adresse de l’espace'), h('code', { class: 'auth-url' }, url)), h('button', { class: 'btn small', onclick: () => copyText(url, 'Adresse copiée.') }, ico('copier', 16), 'Copier')),
-      h('div', { class: 'field' }, h('div', { class: 'lab' }, h('b', {}, 'Connexion avec Discord')), h('div', { class: 'ctl' }, disc)),
+      brand.kiosk ? null : h('div', { class: 'field' }, h('div', { class: 'lab' }, h('b', {}, 'Connexion avec Discord')), h('div', { class: 'ctl' }, disc)),
       h('div', { class: 'field' }, h('div', { class: 'lab' }, h('b', {}, 'Connexion par identifiant et mot de passe')), h('div', { class: 'ctl' }, pwd))),
     h('section', { class: 'card' }, h('h2', {}, 'Modules de l’offre'), h('div', { class: 'modgrid' }, modulesFor(me.sector).map(m => h('div', { class: 'modcard' + (me.modules.includes(m.id) ? ' on' : '') },
       h('div', { class: 'mc-top' }, h('span', { class: 'mc-ic' }, ico(m.icon, 20)), me.modules.includes(m.id) ? pill('Inclus', 'ok') : pill('Non inclus')), h('b', {}, m.name), h('p', {}, m.text),

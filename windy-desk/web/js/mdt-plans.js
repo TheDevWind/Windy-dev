@@ -2,7 +2,7 @@
 // Un plan = une carte (tuiles ou image du service) + des calques photo et des formes, rattaché à un mandat, un transfert ou un briefing SOG.
 // Format stocké dans intervention_plans.data (versionné) : {"v":1,"layers":[…],"shapes":[…],"view":{"c":[lat,lng],"z":3}}.
 // Lecture : tables (RLS) ; écriture : fonctions save_plan / delete_plan.
-import { S, h, ico, modal, toast, run, table, pill, fchips, date, slug } from './ui.js';
+import { S, h, ico, modal, toast, run, table, pill, fchips, date, slug, BRAND } from './ui.js';
 import { rpc, rows } from './sb.js';
 import { saveBlob } from './doc.js';
 import { ms, field, input, select, foot } from './mdt-kit.js';
@@ -56,7 +56,7 @@ export function planButton(ctx, kind, refId, title, cls) {
 // Import d'un plan exporté (.json) : il devient un nouveau plan, sans pièce rattachée
 async function importPlan(ctx, file) {
   let j; try { j = JSON.parse(await file.text()); } catch { throw new Error('Fichier illisible.'); }
-  if (!j || j.format !== 'windy-desk-plan' || j.v !== 1 || !KINDS[j.kind] || !j.data) throw new Error('Ce fichier n’est pas un plan Windy Desk.');
+  if (!j || j.format !== 'windy-desk-plan' || j.v !== 1 || !KINDS[j.kind] || !j.data) throw new Error('Ce fichier n’est pas un plan exporté par ' + BRAND + '.');
   if (!ctx.can(KINDS[j.kind][1])) throw new Error('Ton grade ne permet pas d’importer un plan de ce type.');
   const id = await rpc('save_plan', { p_org: ctx.me.id, p_id: null, p_title: String(j.title || 'Plan importé').slice(0, 120), p_kind: j.kind, p_ref: null, p_data: j.data });
   ctx.go(base(ctx) + '/plans/' + id);

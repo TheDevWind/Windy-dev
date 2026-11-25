@@ -2,9 +2,10 @@
 // Académie (candidatures, parcours, bibliothèque, examens, évaluations, entraînements, promotions), Affaires internes,
 // logistique (parc, armurerie, équipement), statistiques, carte, réglages du service, compléments de la fiche agent
 // et formulaires publics (candidature, plainte). Ne dépend que de mdt-kit.js.
-import { S, h, ico, modal, toast, run, table, pill, strip, date, ago, dailyBars, gauge, fchips } from './ui.js';
+import { S, h, ico, modal, toast, run, table, pill, strip, date, ago, dailyBars, gauge, fchips, BRAND } from './ui.js';
 import { rpc, rows, signedUrls, upload, publicUrl } from './sb.js';
 import { saveBlob, exportModal } from './doc.js';
+import { t } from './brand.js';
 import { createMap, tilesMeta, imageVersCarte } from './map-view.js';
 import { SIDE, carteVersRepere } from './map-geo.js';
 import { DAY, ms, iso, day, field, input, area, select, foot, fullName, toLocal, tabs, search, match, load, send, face, gradeOf, OPEN, IMAGE, stamp, extOf, feed, seal } from './mdt-kit.js';
@@ -94,7 +95,7 @@ function appModal(ctx, a, d) {
   const black = d.blacklist.find(b => b.name.toLowerCase() === a.name.toLowerCase() || (b.discord_id && b.discord_id === a.discord_id));
   const note = input({ maxlength: 1000, placeholder: 'Ajouter une note', 'aria-label': 'Note' });
   const md = modal('Candidature ' + a.num, h('div', { class: 'pills' }, pill(...APP[a.status]), black ? pill('Sur la liste noire', 'bad') : null),
-    h('dl', { class: 'lines-dl rules' }, kv('Nom', a.name), kv('Discord', a.discord_id), kv('Contact', a.contact), kv('Reçue', when(a.created_at)),
+    h('dl', { class: 'lines-dl rules' }, kv('Nom', a.name), kv(t('chat', 'Discord'), a.discord_id), kv('Contact', a.contact), kv('Reçue', when(a.created_at)),
       kv('Entretien', a.interview_at ? when(a.interview_at) + ' · ' + nameOf(d.members, a.interviewer_id) : null), kv('Décision', a.decided_at ? when(a.decided_at) + ' · ' + a.decided_by : null)),
     h('h3', { class: 'sub-h' }, 'Réponses'), h('dl', { class: 'answers' }, a.answers.map(x => [h('dt', {}, x.q), h('dd', { class: 'prewrap' }, x.a)])),
     h('h3', { class: 'sub-h' }, 'Notes'), feed(notes.map(n => [n.at, 'note', n.text, n.by_name, { note: ['Note', null, 'journal'] }])),
@@ -289,7 +290,7 @@ export async function academie(ctx) {
     const keep = { cours: a => ['recue', 'entretien'].includes(a.status), acceptee: a => a.status === 'acceptee', refusee: a => a.status === 'refusee', toutes: () => true }[f];
     body = [h('p', { class: 'muted' }, 'Les candidatures arrivent par le formulaire public : ', h('a', { href: '/avis/' + me.code + '/candidature', target: '_blank', rel: 'noopener' }, location.host + '/avis/' + me.code + '/candidature')),
       fchips([['cours', 'En cours'], ['acceptee', 'Acceptées'], ['refusee', 'Refusées'], ['toutes', 'Toutes']], f, k => { S.filters.acaApp = k; academie(ctx).catch(ctx.fail); }, 'Candidatures'),
-      card(null, table([['N°', a => h('b', { class: 'nowrap' }, a.num)], ['Candidat', a => h('span', { class: 'art' }, h('b', {}, a.name), a.discord_id ? h('small', {}, 'Discord ' + a.discord_id) : null)],
+      card(null, table([['N°', a => h('b', { class: 'nowrap' }, a.num)], ['Candidat', a => h('span', { class: 'art' }, h('b', {}, a.name), a.discord_id ? h('small', {}, t('chat', 'Discord') + ' ' + a.discord_id) : null)],
         ['Reçue', a => ago(ms(a.created_at)), 'num', a => a.created_at], ['Entretien', a => a.interview_at ? when(a.interview_at) : '—'],
         ['Statut', a => h('span', { class: 'pills' }, pill(...APP[a.status]), blacklist.some(b => b.name.toLowerCase() === a.name.toLowerCase() || (b.discord_id && b.discord_id === a.discord_id)) ? pill('Liste noire', 'bad') : null)]],
       apps.filter(keep), a => appModal(ctx, a, d), 'Aucune candidature.'))];
@@ -597,7 +598,7 @@ async function weekCanvas(ctx, st) {
   if (best) { g.font = '400 20px ' + sans; g.fillStyle = muted; g.fillText(best.arrests + ' arrestation(s) · ' + best.hours + ' h de service · ' + best.reports + ' rapport(s)', 40, 584); }
   g.fillStyle = ink; g.font = '700 22px ' + sans; g.fillText('Classement', 640, 512);
   st.agents.filter(a => a.score > 0).slice(0, 4).forEach((a, i) => { g.font = '500 20px ' + sans; g.fillStyle = i ? ink : gold; g.fillText((i + 1) + '. ' + a.name, 640, 548 + i * 30); g.fillStyle = muted; g.textAlign = 'right'; g.fillText(a.score + ' pts', W - 40, 548 + i * 30); g.textAlign = 'left'; });
-  g.fillStyle = muted; g.font = '400 16px ' + sans; g.fillText('Généré par Windy Desk le ' + new Date().toLocaleString('fr-FR'), 40, H - 24);
+  g.fillStyle = muted; g.font = '400 16px ' + sans; g.fillText('Généré par ' + BRAND + ' le ' + new Date().toLocaleString('fr-FR'), 40, H - 24);
   return c;
 }
 
@@ -629,7 +630,7 @@ export async function statistiques(ctx) {
       ['Dossiers résolus', a => String(a.cases_closed), 'num', a => a.cases_closed], ['SOG', a => String(a.sog), 'num', a => a.sog], ['Score', a => h('b', {}, String(a.score)), 'num', a => a.score]], st.agents, a => ctx.go(base(ctx) + '/effectifs/' + a.id), 'Aucun agent.')),
     card('Par unité', table([['Unité', u => h('b', {}, u.unit)], ['Agents', u => String(u.agents), 'num', u => u.agents], ['Arrestations', u => String(u.arrests), 'num', u => u.arrests], ['Heures', u => String(Math.round(u.hours)), 'num', u => u.hours],
       ['Rapports', u => String(u.reports), 'num', u => u.reports]], units, null, 'Aucune unité.')),
-    h('p', { class: 'note' }, 'Score : 3 points par arrestation, 2 par dossier résolu, 1 par rapport soumis et 1 par heure de service. Le bilan s’exporte en image ou en PDF ; sa publication automatique sur Discord arrive avec l’intégration.'));
+    h('p', { class: 'note' }, 'Score : 3 points par arrestation, 2 par dossier résolu, 1 par rapport soumis et 1 par heure de service. Le bilan s’exporte en image ou en PDF.'));
 }
 
 // ================================================================== carte
@@ -743,7 +744,7 @@ export async function adminCards(ctx, grades) {
       const addQ = (q, long) => { const qi = input({ maxlength: 200, value: q || '', placeholder: 'Question', 'aria-label': 'Question' }), lg = h('input', { type: 'checkbox', checked: !!long, 'aria-label': 'Réponse longue' });
         const row = h('div', { class: 'll-row' }, qi, h('label', { class: 'check' }, lg, 'longue'), h('button', { class: 'btn small ghost', type: 'button', 'aria-label': 'Retirer', onclick: () => row.remove() }, ico('moins', 16))); row._get = () => ({ q: qi.value.trim(), long: lg.checked }); list.append(row); };
       ((cur && cur.questions) || DEFAULT_Q).forEach(x => addQ(x.q, x.long));
-      editor.replaceChildren(h('p', { class: 'muted small' }, 'Les questions du formulaire public de candidature. Le nom, le Discord et un contact sont toujours demandés.'), list,
+      editor.replaceChildren(h('p', { class: 'muted small' }, 'Les questions du formulaire public de candidature. Le nom, ' + t('chatThe', 'le Discord') + ' et un contact sont toujours demandés.'), list,
         h('div', { class: 'acts' }, small('Ajouter une question', () => addQ('', false)), h('button', { class: 'btn primary', type: 'button', onclick: ev => run(ev.currentTarget, async () => {
           await rpc('save_template', { p_org: me.id, p_kind: k, p_body: { questions: [...list.children].map(r => r._get()).filter(x => x.q) } }); ctx.reload(); return { message: 'Formulaire enregistré.' }; }) }, 'Enregistrer')));
     } else {
@@ -774,8 +775,8 @@ export async function adminCards(ctx, grades) {
           return { message: 'Sauvegarde téléchargée.' };
         }) }, ico('telecharger', 18), 'Exporter les données')))) : null];
 }
-const DEFAULT_Q = [{ q: 'Âge et origine de ton personnage' }, { q: 'Ton expérience (police, armée, sécurité, autre service)', long: true }, { q: 'Pourquoi veux-tu rejoindre les US Marshals ?', long: true },
-  { q: 'Tes disponibilités (jours et heures)' }, { q: 'As-tu lu le règlement du service et du serveur ?' }, { q: 'Ton âge réel (hors RP)' }];
+const DEFAULT_Q = [{ q: 'Ton âge et ton parcours' }, { q: 'Ton expérience (police, armée, sécurité, autre service)', long: true }, { q: 'Pourquoi veux-tu rejoindre les US Marshals ?', long: true },
+  { q: 'Tes disponibilités (jours et heures)' }, { q: 'As-tu lu le règlement du service ?' }, { q: 'Ta disponibilité hebdomadaire (en heures)' }];
 
 // ================================================================== fiche agent : formation, casier, promotion, plainte, sanction
 export async function agentExtras(ctx, m, d) {
@@ -806,17 +807,17 @@ export async function agentExtras(ctx, m, d) {
 
 // ================================================================== formulaires publics (sans connexion) : candidature et plainte
 export function publicApply(info) {
-  const name = input({ maxlength: 60, autocomplete: 'off', 'aria-label': 'Nom de ton personnage' }), disc = input({ maxlength: 25, inputmode: 'numeric', placeholder: 'Ex. 123456789012345678', 'aria-label': 'Identifiant Discord' });
-  const contact = input({ maxlength: 80, placeholder: 'Pseudo Discord, numéro en jeu…', 'aria-label': 'Contact' });
+  const name = input({ maxlength: 60, autocomplete: 'off', 'aria-label': t('character', 'Nom de ton personnage') }), disc = input({ maxlength: 25, inputmode: 'numeric', placeholder: 'Ex. 123456789012345678', 'aria-label': t('chatId', 'Identifiant Discord') });
+  const contact = input({ maxlength: 80, placeholder: t('contactHint', 'Pseudo Discord, numéro en jeu…'), 'aria-label': 'Contact' });
   const qs = (info.questions || []).map(q => [q.q, q.long ? area({ maxlength: 2000, rows: 4, 'aria-label': q.q }) : input({ maxlength: 2000, 'aria-label': q.q })]);
   const ok = h('button', { class: 'btn primary wide' }, 'Envoyer ma candidature'), done = h('p', { class: 'sent', hidden: true, role: 'status' });
   ok.addEventListener('click', () => run(ok, async () => {
     const num = await rpc('send_application', { p_code: info.code, p_name: name.value.trim(), p_discord: disc.value.trim() || null, p_contact: contact.value.trim() || null, p_answers: qs.map(([q, el]) => ({ q, a: el.value.trim() })) });
     [name, disc, contact, ...qs.map(([, el]) => el)].forEach(el => { el.value = ''; });
-    done.textContent = 'Candidature ' + num + ' envoyée. Le service te recontacte sur Discord pour un entretien.'; done.hidden = false; return { message: 'Candidature envoyée, merci.' };
+    done.textContent = 'Candidature ' + num + ' envoyée. Le service te recontacte ' + t('chatOnly', 'sur Discord') + ' pour un entretien.'; done.hidden = false; return { message: 'Candidature envoyée, merci.' };
   }));
-  return h('section', { class: 'card avis-form' }, h('h2', {}, 'Candidater'), h('p', { class: 'muted' }, 'Réponds sérieusement : chaque candidature est lue par le service. Une seule candidature en cours par compte Discord.'),
-    field('Nom de ton personnage', name), h('div', { class: 'row' }, field('Identifiant Discord', disc, 'grow'), field('Contact', contact, 'grow')), qs.map(([q, el]) => field(q, el)), ok, done);
+  return h('section', { class: 'card avis-form' }, h('h2', {}, 'Candidater'), h('p', { class: 'muted' }, 'Réponds sérieusement : chaque candidature est lue par le service. Une seule candidature en cours par ' + t('accountWord', 'compte Discord') + '.'),
+    field(t('character', 'Nom de ton personnage'), name), h('div', { class: 'row' }, field(t('chatId', 'Identifiant Discord'), disc, 'grow'), field('Contact', contact, 'grow')), qs.map(([q, el]) => field(q, el)), ok, done);
 }
 export function publicComplain(info) {
   const who = input({ maxlength: 120, placeholder: 'Nom, matricule, indicatif ou description', 'aria-label': 'Agent concerné' }), happened = input({ maxlength: 120, placeholder: 'Ex. Hier vers 22 h, Vinewood', 'aria-label': 'Quand et où' });

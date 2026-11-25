@@ -887,8 +887,8 @@ try {
     await v.goto(BASE + '/avis/usms-ls/candidature'); await settle(v, 'h1:text("Rejoindre")');
     await v.getByLabel('Nom de ton personnage').fill('Léo Martin');
     await v.getByLabel('Identifiant Discord').fill('55555555');
-    for (const q of ['Âge et origine de ton personnage', 'Ton expérience (police, armée, sécurité, autre service)', 'Pourquoi veux-tu rejoindre les US Marshals ?', 'Tes disponibilités (jours et heures)',
-      'As-tu lu le règlement du service et du serveur ?', 'Ton âge réel (hors RP)']) await v.getByLabel(q, { exact: true }).fill('Réponse sérieuse');
+    for (const q of ['Ton âge et ton parcours', 'Ton expérience (police, armée, sécurité, autre service)', 'Pourquoi veux-tu rejoindre les US Marshals ?', 'Tes disponibilités (jours et heures)',
+      'As-tu lu le règlement du service ?', 'Ta disponibilité hebdomadaire (en heures)']) await v.getByLabel(q, { exact: true }).fill('Réponse sérieuse');
     await v.getByRole('button', { name: 'Envoyer ma candidature' }).click();
     await toast(v, 'Candidature envoyée');
     await v.locator('.sent', { hasText: 'USMS-CAND-0001' }).waitFor();
@@ -1089,6 +1089,27 @@ try {
     const held = await backend.sql("select array_agg(role order by role) r from public.platform_grants group by user_id having 'editeur' = any (array_agg(role))");
     assert.deepEqual(held[0].r, ['editeur', 'justice']);   // le compte éditeur détient bien les deux rôles
   });
+  await step('habillage tablette : service ouvert directement, aucune trace du logiciel ni du jeu, connexion par mot de passe', async () => {
+    const kiosk = await open({ label: 'tablette' });
+    await kiosk.goto(BASE + '/?marque=usms&service=usms-ls');
+    await kiosk.waitForURL(BASE + '/usms-ls'); await settle(kiosk, 'h1:text("Connexion")');
+    assert.equal(await kiosk.evaluate(() => document.documentElement.dataset.brand), 'usms');
+    assert.match(await kiosk.title(), /U\.S\. Marshals Service/);
+    assert.equal(await kiosk.locator('.auth-or, button:has-text("Discord")').count(), 0, 'pas de connexion Discord dans la tablette');
+    const FORBIDDEN = /Windy(?! Dev\b)|\bRP\b|FiveM|GTA|Discord/i;   // « Windy Dev » est le nom d’affichage du compte éditeur, une donnée saisie dans le journal
+    const clean = async (page, where) => { const t = await page.locator('body').innerText(), m = t.match(FORBIDDEN); assert.ok(!m, where + ' : « ' + (m ? t.slice(Math.max(0, m.index - 50), m.index + 50).replace(/\n/g, ' ') : '') + ' »'); };
+    await clean(kiosk, 'connexion');
+    await kiosk.context().close();
+    // connecté : l'adresse de départ mène au service, et les écrans n'emploient plus ces mots
+    await reed.goto(BASE + '/?marque=usms&service=usms-ls'); await reed.waitForURL(BASE + '/usms-ls'); await settle(reed, 'h1:text("US Marshals")');
+    assert.equal(await reed.locator('.bar .brand img.seal').count(), 1);
+    for (const path of ['', '/dossiers', '/mandats', '/effectifs', '/effectifs/' + S.danId, '/plans', '/carte', '/rapports', '/logistique', '/statistiques', '/reglages', '/academie', '/affaires', '/preuves', '/renseignement', '/transferts', '/sog', '/tribunal', '/wanted', '/presence', '/annonces', '/recherche', '/witsec']) {
+      await reed.goto(BASE + '/usms-ls' + path); await settle(reed); await reed.waitForTimeout(200);
+      await clean(reed, '/usms-ls' + path);
+    }
+    await reed.evaluate(() => sessionStorage.removeItem('windy.brand')); await reed.goto(BASE + '/usms-ls'); await settle(reed, 'h1:text("US Marshals")');
+    assert.equal(await reed.evaluate(() => document.documentElement.dataset.brand), 'windy');
+  });
   await step('barre de navigation : recherche au clavier, raccourcis, menu de groupe au focus', async () => {
     await reed.goto(BASE + '/usms-ls'); await settle(reed, 'h1:text("US Marshals")');
     await reed.locator('#contenu').click({ position: { x: 5, y: 5 } });
@@ -1228,6 +1249,7 @@ const PAGES = {
     '/bella-napoli/recolte', '/bella-napoli/factures', '/bella-napoli/dons', '/bella-napoli/vehicules', '/bella-napoli/evenements', S.eventPath, '/bella-napoli/equipe/' + S.ninaId]],
   fisc: [S.fisc, ['/fisc', '/fisc/bella-napoli', '/fisc/les-restos-du-coeur', '/fisc/bareme']],
   editeur: [S.editeur, ['/editeur', '/editeur/modules', '/editeur/acces', '/editeur/devis', '/editeur/devis/' + devisId, '/editeur/devis/nouveau']],
+  tablette: [S.reed, ['/usms-ls?marque=usms&service=usms-ls', '/usms-ls/dossiers', '/usms-ls/mandats', '/usms-ls/plans', '/usms-ls/effectifs', '/usms-ls/carte', '/usms-ls/rapports', '/usms-ls/statistiques']],
   director: [S.reed, ['/usms-ls', '/usms-ls/effectifs', '/usms-ls/effectifs/' + S.danId, '/usms-ls/presence', '/usms-ls/dossiers', S.personPath, S.casePath, '/usms-ls/mandats', '/usms-ls/wanted', '/usms-ls/annonces', '/usms-ls/reglages',
     '/usms-ls/recherche', S.platePath, S.gangPath, '/usms-ls/rapports', S.reportPath, '/usms-ls/rapports/nouveau', '/usms-ls/preuves', S.evidencePath,
     '/usms-ls/transferts', '/usms-ls/tribunal', '/usms-ls/witsec', S.witnessPath, '/usms-ls/sog', S.missionPath, '/usms-ls/renseignement',

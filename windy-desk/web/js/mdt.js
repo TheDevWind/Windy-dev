@@ -2,7 +2,8 @@
 // Tableau de bord, effectifs et fiche agent, présence, dossiers et individus, mandats, Most Wanted, annonces,
 // réglages propres aux services, espace Justice et page publique des avis de recherche.
 // Comme le reste du site : lecture des tables (les règles RLS filtrent), écriture par les fonctions SQL.
-import { $app, S, h, ico, modal, toast, run, table, pill, strip, fchips, money, initials, date, ago, clock, liveDot, copyText, slug, themeSwitch, butterfly, BRAND } from './ui.js';
+import { $app, S, h, ico, modal, toast, run, table, pill, strip, fchips, money, initials, date, ago, clock, liveDot, copyText, slug, themeSwitch, butterfly, mark, BRAND } from './ui.js';
+import { t } from './brand.js';
 import { rpc, rows, upload, signedUrls, publicUrl } from './sb.js';
 import { saveBlob } from './doc.js';
 import { KIND, DANGER, personCards, caseCards, reportAlerts } from './mdt-enquete.js';
@@ -85,17 +86,17 @@ export async function dashboard(ctx) {
 
 // ================================================================== effectifs
 function recruitModal(ctx, grades, rank) {
-  const name = input({ maxlength: 60, placeholder: 'Prénom Nom (nom RP)' }), login = input({ maxlength: 40, autocapitalize: 'none', spellcheck: 'false' });
+  const name = input({ maxlength: 60, placeholder: t('nameHint', 'Prénom Nom (nom RP)') }), login = input({ maxlength: 40, autocapitalize: 'none', spellcheck: 'false' });
   let touched = false;
   name.addEventListener('input', () => { if (!touched) login.value = slug(name.value).replace('-', '.'); });
   login.addEventListener('input', () => { touched = true; });
   const below = grades.filter(g => g.rank <= rank);
   const grade = select(below.map(g => [g.id, g.name + (g.max_seats ? ' (' + g.max_seats + (g.max_seats > 1 ? ' places)' : ' place)') : '')]), below.length ? below[below.length - 1].id : null);
-  const call = input({ maxlength: 20, placeholder: 'Ex. Marshal-12' }), disc = input({ maxlength: 25, inputmode: 'numeric', placeholder: 'Identifiant Discord (chiffres)' });
+  const call = input({ maxlength: 20, placeholder: 'Ex. Marshal-12' }), disc = input({ maxlength: 25, inputmode: 'numeric', placeholder: t('chatId', 'Identifiant Discord') + ' (chiffres)' });
   const ok = h('button', { class: 'btn primary' }, 'Recruter');
   const m = modal('Recruter un agent', field('Nom', name), h('div', { class: 'row' }, field('Identifiant de connexion', login, 'grow'), field('Grade', grade, 'grow')),
-    h('div', { class: 'row' }, field('Indicatif', call, 'grow'), field('Discord (facultatif)', disc, 'grow')),
-    h('p', { class: 'note' }, 'Le matricule est attribué tout seul. Un lien d’activation est créé : l’agent y choisit Discord ou un mot de passe.'), foot({ close: () => m.close() }, ok));
+    h('div', { class: 'row' }, field('Indicatif', call, 'grow'), field(t('chat', 'Discord') + ' (facultatif)', disc, 'grow')),
+    h('p', { class: 'note' }, 'Le matricule est attribué tout seul. Un lien d’activation est créé : l’agent y choisit ' + t('chooseLogin', 'Discord ou un mot de passe') + '.'), foot({ close: () => m.close() }, ok));
   ok.addEventListener('click', () => run(ok, async () => {
     if (name.value.trim().length < 2) throw new Error('Indique le nom de l’agent.');
     if (!/^[a-z0-9]+([._-][a-z0-9]+)*$/.test(login.value.trim())) throw new Error('Identifiant invalide : lettres minuscules, chiffres, point ou tiret.');
@@ -142,9 +143,9 @@ export async function effectifs(ctx) {
       })))],
     anciens: () => h('section', { class: 'card' }, table([['Agent', m => personCell(m.name, m.matricule, m.photo, urls)], ['Dernier grade', m => gradeOf(grades, m.grade_id).name],
       ['Parti le', m => m.left_at ? day(m.left_at) : '—', 'num', m => m.left_at], ['Motif', m => m.left_reason || '—']], gone, m => ctx.go(base + m.id), 'Aucun ancien agent.')),
-    noire: () => h('section', { class: 'card' }, h('div', { class: 'cardhead' }, h('p', { class: 'muted' }, 'Personne sur cette liste ne peut être recrutée ni réintégrée (même nom ou même identifiant Discord).'),
+    noire: () => h('section', { class: 'card' }, h('div', { class: 'cardhead' }, h('p', { class: 'muted' }, 'Personne sur cette liste ne peut être recrutée ni réintégrée (même nom ou ' + t('blacklistId', 'même identifiant Discord') + ').'),
       h('button', { class: 'btn', type: 'button', onclick: () => blackModal(ctx) }, ico('ajout', 18), 'Ajouter')),
-      table([['Nom', b => h('b', {}, b.name)], ['Discord', b => b.discord_id || '—'], ['Motif', b => b.reason], ['Ajouté', b => day(b.at) + ' · ' + b.by_name, 'num', b => b.at],
+      table([['Nom', b => h('b', {}, b.name)], [t('chat', 'Discord'), b => b.discord_id || '—'], ['Motif', b => b.reason], ['Ajouté', b => day(b.at) + ' · ' + b.by_name, 'num', b => b.at],
         ['', b => h('button', { class: 'btn small', type: 'button', onclick: ev => { ev.stopPropagation(); run(ev.currentTarget, async () => { await rpc('blacklist_remove', { p_id: b.id }); ctx.reload(); return { message: b.name + ' retiré de la liste noire.' }; }); } }, 'Retirer')]],
       black, null, 'La liste noire est vide.')),
   };
@@ -156,7 +157,7 @@ export async function effectifs(ctx) {
 function blackModal(ctx) {
   const name = input({ maxlength: 60 }), disc = input({ maxlength: 25, inputmode: 'numeric' }), why = area({ maxlength: 200 });
   const ok = h('button', { class: 'btn danger' }, 'Ajouter à la liste noire');
-  const m = modal('Liste noire', field('Nom', name), field('Discord (facultatif)', disc), field('Motif', why), foot({ close: () => m.close() }, ok));
+  const m = modal('Liste noire', field('Nom', name), field(t('chat', 'Discord') + ' (facultatif)', disc), field('Motif', why), foot({ close: () => m.close() }, ok));
   ok.addEventListener('click', () => run(ok, async () => { await rpc('blacklist_add', { p_org: ctx.me.id, p_name: name.value.trim(), p_discord: disc.value.trim() || null, p_reason: why.value.trim() }); m.close(); ctx.reload(); return { message: 'Ajouté à la liste noire.' }; }));
 }
 
@@ -183,7 +184,7 @@ export async function agent(ctx, id) {
     const disc = input({ maxlength: 25, value: m.discord_id || '', inputmode: 'numeric' }), fivem = input({ maxlength: 60, value: m.fivem_id || '', placeholder: 'license:…' });
     const photo = photoIn(), ok = h('button', { class: 'btn primary' }, 'Enregistrer');
     const md = modal('Fiche de ' + m.name, h('div', { class: 'row' }, field('Indicatif', call, 'grow'), field('Téléphone', phone, 'grow')),
-      h('div', { class: 'row' }, field('Discord (chiffres)', disc, 'grow'), field('Identifiant FiveM', fivem, 'grow')), field('Photo (10 Mo au plus)', photo),
+      h('div', { class: 'row' }, field(t('chatId', 'Discord (chiffres)'), disc, 'grow'), field(t('gameId', 'Identifiant FiveM'), fivem, 'grow')), field('Photo (10 Mo au plus)', photo),
       boss ? null : h('p', { class: 'note' }, 'L’indicatif est donné par les responsables des effectifs.'), foot({ close: () => md.close() }, ok));
     ok.addEventListener('click', () => run(ok, async () => {
       const path = await send(me.id, 'agents/' + m.id, photo.files[0], true);
@@ -247,7 +248,7 @@ export async function agent(ctx, id) {
         m.signature_style ? h('span', { class: 'idsig' }, sigEl({ name: m.signature_name, style: m.signature_style }, 26)) : null,
         h('span', {}, g.name + (m.rank_since ? ' depuis le ' + day(m.rank_since) : '')), h('span', { class: 'pills' }, myUnits.map(([u, main]) => pill(u.code + (main ? ' · principale' : ''), main ? 'info' : null))))),
         h('dl', { class: 'lines-dl rules' }, info('Matricule', m.matricule || '—'), info('Indicatif', m.callsign || '—'), info('Parcours', STAGE[m.stage][0]), info('Téléphone', m.phone || '—'),
-          info('Discord', m.discord_id || '—'), info('FiveM', m.fivem_id || '—'), info('Recruté le', day(m.created_at)), info('Vu', m.last_seen ? ago(ms(m.last_seen)) : 'jamais'),
+          info(t('chat', 'Discord'), m.discord_id || '—'), info(t('gameIdShort', 'FiveM'), m.fivem_id || '—'), info('Recruté le', day(m.created_at)), info('Vu', m.last_seen ? ago(ms(m.last_seen)) : 'jamais'),
           has('presence') ? info('Service cette semaine', fmtH(week)) : null),
         selfOk && m.active ? h('div', { class: 'acts' }, h('button', { class: 'btn small', type: 'button', onclick: unitsModal }, ico('grille', 16), 'Unités'),
           manage ? h('div', { class: 'seg', role: 'group', 'aria-label': 'Parcours' }, Object.entries(STAGE).map(([k, [l]]) => h('button', { type: 'button', class: m.stage === k ? 'on' : null, 'aria-pressed': String(m.stage === k),
@@ -836,7 +837,7 @@ export async function publicWanted(code, $app, sub) {
     if (!d) return false;
     info.name = info.name || d.name; info.kind = info.kind || d.kind;
     const pick = select([['', 'Je ne sais pas / autre']].concat(d.list.map(w => [w.id, w.rank + '. ' + w.name])), '', { 'aria-label': 'Au sujet de' });
-    const text = area({ maxlength: 1000, rows: 5, placeholder: 'Où, quand, avec qui, quel véhicule…', 'aria-label': 'Ce que tu as vu' }), contact = input({ maxlength: 80, placeholder: 'Facultatif : numéro ou pseudo Discord', 'aria-label': 'Contact (facultatif)' });
+    const text = area({ maxlength: 1000, rows: 5, placeholder: 'Où, quand, avec qui, quel véhicule…', 'aria-label': 'Ce que tu as vu' }), contact = input({ maxlength: 80, placeholder: 'Facultatif : ' + t('contactHint', 'numéro ou pseudo Discord').toLowerCase(), 'aria-label': 'Contact (facultatif)' });
     const ok = h('button', { class: 'btn primary wide' }, 'Envoyer le signalement'), done = h('p', { class: 'sent', hidden: true, role: 'status' }, 'Merci. Ton signalement est transmis aux enquêteurs.');
     ok.addEventListener('click', () => run(ok, async () => {
       await rpc('send_tip', { p_code: code, p_wanted: pick.value || null, p_text: text.value.trim(), p_contact: contact.value.trim() || null });
@@ -857,6 +858,6 @@ export async function publicWanted(code, $app, sub) {
     h('span', { class: 'art' }, h('b', {}, info.name), h('small', {}, info.kind))), themeSwitch()),
     pages.length > 1 ? h('nav', { class: 'avis-tabs', 'aria-label': 'Pages publiques' }, pages.map(([k, l]) => h('a', { href: '/avis/' + code + (k ? '/' + k : ''), class: k === cur ? 'on' : null, 'aria-current': k === cur ? 'page' : null }, l))) : null,
     h('main', { class: 'avis-main' }, ...main),
-    h('footer', { class: 'avis-foot' }, butterfly('avis-fly'), h('span', {}, BRAND))));
+    h('footer', { class: 'avis-foot' }, mark('avis-fly'), h('span', {}, BRAND))));
   return true;
 }
