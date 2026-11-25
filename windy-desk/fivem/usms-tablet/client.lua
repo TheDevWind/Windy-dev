@@ -63,7 +63,7 @@ local function openTablet()
   isOpen = true
   startHolding()
   SetNuiFocus(true, true)
-  SendNUIMessage({ action = 'open', url = Config.Url })
+  SendNUIMessage({ action = 'open', url = Config.Url, debug = Config.Debug == true })
   CreateThread(function()   -- la tablette se range si le joueur tombe
     while isOpen do
       if IsPedDeadOrDying(PlayerPedId(), true) then closeTablet() end

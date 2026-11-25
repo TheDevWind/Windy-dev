@@ -19,6 +19,9 @@ Config.Framework = 'auto'
 Config.Prop = { enabled = true, model = 'prop_cs_tablet', bone = 60309, pos = vec3(0.03, 0.002, 0.0), rot = vec3(10.0, 160.0, 0.0) }
 Config.Anim = { dict = 'amb@code_human_in_bus_passenger_idles@female@tablet@base', name = 'base' }
 
+-- Diagnostic : affiche en bas de la tablette l'origine de la page, ses ancêtres et si le site est joignable. À couper une fois que tout marche.
+Config.Debug = true
+
 Config.Messages = {
   denied = 'Cette tablette est réservée au personnel du service.',
   dead = 'Impossible d’utiliser la tablette dans cet état.',

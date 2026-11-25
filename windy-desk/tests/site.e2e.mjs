@@ -1117,7 +1117,7 @@ try {
     assert.equal(await reed.evaluate(() => document.documentElement.dataset.brand), 'windy');
   });
   await step('tablette en jeu : la console s’ouvre dans la tablette, Échap la range, la console ne peut rien demander d’autre', async () => {
-    assert.match(csp, /frame-ancestors 'self' https:\/\/cfx-nui-usms-tablet(;|$)/, 'le site ne peut être affiché que par la tablette');
+    assert.match(csp, /frame-ancestors 'self' https:\/\/cfx-nui-usms-tablet nui:(;|$)/, 'le site ne peut être affiché que par la tablette');
     const tab = await open({ label: 'tablette nui' });
     await tab.addInitScript(() => { window.GetParentResourceName = () => 'usms-tablet'; window.__calls = []; window.fetch = u => { window.__calls.push(String(u)); return Promise.resolve({}); }; });
     await tab.goto(BASE + '/__tablet/index.html');
