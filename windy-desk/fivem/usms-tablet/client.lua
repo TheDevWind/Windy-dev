@@ -109,7 +109,7 @@ local function takePhoto()
       SendNUIMessage({ action = 'photo', data = data })
     end
   end
-  exports['screenshot-basic']:requestScreenshot({ encoding = 'jpg', quality = (Config.Camera and Config.Camera.quality) or 0.85 }, finish)
+  exports[Config.ScreenshotResource or 'screenshot-basic']:requestScreenshot({ encoding = 'jpg', quality = (Config.Camera and Config.Camera.quality) or 0.85 }, finish)
   SetTimeout(6000, function() finish(nil) end)   -- si la capture ne répond pas, on rend la main
 end
 
@@ -179,7 +179,7 @@ end)
 
 RegisterNUICallback('camera', function(data, cb)
   if data and data.on then
-    if GetResourceState('screenshot-basic') ~= 'started' then cb({ ok = false, reason = 'missing' }) return end
+    if GetResourceState(Config.ScreenshotResource or 'screenshot-basic') ~= 'started' then cb({ ok = false, reason = 'missing' }) return end
     cb({ ok = true })
     startCamera()
   else

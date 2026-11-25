@@ -27,7 +27,7 @@ Notes, rappels, contacts, photos et réglages sont gardés **sur le poste de jeu
 1. Copier le dossier `usms-tablet` dans `resources/`. **Garder ce nom** : il apparaît dans la règle de sécurité du site (voir plus bas).
 2. Dans `server.cfg` : `ensure usms-tablet`.
 3. Ouvrir `config.lua` et régler au minimum `Config.Url` : l'adresse du site, `?marque=usms`, et `&service=` suivi du code du service.
-4. **Appareil photo** : installer la ressource gratuite [screenshot-basic](https://github.com/citizenfx/screenshot-basic) et la démarrer avant `usms-tablet` (`ensure screenshot-basic`). Sans elle, l'application s'ouvre puis se referme avec un message, le reste fonctionne.
+4. **Appareil photo** : installer la ressource gratuite [screenshot-basic](https://github.com/citizenfx/screenshot-basic) et la démarrer avant `usms-tablet` (`ensure screenshot-basic`). Si son dossier ne s'appelle pas exactement `screenshot-basic` (par exemple `screenshot-basic-master`), le dire dans `Config.ScreenshotResource`. Au premier démarrage, `webpack` s'installe seul et redémarre : attendre la fin avant de lancer `screenshot-basic`. Sans cette ressource, l'application s'ouvre puis se referme avec un message, le reste fonctionne.
 5. En jeu : `/tablette` ou F9 (touche modifiable dans les paramètres de touches du jeu). Échap revient à l'accueil puis range la tablette ; le bouton d'alimentation, en haut à droite, la range aussi.
 
 Un objet utilisable est possible (ESX ou QBCore) : `Config.Item = 'tablet'`, l'objet devant exister dans l'inventaire du serveur.

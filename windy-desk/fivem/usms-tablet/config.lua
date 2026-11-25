@@ -24,6 +24,7 @@ Config.Debug = false
 
 -- Appareil photo : demande la ressource gratuite « screenshot-basic » (https://github.com/citizenfx/screenshot-basic). Sans elle, l'application s'ouvre puis se referme avec un message.
 Config.Camera = { quality = 0.85 }
+Config.ScreenshotResource = 'screenshot-basic'   -- nom exact du dossier de la ressource (ex. 'screenshot-basic-master' si tu ne l'as pas renommé)
 
 Config.Messages = {
   denied = 'Cette tablette est réservée au personnel du service.',
