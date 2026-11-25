@@ -4,6 +4,7 @@
 // 2. une revue de toutes les pages en clair/sombre, ordinateur/téléphone : erreurs JS, contraste, débordement, « null » affiché.
 import { createRequire } from 'node:module';
 import { mkdirSync, readFileSync } from 'node:fs';
+import { extname } from 'node:path';
 import assert from 'node:assert/strict';
 import { createBackend } from './backend.mjs';
 import { serve } from './serve.mjs';
@@ -17,7 +18,12 @@ const backend = await createBackend();
 const csp = readFileSync(new URL('../../netlify.toml', import.meta.url), 'utf8').match(/Content-Security-Policy = "([^"]+)"/)[1];
 const overrides = { '/config.js': "window.WINDY_DESK_CONFIG = { fake: true, passwordDomain: 'comptes.windydev.fr' };" };
 const server = await serve(PORT, overrides, { 'content-security-policy': csp },
-  path => { if (!path.startsWith('/__fake-storage/')) return null; const f = backend.files.get(path.slice('/__fake-storage/'.length)); return f ? { type: f.type, body: f.bytes } : null; });
+  path => {
+    if (path.startsWith('/__tablet/')) {   // la page de la tablette en jeu (ressource FiveM), servie ici pour tester l'enchaînement
+      const f = path.slice('/__tablet/'.length) || 'index.html', types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
+      try { return { type: types[extname(f)] || 'text/plain', body: readFileSync(new URL('../fivem/usms-tablet/ui/' + f, import.meta.url)) }; } catch { return null; }
+    }
+    if (!path.startsWith('/__fake-storage/')) return null; const f = backend.files.get(path.slice('/__fake-storage/'.length)); return f ? { type: f.type, body: f.bytes } : null; });
 const browser = await chromium.launch();
 const errors = [], pages = [];
 const steps = [];
@@ -1109,6 +1115,31 @@ try {
     }
     await reed.evaluate(() => sessionStorage.removeItem('windy.brand')); await reed.goto(BASE + '/usms-ls'); await settle(reed, 'h1:text("US Marshals")');
     assert.equal(await reed.evaluate(() => document.documentElement.dataset.brand), 'windy');
+  });
+  await step('tablette en jeu : la console s’ouvre dans la tablette, Échap la range, la console ne peut rien demander d’autre', async () => {
+    assert.match(csp, /frame-ancestors 'self' https:\/\/cfx-nui-usms-tablet(;|$)/, 'le site ne peut être affiché que par la tablette');
+    const tab = await open({ label: 'tablette nui' });
+    await tab.addInitScript(() => { window.GetParentResourceName = () => 'usms-tablet'; window.__calls = []; window.fetch = u => { window.__calls.push(String(u)); return Promise.resolve({}); }; });
+    await tab.goto(BASE + '/__tablet/index.html');
+    assert.equal(await tab.locator('#root').isHidden(), true, 'la tablette est rangée au départ');
+    await tab.evaluate(url => window.postMessage({ action: 'open', url }, '*'), BASE + '/?marque=usms&service=usms-ls');
+    await tab.locator('#root:not([hidden])').waitFor();
+    const inner = tab.frameLocator('#app');
+    await inner.locator('h1:text("Connexion")').waitFor();
+    assert.equal(await tab.locator('#overlay').isHidden(), true, 'le message de chargement disparaît');
+    assert.equal(await inner.locator('html').getAttribute('data-brand'), 'usms');
+    await shot(tab, 'tablette-nui');
+    // Échap dans la console : elle demande la fermeture à la tablette, qui la demande au jeu
+    await inner.locator('body').click({ position: { x: 5, y: 5 } }); await tab.keyboard.press('Escape');
+    await tab.waitForFunction(() => window.__calls.some(u => u === 'https://usms-tablet/close'));
+    // la console ne peut pas faire ouvrir une autre adresse
+    const frame = tab.frames().find(f => f !== tab.mainFrame());
+    await frame.evaluate(() => parent.postMessage({ action: 'open', url: 'https://example.invalid/' }, '*'));
+    await tab.waitForTimeout(300);
+    assert.match(await tab.locator('#app').getAttribute('src'), /marque=usms/);
+    await tab.evaluate(() => window.postMessage({ action: 'close' }, '*'));
+    await tab.locator('#root').waitFor({ state: 'hidden' });
+    await tab.context().close();
   });
   await step('barre de navigation : recherche au clavier, raccourcis, menu de groupe au focus', async () => {
     await reed.goto(BASE + '/usms-ls'); await settle(reed, 'h1:text("US Marshals")');

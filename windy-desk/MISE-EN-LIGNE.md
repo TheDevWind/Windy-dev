@@ -175,3 +175,9 @@ Puis copier `three.plan.min.js` et la licence (`node_modules/three/LICENSE`) dan
 - Polices : Fraunces (titres) et Work Sans (texte), licence OFL, copiées dans `web/fonts/` depuis les paquets `@fontsource/fraunces` et `@fontsource/work-sans` (fichiers `*-latin-<graisse>-normal.woff2`).
 - Icônes : Tabler Icons (MIT), contour uniquement. `web/js/icons.js` est généré : `npm install --no-save @tabler/icons` puis `node scripts/make-icons.mjs`. Pour ajouter une icône, compléter la table `MAP` du script.
 - Couleurs : variables en tête de `web/css/windy.css` (violet `#7566C2`, crème `#FDF8F2`, sauge `#C3D4A8`, lilas `#D9CEF2`, encre `#2B2640`). Le texte violet utilise `#5B4DA6` pour tenir le contraste AA.
+
+## Tablette en jeu (U.S. Marshals)
+
+- Habillage : `?marque=usms&service=<code>` (voir `web/js/brand.js`, `web/css/usms.css`). On peut aussi le fixer pour tout un déploiement dans `web/config.js` avec `brand: 'usms'` et `brandService: '<code>'`.
+- Ressource FiveM : `fivem/usms-tablet/` (notice d'installation et d'adaptation dans son `README.md`).
+- Le site n'accepte d'être affiché dans un cadre que par la ressource (`frame-ancestors` dans `netlify.toml`, ou dans l'en-tête de ton serveur web si tu l'héberges toi-même, par exemple Caddy).

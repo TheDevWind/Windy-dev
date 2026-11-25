@@ -11,15 +11,16 @@
   to = "/index.html"
   status = 200
 
+# Le site ne peut être affiché dans un cadre que par la tablette en jeu (ressource FiveM « usms-tablet », windy-desk/fivem/usms-tablet).
+# Une autre ressource ou un autre serveur : adapter l'origine « https://cfx-nui-<nom de la ressource> » dans frame-ancestors.
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://vevezyxavdfykvcbsiws.supabase.co; media-src 'self' blob: https://vevezyxavdfykvcbsiws.supabase.co; font-src 'self'; connect-src 'self' https://vevezyxavdfykvcbsiws.supabase.co wss://vevezyxavdfykvcbsiws.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://vevezyxavdfykvcbsiws.supabase.co; media-src 'self' blob: https://vevezyxavdfykvcbsiws.supabase.co; font-src 'self'; connect-src 'self' https://vevezyxavdfykvcbsiws.supabase.co wss://vevezyxavdfykvcbsiws.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self' https://cfx-nui-usms-tablet"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
     Strict-Transport-Security = "max-age=31536000"
-    X-Frame-Options = "DENY"
 
 [[headers]]
   for = "/index.html"

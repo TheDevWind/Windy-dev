@@ -35,3 +35,10 @@ if (brand.title) {
   const d = document.querySelector('meta[name="description"]'); if (d) d.content = brand.title;
   const ic = document.querySelector('link[rel="icon"]'); if (ic && brand.logo) { ic.href = brand.logo; ic.type = 'image/png'; }
 }
+
+// Dans la tablette (page affichée dans un cadre) : Échap, quand rien d'autre n'est ouvert, demande à la tablette de se ranger.
+if (brand.kiosk && window.parent !== window) {
+  document.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape' && !ev.defaultPrevented && !document.querySelector('.modal-bg, .menu')) window.parent.postMessage({ type: 'tablet-close' }, '*');
+  });
+}

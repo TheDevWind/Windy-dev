@@ -283,7 +283,7 @@ function passwordForm(space, onDone, labels) {
 async function orgLogin(code) {
   const o = await rpc('org_public', { p_code: code });
   if (!o) return message('Entreprise introuvable', 'Aucune entreprise n’utilise l’adresse /' + code + '. Vérifie le lien envoyé par ton patron.', h('a', { class: 'btn', href: '/connexion' }, 'Chercher une autre entreprise'));
-  authFrame([h('b', { class: 'mk big inv' }, o.name[0].toUpperCase()), h('h2', {}, o.name), h('p', {}, t('kind', o.kind) + (o.sector === 'service_public' ? ' · espace du service' : ' · espace de l’entreprise')), h('code', { class: 'auth-url' }, '/' + o.code),
+  authFrame([brand.kiosk ? mark('auth-seal') : h('b', { class: 'mk big inv' }, o.name[0].toUpperCase()), h('h2', {}, o.name), h('p', {}, t('kind', o.kind) + (o.sector === 'service_public' ? ' · espace du service' : ' · espace de l’entreprise')), h('code', { class: 'auth-url' }, '/' + o.code),
       h('ul', { class: 'auth-points' }, o.modules.slice(0, 6).map(id => h('li', {}, ico(moduleOf(id).icon, 18), moduleOf(id).name)))],
     h('h1', {}, 'Connexion'), h('p', { class: 'muted' }, (o.sector === 'service_public' ? 'Espace réservé aux agents de ' : 'Espace réservé à l’équipe de ') + o.name + '.'),
     o.password_login ? passwordForm(o.code, () => route()) : null,
